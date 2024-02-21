@@ -107,15 +107,15 @@ public class BicepCompiler
     private static ImmutableDictionary<BicepSourceFile, ImmutableArray<IDiagnostic>> GetModuleRestoreDiagnosticsByBicepFile(SourceFileGrouping sourceFileGrouping, ImmutableHashSet<ArtifactResolutionInfo> originalModulesToRestore, bool forceModulesRestore)
     {
         static IDiagnostic? DiagnosticForModule(SourceFileGrouping grouping, IArtifactReferenceSyntax moduleDeclaration)
-            => grouping.TryGetSourceFile(moduleDeclaration).IsSuccess(out _, out var errorBuilder) ? null : errorBuilder(DiagnosticBuilder.ForPosition(moduleDeclaration.SourceSyntax));
+            => grouping.TryGetSourceFileForArtifactReferenceSyntax(moduleDeclaration).IsSuccess(out _, out var errorBuilder) ? null : errorBuilder(DiagnosticBuilder.ForPosition(moduleDeclaration.SourceSyntax));
 
         static IEnumerable<(BicepSourceFile, IDiagnostic)> GetDiagnosticsForModulesToRestore(SourceFileGrouping grouping, ImmutableHashSet<ArtifactResolutionInfo> originalArtifactsToRestore)
         {
             var originalModulesToRestore = originalArtifactsToRestore.OfType<ArtifactResolutionInfo>();
-            foreach (var (module, sourceFile) in originalModulesToRestore)
+            foreach (var (moduleSyntax, sourceFile) in originalModulesToRestore)
             {
                 if (sourceFile is BicepSourceFile bicepFile &&
-                    DiagnosticForModule(grouping, module) is { } diagnostic)
+                    DiagnosticForModule(grouping, moduleSyntax) is { } diagnostic)
                 {
                     yield return (bicepFile, diagnostic);
                 }

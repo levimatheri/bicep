@@ -112,7 +112,7 @@ namespace Bicep.LanguageServer.Handlers
                      (moduleSyntax, stringSyntax, token) => moduleSyntax.Path == stringSyntax && token.Type == TokenType.StringComplete)
                  && matchingNodes[^3] is ModuleDeclarationSyntax moduleDeclarationSyntax
                  && matchingNodes[^2] is StringSyntax stringToken
-                 && context.Compilation.SourceFileGrouping.TryGetSourceFile(moduleDeclarationSyntax).IsSuccess(out var sourceFile)
+                 && context.Compilation.SourceFileGrouping.TryGetSourceFileForArtifactReferenceSyntax(moduleDeclarationSyntax).IsSuccess(out var sourceFile)
                  && this.moduleDispatcher.TryGetArtifactReference(moduleDeclarationSyntax, request.TextDocument.Uri.ToUriEncoded()).IsSuccess(out var moduleReference))
                 {
                     return HandleModuleReference(context, stringToken, sourceFile, moduleReference);
@@ -125,7 +125,7 @@ namespace Bicep.LanguageServer.Handlers
                      (_, fromClauseSyntax, stringSyntax, token) => fromClauseSyntax.Path == stringSyntax && token.Type == TokenType.StringComplete)
                  && matchingNodes[^4] is CompileTimeImportDeclarationSyntax importDeclarationSyntax
                  && matchingNodes[^2] is StringSyntax stringToken
-                 && context.Compilation.SourceFileGrouping.TryGetSourceFile(importDeclarationSyntax).IsSuccess(out var sourceFile)
+                 && context.Compilation.SourceFileGrouping.TryGetSourceFileForArtifactReferenceSyntax(importDeclarationSyntax).IsSuccess(out var sourceFile)
                  && this.moduleDispatcher.TryGetArtifactReference(importDeclarationSyntax, request.TextDocument.Uri.ToUriEncoded()).IsSuccess(out var moduleReference))
                 {
                     // goto beginning of the module file.
@@ -157,7 +157,7 @@ namespace Bicep.LanguageServer.Handlers
             {
                 if (SyntaxMatcher.GetTailMatch<UsingDeclarationSyntax, StringSyntax, Token>(matchingNodes) is (var @using, var path, _) &&
                     @using.Path == path &&
-                    context.Compilation.SourceFileGrouping.TryGetSourceFile(@using).IsSuccess(out var sourceFile))
+                    context.Compilation.SourceFileGrouping.TryGetSourceFileForArtifactReferenceSyntax(@using).IsSuccess(out var sourceFile))
                 {
                     return GetFileDefinitionLocation(
                         sourceFile.FileUri,
@@ -196,7 +196,7 @@ namespace Bicep.LanguageServer.Handlers
 
         private LocationOrLocationLinks HandleWildcardImportDeclaration(CompilationContext context, DefinitionParams request, SymbolResolutionResult result, WildcardImportSymbol wildcardImport)
         {
-            if (context.Compilation.SourceFileGrouping.TryGetSourceFile(wildcardImport.EnclosingDeclaration).IsSuccess(out var sourceFile) &&
+            if (context.Compilation.SourceFileGrouping.TryGetSourceFileForArtifactReferenceSyntax(wildcardImport.EnclosingDeclaration).IsSuccess(out var sourceFile) &&
                 wildcardImport.TryGetArtifactReference().IsSuccess(out var moduleReference))
             {
                 return GetFileDefinitionLocation(
@@ -461,7 +461,7 @@ namespace Bicep.LanguageServer.Handlers
         }
 
         private static (Template?, Uri?) GetArmSourceTemplateInfo(CompilationContext context, IArtifactReferenceSyntax foreignTemplateReference)
-            => context.Compilation.SourceFileGrouping.TryGetSourceFile(foreignTemplateReference).TryUnwrap() switch
+            => context.Compilation.SourceFileGrouping.TryGetSourceFileForArtifactReferenceSyntax(foreignTemplateReference).TryUnwrap() switch
             {
                 TemplateSpecFile templateSpecFile => (templateSpecFile.MainTemplateFile.Template, templateSpecFile.FileUri),
                 ArmTemplateFile armTemplateFile => (armTemplateFile.Template, armTemplateFile.FileUri),
@@ -485,7 +485,7 @@ namespace Bicep.LanguageServer.Handlers
             string propertyType,
             string propertyName)
         {
-            if (context.Compilation.SourceFileGrouping.TryGetSourceFile(moduleDeclarationSyntax).IsSuccess(out var sourceFile) && sourceFile is BicepFile bicepFile
+            if (context.Compilation.SourceFileGrouping.TryGetSourceFileForArtifactReferenceSyntax(moduleDeclarationSyntax).IsSuccess(out var sourceFile) && sourceFile is BicepFile bicepFile
             && context.Compilation.GetSemanticModel(bicepFile) is SemanticModel moduleModel)
             {
                 switch (propertyType)

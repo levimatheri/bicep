@@ -11,6 +11,8 @@ using Bicep.Core.Registry;
 using Bicep.Core.Syntax;
 using Bicep.Core.Utils;
 using static Bicep.Core.Diagnostics.DiagnosticBuilder;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Bicep.Core.Workspaces
 {
@@ -21,8 +23,7 @@ namespace Bicep.Core.Workspaces
         private readonly IReadOnlyWorkspace workspace;
 
         private readonly Dictionary<Uri, ResultWithDiagnostic<ISourceFile>> fileResultByUri;
-        // For each .bicep file key, a dictionary (keyed by 'module' or other syntax statement in the .bicep file) of the resolved URI for that syntax statement
-        private readonly ConcurrentDictionary<BicepSourceFile, Dictionary<IArtifactReferenceSyntax, Result<Uri, UriResolutionError>>> fileUriResultByArtifactReference; => add ref to here?
+        private readonly ConcurrentDictionary<BicepSourceFile, Dictionary<IArtifactReferenceSyntax, ArtifactResolution>> artifactResolutionBySyntax;
 
         private readonly bool forceRestore;
 
@@ -35,7 +36,7 @@ namespace Bicep.Core.Workspaces
             this.fileResolver = fileResolver;
             this.dispatcher = moduleDispatcher;
             this.workspace = workspace;
-            this.fileUriResultByArtifactReference = new();
+            this.artifactResolutionBySyntax = new();
             this.fileResultByUri = new();
             this.forceRestore = forceModulesRestore;
         }
@@ -50,7 +51,7 @@ namespace Bicep.Core.Workspaces
             this.fileResolver = fileResolver;
             this.dispatcher = moduleDispatcher;
             this.workspace = workspace;
-            this.fileUriResultByArtifactReference = new(current.FileUriResultByArtifactReference.Select(kvp => KeyValuePair.Create(kvp.Key, kvp.Value.ToDictionary(p => p.Key, p => p.Value))));
+            this.artifactResolutionBySyntax = new(current.ArtifactResolutionBySyntax.Select(kvp => KeyValuePair.Create(kvp.Key, kvp.Value.ToDictionary(p => p.Key, p => p.Value))));
             this.fileResultByUri = current.FileResultByUri.Where(x => x.Value.TryUnwrap() is not null).ToDictionary(x => x.Key, x => x.Value);
             this.forceRestore = forceArtifactRestore;
         }
@@ -70,7 +71,7 @@ namespace Bicep.Core.Workspaces
 
             foreach (var (module, sourceFile) in modulesToRestore)
             {
-                builder.fileUriResultByArtifactReference[sourceFile].Remove(module);
+                builder.artifactResolutionBySyntax[sourceFile].Remove(module);
             }
 
             // Rebuild source files that contain external module references restored during the inital build.
@@ -103,7 +104,7 @@ namespace Bicep.Core.Workspaces
                 fileResolver,
                 entryFileUri,
                 fileResultByUri.ToImmutableDictionary(),
-                fileUriResultByArtifactReference.ToImmutableDictionary(kvp => kvp.Key, kvp => kvp.Value.ToImmutableDictionary()),
+                artifactResolutionBySyntax.ToImmutableDictionary(kvp => kvp.Key, kvp => kvp.Value.ToImmutableDictionary()),
                 sourceFileDependencies.InvertLookup().ToImmutableDictionary());
         }
 
@@ -151,7 +152,7 @@ namespace Bicep.Core.Workspaces
             foreach (var restorable in file.ProgramSyntax.Children.OfType<IArtifactReferenceSyntax>())
             {
                 var (childArtifactReference, uriResult) = GetArtifactRestoreResult(file.FileUri, restorable);
-                fileUriResultByArtifactReference.GetOrAdd(file, f => new())[restorable] = uriResult;
+                artifactResolutionBySyntax.GetOrAdd(file, f => new())[restorable] = new ArtifactResolution(uriResult, childArtifactReference);
 
                 if (!uriResult.IsSuccess(out var artifactUri))
                 {
@@ -213,7 +214,7 @@ namespace Bicep.Core.Workspaces
                 .Select(x => x.TryUnwrap())
                 .WhereNotNull()
                 .SelectMany(sourceFile => GetReferenceSourceNodes(sourceFile)
-                    .SelectMany(moduleDeclaration => this.fileUriResultByArtifactReference.Values.Select(f => f.TryGetValue(moduleDeclaration)?.TryUnwrap()))
+                    .SelectMany(moduleDeclaration => this.artifactResolutionBySyntax.Values.Select(f => f.TryGetValue(moduleDeclaration)?.UriResult. TryUnwrap()))
                     .WhereNotNull()
                     .Select(fileUri => this.fileResultByUri[fileUri].TryUnwrap())
                     .WhereNotNull()
@@ -222,27 +223,30 @@ namespace Bicep.Core.Workspaces
                 .ToLookup(x => x.sourceFile, x => x.referencedFile);
 
             var cycles = CycleDetector<ISourceFile>.FindCycles(sourceFileGraph);
-            foreach (var (file, uriResultByModuleForFile) in fileUriResultByArtifactReference)
+            foreach (var (file, artifactResolutionByModuleForFile) in artifactResolutionBySyntax)
             {
-                foreach (var (statement, urlResult) in uriResultByModuleForFile)
+                foreach (var (statement, artifactResolution) in artifactResolutionByModuleForFile)
                 {
                     if (statement.GetArtifactType() == ArtifactType.Module &&
-                        urlResult.IsSuccess(out var fileUri) &&
+                        artifactResolution.UriResult.IsSuccess(out var fileUri) &&
                         fileResultByUri[fileUri].IsSuccess(out var sourceFile) &&
                         cycles.TryGetValue(sourceFile, out var cycle))
                     {
                         if (cycle.Length == 1)
                         {
-                            uriResultByModuleForFile[statement] = cycle[0] switch
+                            var uriResolutionError = cycle[0] switch
                             {
-                                BicepParamFile => new(new UriResolutionError(x => x.CyclicParametersSelfReference(), false)),
-                                _ => new(new UriResolutionError(x => x.CyclicModuleSelfReference(), false)),
+                                BicepParamFile => new UriResolutionError(x => x.CyclicParametersSelfReference(), false),
+                                _ => new UriResolutionError(x => x.CyclicModuleSelfReference(), false),
                             };
+                            artifactResolutionByModuleForFile[statement] = new ArtifactResolution(new Result<Uri, UriResolutionError>(uriResolutionError), null);
                         }
                         else
                         {
                             // the error message is generic so it should work for either bicep module or params
-                            uriResultByModuleForFile[statement] = new(new UriResolutionError(x => x.CyclicFile(cycle.Select(u => u.FileUri.LocalPath)), false));
+                            artifactResolutionByModuleForFile[statement] = new ArtifactResolution(
+                                new Result<Uri, UriResolutionError>(new UriResolutionError(x => x.CyclicFile(cycle.Select(u => u.FileUri.LocalPath)), false)),
+                                null);
                         }
                     }
                 }

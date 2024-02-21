@@ -73,7 +73,7 @@ namespace Bicep.Core.Semantics
 
         private static Result<ISourceFile, ErrorDiagnostic> TryGetSourceFile(IArtifactFileLookup sourceFileLookup, IArtifactReferenceSyntax reference)
         {
-            if (!sourceFileLookup.TryGetSourceFile(reference).IsSuccess(out var sourceFile, out var errorBuilder))
+            if (!sourceFileLookup.TryGetSourceFileForArtifactReferenceSyntax(reference).IsSuccess(out var sourceFile, out var errorBuilder))
             {
                 return new(errorBuilder(DiagnosticBuilder.ForPosition(reference.SourceSyntax)));
             }

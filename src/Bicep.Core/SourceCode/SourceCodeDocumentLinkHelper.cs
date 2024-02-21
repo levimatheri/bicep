@@ -4,11 +4,11 @@
 using System.Collections.Immutable;
 using Bicep.Core.Extensions;
 using Bicep.Core.Navigation;
+using Bicep.Core.Registry;
 using Bicep.Core.Text;
 using Bicep.Core.Utils;
 using Bicep.Core.Workspaces;
 using Uri = System.Uri;
-
 
 namespace Bicep.Core.SourceCode;
 
@@ -31,19 +31,21 @@ public static class SourceCodeDocumentLinkHelper
     {
         var dictionary = new Dictionary<Uri, SourceCodeDocumentUriLink[]>();
 
-        foreach (var sourceAndDictPair in sourceFileGrouping.FileUriResultByArtifactReference)
+        foreach (var sourceAndDictPair in sourceFileGrouping.ArtifactResolutionBySyntax)
         {
             ISourceFile referencingFile = sourceAndDictPair.Key;
-            IDictionary<IArtifactReferenceSyntax, Result<Uri, UriResolutionError>> referenceSyntaxToUri = sourceAndDictPair.Value;
+            ImmutableDictionary<IArtifactReferenceSyntax, ArtifactResolution> referenceSyntaxToArtifactResolution = sourceAndDictPair.Value;
 
             var referencingFileLineStarts = TextCoordinateConverter.GetLineStarts(referencingFile.GetOriginalSource());
 
             var linksForReferencingFile = new List<SourceCodeDocumentUriLink>();
 
-            foreach (var syntaxAndUriPair in referenceSyntaxToUri)
+            foreach (var syntaxAndArtifactResolution in referenceSyntaxToArtifactResolution)
             {
-                IArtifactReferenceSyntax syntax = syntaxAndUriPair.Key;
-                Result<Uri, UriResolutionError> uriResult = syntaxAndUriPair.Value;
+                IArtifactReferenceSyntax syntax = syntaxAndArtifactResolution.Key;
+                Result<Uri, UriResolutionError> uriResult = syntaxAndArtifactResolution.Value.UriResult;
+                ArtifactReference? externalArtifactReference = syntaxAndArtifactResolution.Value.ArtifactReference;
+
                 if (syntax.Path is { } && uriResult.IsSuccess(out var uri))
                 {
                     var start = new SourceCodePosition(TextCoordinateConverter.GetPosition(referencingFileLineStarts, syntax.Path.Span.Position));

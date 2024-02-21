@@ -48,9 +48,12 @@ namespace Bicep.Core.SourceCode
 
         #region Constants
 
-        public const string SourceKind_Bicep = "bicep";
-        public const string SourceKind_ArmTemplate = "armTemplate";
-        public const string SourceKind_TemplateSpec = "templateSpec";
+        public static class SourceKind //asdfg check for known values
+        {
+            public const string Bicep = "bicep";
+            public const string ArmTemplate = "armTemplate";
+            public const string TemplateSpec = "templateSpec";
+        }
 
         private const string MetadataFileName = "__metadata.json";
         private const string FilesFolderName = "files";
@@ -93,12 +96,13 @@ namespace Bicep.Core.SourceCode
 
         #region Serialization
 
-        public partial record SourceFileInfo(
+        // This is the info we expose via SourceFiles
+        public record SourceFileInfo(
             // Note: Path is also used as the key for source file retrieval
             string Path,        // The location, relative to the main.bicep file's folder or one of the other roots.
 
             string ArchivePath, // The location (relative to root) of where the file is stored in the archive (munged from Path, e.g. in case Path starts with "../")
-            string Kind,        // Kind of source
+            string Kind,        // Kind of source (SourceKind)
             string Contents     // File contents
         );
 
@@ -115,13 +119,15 @@ namespace Bicep.Core.SourceCode
             IReadOnlyDictionary<string, SourceCodeDocumentPathLink[]>? DocumentLinks = null // Maps source file path -> array of document links inside that file
         );
 
+        // A single SourceFiles entry in the metadata.json file
         private partial record SourceFileInfoEntry(
             // IF ADDING TO THIS: Remember both forwards and backwards compatibility.
             // E.g., previous versions must be able to deal with unrecognized source kinds.
             // (but see CurrentMetadataVersion for breaking changes)
-            string Path,        // the location, relative to the main.bicep file's folder, for the file that will be shown to the end user (required in all Bicep versions)
-            string ArchivePath, // the location (relative to root) of where the file is stored in the archive
-            string Kind         // kind of source
+            string Path,             // the location, relative to the main.bicep file's folder, for the file that will be shown to the end user (required in all Bicep versions)
+            string ArchivePath,      // the location (relative to root) of where the file is stored in the archive
+            string Kind,             // kind of source (SourceKind)
+            string? ExternalArtifact //asdfg
         );
 
         #endregion
@@ -187,9 +193,9 @@ namespace Bicep.Core.SourceCode
                         string source = file.GetOriginalSource();
                         string kind = file switch
                         {
-                            BicepFile bicepFile => SourceKind_Bicep,
-                            ArmTemplateFile armTemplateFile => SourceKind_ArmTemplate,
-                            TemplateSpecFile => SourceKind_TemplateSpec,
+                            BicepFile bicepFile => SourceKind.Bicep,
+                            ArmTemplateFile armTemplateFile => SourceKind.ArmTemplate,
+                            TemplateSpecFile => SourceKind.TemplateSpec,
                             _ => throw new ArgumentException($"Unexpected source file type {file.GetType().Name}"),
                         };
 
@@ -209,7 +215,7 @@ namespace Bicep.Core.SourceCode
                         archivePath = UniquifyArchivePath(filesMetadata, archivePath);
 
                         WriteNewFileEntry(tarWriter, archivePath, source);
-                        filesMetadata.Add(new SourceFileInfoEntry(relativePath, archivePath, kind));
+                        filesMetadata.Add(new SourceFileInfoEntry(relativePath, archivePath, kind, null/*asdfg*/));
 
                         if (PathHelper.PathComparer.Equals(file.FileUri, entrypointFileUri))
                         {

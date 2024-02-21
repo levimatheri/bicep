@@ -197,7 +197,7 @@ namespace Bicep.Core.Semantics
 
             Uri? typesBaseUri = null;
             if (syntax.Path is not null &&
-                !this.artifactFileLookup.TryGetResourceTypesFileUri(syntax).IsSuccess(out typesBaseUri, out var errorBuilder))
+                !this.artifactFileLookup.TryGetUriForArtifactReferenceSyntax(syntax).IsSuccess(out typesBaseUri, out var errorBuilder))
             {
                 return ErrorType.Create(errorBuilder(DiagnosticBuilder.ForPosition(syntax)));
             }

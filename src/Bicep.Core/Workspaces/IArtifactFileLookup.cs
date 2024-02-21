@@ -8,7 +8,7 @@ namespace Bicep.Core.Workspaces;
 
 public interface IArtifactFileLookup
 {
-    public ResultWithDiagnostic<ISourceFile> TryGetSourceFile(IArtifactReferenceSyntax foreignTemplateReference);
+    public ResultWithDiagnostic<ISourceFile> TryGetSourceFileForArtifactReferenceSyntax(IArtifactReferenceSyntax foreignTemplateReference);
 
-    public ResultWithDiagnostic<Uri> TryGetResourceTypesFileUri(IArtifactReferenceSyntax providerReference);
+    public ResultWithDiagnostic<Uri> TryGetUriForArtifactReferenceSyntax(IArtifactReferenceSyntax providerReference);
 }
