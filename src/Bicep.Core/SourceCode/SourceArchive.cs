@@ -9,11 +9,13 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Bicep.Core.Exceptions;
+using Bicep.Core.Extensions;
 using Bicep.Core.FileSystem;
 using Bicep.Core.Registry;
 using Bicep.Core.Registry.Oci;
 using Bicep.Core.Utils;
 using Bicep.Core.Workspaces;
+using Microsoft.VisualBasic;
 using Microsoft.WindowsAzure.ResourceStack.Common.Extensions;
 using static Bicep.Core.SourceCode.SourceArchive;
 
@@ -161,12 +163,22 @@ namespace Bicep.Core.SourceCode
         /// <returns>A .tar.gz file as a binary stream</returns>
         public static Stream PackSourcesIntoStream(SourceFileGrouping sourceFileGrouping, string? cacheRoot)
         {
+            //asdfg test properly
+            //asdfg
+            //asdfg test distinct
+            //sourceFileGrouping.TryGetUriForArtifactReferenceSyntax
+            //asdfg
             var sourceFiles = sourceFileGrouping.SourceFiles.ToArray();
             var artifactResolutions = sourceFileGrouping.ArtifactResolutionBySyntax.Values.SelectMany(x => x.Values);
             var artifactResolutions2 = artifactResolutions.DistinctArray();
             var artifactResolution3 = artifactResolutions2.Where(x => x.UriResult.TryUnwrap() is not null && x.ArtifactReference is OciArtifactReference).ToArray();
+            var a = artifactResolutions2.Select(x => (x.UriResult.Unwrap(), x.ArtifactReference?.UnqualifiedReference)).ToArray();
+            var b = artifactResolutions.WhereNotNull()
+                .Distinct(x => x.UriResult.Unwrap().ToString());
+            var artifactByUri = b.ToDictionary(x => x.UriResult.Unwrap(), x => x.ArtifactReference as OciArtifactReference); // Only want OCI references  //asdfg test
 
-            var sourceFilesWithArtifactReference = sourceFiles.Select(x => new SourceFileWithArtifactReference(x, null/*asdfg*/));
+
+            var sourceFilesWithArtifactReference = sourceFiles.Select(x => new SourceFileWithArtifactReference(x, artifactByUri.GetValueOrDefault(x.FileUri))).ToArray();
 
             var documentLinks = SourceCodeDocumentLinkHelper.GetAllModuleDocumentLinks(sourceFileGrouping);
             return PackSourcesIntoStream(sourceFileGrouping.EntryFileUri, cacheRoot, documentLinks, sourceFilesWithArtifactReference.ToArray());
