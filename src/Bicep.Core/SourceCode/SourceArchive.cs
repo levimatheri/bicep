@@ -138,7 +138,7 @@ namespace Bicep.Core.SourceCode
             string Path,             // the location, relative to the main.bicep file's folder, for the file that will be shown to the end user (required in all Bicep versions)
             string ArchivePath,      // the location (relative to root) of where the file is stored in the archive
             string Kind,             // kind of source (SourceKind)
-            string? Artifact = null // asdfg
+            string? Source = null // asdfg
         );
 
         #endregion
@@ -160,8 +160,8 @@ namespace Bicep.Core.SourceCode
         /// Bundles all the sources from a compilation group (thus source for a bicep file and all its dependencies
         /// in JSON form) into an archive (as a stream)
         /// </summary>
-        /// <returns>A .tar.gz file as a binary stream</returns>
-        public static Stream PackSourcesIntoStream(SourceFileGrouping sourceFileGrouping, string? cacheRoot)
+        /// <returns>A .tgz file as a binary stream</returns>
+        public static Stream PackSourcesIntoStream(SourceFileGrouping sourceFileGrouping, string? cacheRoot, IModuleDispatcher moduleDispatcher/*asdfg move externally*/)
         {
             //asdfg test properly
             //asdfg
@@ -175,7 +175,11 @@ namespace Bicep.Core.SourceCode
             var a = artifactResolutions2.Select(x => (x.UriResult.Unwrap(), x.ArtifactReference?.UnqualifiedReference)).ToArray();
             var b = artifactResolutions.WhereNotNull()
                 .Distinct(x => x.UriResult.Unwrap().ToString());
-            var artifactByUri = b.ToDictionary(x => x.UriResult.Unwrap(), x => x.ArtifactReference as OciArtifactReference); // Only want OCI references  //asdfg test
+            // Only want OCI references  //asdfg test
+            // Only those that have source themselves
+            var c = b.Where(x => x.ArtifactReference is OciArtifactReference && moduleDispatcher.TryGetModuleSources( x.ArtifactReference).IsSuccess()).ToArray();
+
+            var artifactByUri = c.ToDictionary(x => x.UriResult.Unwrap(), x => x.ArtifactReference); // Only want OCI references  //asdfg test
 
 
             var sourceFilesWithArtifactReference = sourceFiles.Select(x => new SourceFileWithArtifactReference(x, artifactByUri.GetValueOrDefault(x.FileUri))).ToArray();
@@ -405,7 +409,7 @@ namespace Bicep.Core.SourceCode
             {
                 var contents = dictionary[info.ArchivePath]
                     ?? throw new BicepException("Incorrectly formatted source file: File entry not found: \"{info.ArchivePath}\"");
-                infos.Add(new SourceFileInfo(info.Path, info.ArchivePath, info.Kind, contents, info.Artifact));
+                infos.Add(new SourceFileInfo(info.Path, info.ArchivePath, info.Kind, contents, info.Source));
             }
 
             this.InstanceMetadata = metadata;

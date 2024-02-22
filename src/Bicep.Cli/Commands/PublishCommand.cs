@@ -93,7 +93,7 @@ namespace Bicep.Cli.Commands
 
                 await ioContext.Output.WriteLineAsync(string.Format(CliResources.ExperimentalFeaturesDisclaimerMessage, PublishSourceFeatureName));
 
-                sourcesStream = SourceArchive.PackSourcesIntoStream(compilation.SourceFileGrouping, features.CacheRootDirectory);
+                sourcesStream = SourceArchive.PackSourcesIntoStream(compilation.SourceFileGrouping, features.CacheRootDirectory, moduleDispatcher);
                 Trace.WriteLine("Publishing Bicep module with source");
             }
             else
