@@ -177,18 +177,18 @@ namespace Bicep.Core.Workspaces
             if (!dispatcher.TryGetArtifactReference(referenceSyntax, parentFileUri).IsSuccess(out var artifactReference, out var referenceResolutionError))
             {
                 // module reference is not valid
-                return (null, new(new UriResolutionError(referenceResolutionError, false)));
+                return (null/*asdfg put this into result with uri*/, new(new UriResolutionError(referenceResolutionError, false)));
             }
 
             if (!dispatcher.TryGetLocalArtifactEntryPointUri(artifactReference).IsSuccess(out var artifactFileUri, out var artifactGetPathFailureBuilder))
             {
-                return (artifactReference, new(new UriResolutionError(artifactGetPathFailureBuilder, false)));
+                return (null, new(new UriResolutionError(artifactGetPathFailureBuilder, false)));
             }
 
             if (forceRestore)
             {
                 //override the status to force restore
-                return (artifactReference, new(new UriResolutionError(x => x.ArtifactRequiresRestore(artifactReference.FullyQualifiedReference), true)));
+                return (null, new(new UriResolutionError(x => x.ArtifactRequiresRestore(artifactReference.FullyQualifiedReference), true)));
             }
 
             var restoreStatus = dispatcher.GetArtifactRestoreStatus(artifactReference, out var restoreErrorBuilder);
@@ -196,11 +196,11 @@ namespace Bicep.Core.Workspaces
             {
                 case ArtifactRestoreStatus.Unknown:
                     // we have not yet attempted to restore the module, so let's do it
-                    return (artifactReference, new(new UriResolutionError(x => x.ArtifactRequiresRestore(artifactReference.FullyQualifiedReference), true)));
+                    return (null, new(new UriResolutionError(x => x.ArtifactRequiresRestore(artifactReference.FullyQualifiedReference), true)));
                 case ArtifactRestoreStatus.Failed:
                     // the module has not yet been restored or restore failed
                     // in either case, set the error
-                    return (artifactReference, new(new UriResolutionError(restoreErrorBuilder ?? (x => x.ArtifactRestoreFailed(artifactReference.FullyQualifiedReference)), false)));
+                    return (null, new(new UriResolutionError(restoreErrorBuilder ?? (x => x.ArtifactRestoreFailed(artifactReference.FullyQualifiedReference)), false)));
                 default:
                     break;
             }

@@ -244,7 +244,7 @@ namespace Bicep.Core.UnitTests.Modules
             return OciArtifactReference.TryParse(ArtifactType.Module, null, package, BicepTestConstants.BuiltInConfigurationWithAllAnalyzersDisabled, RandomFileUri()).IsSuccess(out var _, out var _);
         }
 
-        public static OciArtifactReference Parse(string package)
+        public static OciArtifactReference Parse(string package) //asdfg
         {
             OciArtifactReference.TryParse(ArtifactType.Module, null, package, BicepTestConstants.BuiltInConfigurationWithAllAnalyzersDisabled, RandomFileUri()).IsSuccess(out var parsed, out var failureBuilder).Should().BeTrue();
             failureBuilder!.Should().BeNull();

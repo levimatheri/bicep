@@ -2,7 +2,9 @@
 // Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using Bicep.Core.Features;
+using Bicep.Core.FileSystem;
 using Bicep.Core.Registry;
 using Bicep.Core.Registry.Oci;
 using Bicep.Core.SourceCode;
@@ -300,6 +302,17 @@ namespace Bicep.Core.UnitTests.Registry
 
         #endregion GetDocumentationUri
 
+        //asdfg remove
+        //private static Uri RandomFileUri() => PathHelper.FilePathToFileUrl(Path.GetTempFileName());
+
+        //public static OciArtifactReference CreateOciArtifactReference(string id) //asdfg    extract?
+        //{
+        //    OciArtifactReference.TryParse(ArtifactType.Module, null, id, BicepTestConstants.BuiltInConfigurationWithAllAnalyzersDisabled, RandomFileUri()).IsSuccess(out var parsed, out var failureBuilder).Should().BeTrue();
+        //    failureBuilder!.Should().BeNull();
+        //    parsed.Should().NotBeNull();
+        //    return parsed!;
+        //}
+
         #region GetDescription
 
         [DataRow("")]
@@ -308,7 +321,7 @@ namespace Bicep.Core.UnitTests.Registry
         [DataTestMethod]
         public void GetDescription_WithInvalidManifestContents_ShouldReturnNull(string manifestFileContents)
         {
-            (OciArtifactRegistry OciArtifactRegistry, OciArtifactReference OciArtifactReference) = CreateModuleRegistryWithCachedModuleReference(
+            (OciArtifactRegistry OciArtifactRegistry, OciArtifactReference OciArtifactReference) = CreateModuleRegistryWithCachedModuleReference(//asdfg
                 "output myOutput string = 'hello!'",
                 manifestFileContents,
                 "test.azurecr.io",
@@ -662,8 +675,9 @@ namespace Bicep.Core.UnitTests.Registry
             if (publishSource)
             {
                 var uri = new Uri("file://path/to/bicep.bicep", UriKind.Absolute);
-                var stream = SourceArchive.PackSourcesIntoStream(uri, cacheRoot: null, new ISourceFile[] { SourceFileFactory.CreateBicepFile(uri, "// contents") });
-                sources = BinaryData.FromStream(stream);
+                sources = new SourceArchiveBuilder()
+                    .WithEntrypointFile(uri, "// contents")
+                    .BuildBinaryData();
             }
 
             await ociRegistry.PublishModule(moduleReference, template, sources, "http://documentation", "description");
@@ -750,12 +764,12 @@ namespace Bicep.Core.UnitTests.Registry
         {
             var (OciArtifactRegistry, _, parentModuleUri) = CreateModuleRegistryAndBicepFile(parentBicepFileContents, true);
 
-            OciArtifactReference? OciArtifactReference = OciRegistryHelper.CreateModuleReferenceMock(
+            OciArtifactReference? OciArtifactReference = OciRegistryHelper.CreateModuleReference(
                 registry,
                 repository,
-                parentModuleUri,
                 digest,
-                tag);
+                tag,
+                parentModuleUri);
 
             if (manifestFileContents is string)
             {

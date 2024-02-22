@@ -1068,12 +1068,12 @@ Source port ranges.
                 testOutputPath,
                 digest,
                 tag);
-            ArtifactReference? ociArtifactModuleReference = OciRegistryHelper.CreateModuleReferenceMock(
+            ArtifactReference? ociArtifactModuleReference = OciRegistryHelper.CreateModuleReference(
                 registry,
                 repository,
-                parentModuleUri,
                 digest,
-                tag);
+                tag,
+                parentModuleUri);
 
             var moduleDispatcher = StrictMock.Of<IModuleDispatcher>();
             moduleDispatcher.Setup(m => m.TryGetArtifactReference(moduleDeclarationSyntax, parentModuleUri)).Returns(ResultHelper.Create(ociArtifactModuleReference, null));

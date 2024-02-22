@@ -32,8 +32,9 @@ public class SourceFileGrouping : IArtifactFileLookup
 
     public SourceFileGrouping(IFileResolver fileResolver,
         Uri entryFileUri,
+        // A dictionary of all source files (or rather the result of attempting to retrieve them), keyed by Uri
         ImmutableDictionary<Uri, ResultWithDiagnostic<ISourceFile>> fileResultByUri,
-        // For each .bicep file key, a dictionary (keyed by 'module' or other syntax statement in the .bicep file) of the resolved URI and reference for that syntax statement
+        // For each bicep file, a dictionary containing all artifact URIs/references in that file, keyed by their module/artifact declaration syntax
         ImmutableDictionary<BicepSourceFile, ImmutableDictionary<IArtifactReferenceSyntax, ArtifactResolution>> artifactResolutionBySyntax,
         ImmutableDictionary<ISourceFile, ImmutableHashSet<ISourceFile>> sourceFileParentLookup)
     {
