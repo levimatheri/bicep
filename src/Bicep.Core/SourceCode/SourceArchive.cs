@@ -107,7 +107,12 @@ namespace Bicep.Core.SourceCode
             string ArchivePath, // The location (relative to root) of where the file is stored in the archive (munged from Path, e.g. in case Path starts with "../")
             string Kind,        // Kind of source (SourceKind)
             string Contents,    // File contents
-            string? ArtifactId  //asdfg
+            string? Source  //asdfg
+        );
+
+        public record Source(
+            string ArtifactId,
+            string Entrypoint
         );
 
         public record SourceFileWithArtifactReference( //asdfg?
@@ -139,6 +144,11 @@ namespace Bicep.Core.SourceCode
             string ArchivePath,      // the location (relative to root) of where the file is stored in the archive
             string Kind,             // kind of source (SourceKind)
             string? Source = null // asdfg
+        );
+
+        private record SourceDto(
+            string ArtifactId
+            //asdfgstring Entrypoint
         );
 
         #endregion
@@ -247,7 +257,12 @@ namespace Bicep.Core.SourceCode
                         archivePath = UniquifyArchivePath(filesMetadata, archivePath);
 
                         WriteNewFileEntry(tarWriter, archivePath, source);
-                        filesMetadata.Add(new SourceFileInfoDto(relativePath, archivePath, kind, artifactReference?.FullyQualifiedReference)); //asdfg
+                        filesMetadata.Add(
+                            new SourceFileInfoDto(
+                                relativePath,
+                                archivePath,
+                                kind,
+                                artifactReference?.FullyQualifiedReference));
 
                         if (PathHelper.PathComparer.Equals(file.FileUri, entrypointFileUri))
                         {

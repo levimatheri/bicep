@@ -10,7 +10,21 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace Bicep.LanguageServer.Handlers
 {
-    public class BicepDocumentLinkHandler : DocumentLinkHandlerBase
+#nullable disable
+    public partial record Asdfg : IHandlerIdentity
+    {
+    }
+#nullable restore
+
+    //asdfg
+    //public partial record Data : IHandlerIdentity
+    //{
+    //    public string Name { get; init; }
+    //    public Guid Id { get; init; }
+    //    public string Child { get; init; }
+    //}
+
+    public class BicepDocumentLinkHandler : DocumentLinkHandlerBase<Asdfg>
     {
         private readonly IModuleDispatcher moduleDispatcher;
 
@@ -19,17 +33,14 @@ namespace Bicep.LanguageServer.Handlers
             this.moduleDispatcher = moduleDispatcher;
         }
 
-        public override Task<DocumentLinkContainer?> Handle(DocumentLinkParams request, CancellationToken cancellationToken)
+        protected override Task<DocumentLinkContainer<Asdfg>> HandleParams(DocumentLinkParams request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var links = GetDocumentLinks(moduleDispatcher, request, cancellationToken);
-            return Task.FromResult<DocumentLinkContainer?>(new DocumentLinkContainer(links));
-        }
-
-        public override Task<DocumentLink> Handle(DocumentLink request, CancellationToken cancellationToken)
-        {
-            throw new System.NotImplementedException();
+            return Task.FromResult(new DocumentLinkContainer<Asdfg>(links));
+            //request.WorkDoneToken asdfg
+            //request.PartialResultToken asdfg
         }
 
         protected override DocumentLinkRegistrationOptions CreateRegistrationOptions(DocumentLinkCapability capability, ClientCapabilities clientCapabilities) => new()
@@ -37,7 +48,7 @@ namespace Bicep.LanguageServer.Handlers
             DocumentSelector = TextDocumentSelector.ForScheme(LangServerConstants.ExternalSourceFileScheme)
         };
 
-        public static IEnumerable<DocumentLink> GetDocumentLinks(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
+        public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinks(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -68,21 +79,33 @@ namespace Bicep.LanguageServer.Handlers
                         yield break;
                     }
 
-                    sourceArchive.FindExpectedSourceFile(externalReference.RequestedFile);
+                    //asdfg var source sourceArchive.FindExpectedSourceFile(externalReference.RequestedFile);
                     if (sourceArchive.DocumentLinks.TryGetValue(externalReference.RequestedFile, out var links))
                     {
                         foreach (var link in links)
                         {
+                            var targetFile = "main.json";
+                            var targetFileInfo = sourceArchive.FindExpectedSourceFile(link.Target);
+                            if (targetFileInfo.Source is not null && targetFileInfo.Source.StartsWith("br:"))
+                            {
+                                targetFile = targetFileInfo.Source;
+                            }
+
                             yield return new DocumentLink()
                             {
                                 Range = link.Range.ToRange(),
                                 Target = new ExternalSourceReference(request.TextDocument.Uri)
-                                    .WithRequestForSourceFile(link.Target).ToUri().ToString()
+                                    .WithRequestForSourceFile(targetFile).ToUri().ToString()
                             };
                         }
                     }
                 }
             }
+        }
+
+        protected override Task<DocumentLink<Asdfg>> HandleResolve(DocumentLink<Asdfg> request, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }
