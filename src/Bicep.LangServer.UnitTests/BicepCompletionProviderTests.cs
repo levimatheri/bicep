@@ -127,7 +127,7 @@ namespace Bicep.LangServer.UnitTests
                     c.Kind.Should().Be(CompletionItemKind.Keyword);
                     c.InsertTextFormat.Should().Be(InsertTextFormat.PlainText);
                     c.InsertText.Should().BeNull();
-                    c.Detail.Should().Be("Target Scope keyword");
+                    c.Detail.Should().Be("ArtifactId Scope keyword");
                     c.TextEdit!.TextEdit!.NewText.Should().Be("targetScope");
                 },
                 c =>

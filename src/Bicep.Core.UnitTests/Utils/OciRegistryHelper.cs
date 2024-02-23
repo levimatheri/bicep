@@ -24,9 +24,9 @@ namespace Bicep.Core.UnitTests.Utils
 
         public static OciArtifactReference CreateModuleReference(string moduleId /* with or without br: */, Uri? parentModuleUri = null)
         {
-            if (moduleId.StartsWith("br:"))
+            if (moduleId.StartsWith(OciArtifactReferenceFacts.SchemeWithColon))
             {
-                moduleId = moduleId.Substring("br:".Length);
+                moduleId = moduleId.Substring(OciArtifactReferenceFacts.SchemeWithColon.Length);
             }
 
             OciArtifactReference.TryParse(

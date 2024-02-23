@@ -126,7 +126,7 @@ namespace Bicep.LangServer.UnitTests.Handlers
             var configuration = IConfigurationManager.GetBuiltInConfiguration();
             var parentModuleLocalPath = "/foo/main.bicep";
             var parentModuleUri = new Uri($"file://{parentModuleLocalPath}");
-            OciArtifactReference.TryParseModule(null, UnqualifiedModuleRefStr, configuration, parentModuleUri).IsSuccess(out var moduleReference).Should().BeTrue();
+            OciArtifactReference.TryParseModuleAndAlias(null, UnqualifiedModuleRefStr, configuration, parentModuleUri).IsSuccess(out var moduleReference).Should().BeTrue();
             moduleReference.Should().NotBeNull();
 
             ArtifactReference? outRef = moduleReference;
@@ -162,7 +162,7 @@ namespace Bicep.LangServer.UnitTests.Handlers
             var configuration = IConfigurationManager.GetBuiltInConfiguration();
             var parentModuleLocalPath = "/main.bicep";
             var parentModuleUri = new Uri($"file://{parentModuleLocalPath}");
-            OciArtifactReference.TryParseModule(null, UnqualifiedModuleRefStr, configuration, parentModuleUri).IsSuccess(out var moduleReference).Should().BeTrue();
+            OciArtifactReference.TryParseModuleAndAlias(null, UnqualifiedModuleRefStr, configuration, parentModuleUri).IsSuccess(out var moduleReference).Should().BeTrue();
             moduleReference.Should().NotBeNull();
 
             ArtifactReference? outRef = moduleReference;
@@ -201,7 +201,7 @@ namespace Bicep.LangServer.UnitTests.Handlers
             const string ModuleRefStr = "br:" + UnqualifiedModuleRefStr;
 
             var configuration = IConfigurationManager.GetBuiltInConfiguration();
-            OciArtifactReference.TryParseModule(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
+            OciArtifactReference.TryParseModuleAndAlias(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
             moduleReference.Should().NotBeNull();
 
             ArtifactReference? outRef = moduleReference;
@@ -242,7 +242,7 @@ namespace Bicep.LangServer.UnitTests.Handlers
 
             var configuration = ConfigurationManager.GetConfiguration(compiledJsonUri);
 
-            OciArtifactReference.TryParseModule(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
+            OciArtifactReference.TryParseModuleAndAlias(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
             moduleReference.Should().NotBeNull();
 
             ArtifactReference? outRef = moduleReference;
@@ -291,7 +291,7 @@ namespace Bicep.LangServer.UnitTests.Handlers
 
             var configuration = ConfigurationManager.GetConfiguration(compiledJsonUri);
 
-            OciArtifactReference.TryParseModule(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
+            OciArtifactReference.TryParseModuleAndAlias(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
             moduleReference.Should().NotBeNull();
 
             ArtifactReference? outRef = moduleReference;
@@ -343,7 +343,7 @@ namespace Bicep.LangServer.UnitTests.Handlers
 
             var configuration = ConfigurationManager.GetConfiguration(compiledJsonUri);
 
-            OciArtifactReference.TryParseModule(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
+            OciArtifactReference.TryParseModuleAndAlias(null, UnqualifiedModuleRefStr, configuration, compiledJsonUri).IsSuccess(out var moduleReference).Should().BeTrue();
             moduleReference.Should().NotBeNull();
 
             ArtifactReference? outRef = moduleReference;

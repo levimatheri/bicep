@@ -142,7 +142,7 @@ namespace Bicep.LanguageServer.Completions
                         yield return CreateKeywordCompletion(LanguageConstants.ResourceKeyword, "Resource keyword", context.ReplacementRange, priority: CompletionPriority.High);
                         yield return CreateKeywordCompletion(LanguageConstants.OutputKeyword, "Output keyword", context.ReplacementRange);
                         yield return CreateKeywordCompletion(LanguageConstants.ModuleKeyword, "Module keyword", context.ReplacementRange);
-                        yield return CreateKeywordCompletion(LanguageConstants.TargetScopeKeyword, "Target Scope keyword", context.ReplacementRange);
+                        yield return CreateKeywordCompletion(LanguageConstants.TargetScopeKeyword, "ArtifactId Scope keyword", context.ReplacementRange);
                         yield return CreateKeywordCompletion(LanguageConstants.TypeKeyword, "Type keyword", context.ReplacementRange);
                         yield return CreateKeywordCompletion(LanguageConstants.ImportKeyword, "Import keyword", context.ReplacementRange);
 

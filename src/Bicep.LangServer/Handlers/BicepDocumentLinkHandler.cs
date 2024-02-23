@@ -2,7 +2,10 @@
 // Licensed under the MIT License.
 
 using System.Diagnostics;
+using System.Transactions;
+using Bicep.Core.Diagnostics;
 using Bicep.Core.Registry;
+using Bicep.Core.Registry.Oci;
 using Bicep.LanguageServer.Extensions;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -13,6 +16,12 @@ namespace Bicep.LanguageServer.Handlers
 #nullable disable
     public partial record Asdfg : IHandlerIdentity
     {
+        public string TargetArtifactId;
+
+        public Asdfg(string targetArtifactId)
+        {
+            this.TargetArtifactId = targetArtifactId;
+        }
     }
 #nullable restore
 
@@ -37,7 +46,9 @@ namespace Bicep.LanguageServer.Handlers
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var links = GetDocumentLinks(moduleDispatcher, request, cancellationToken);
+            Trace.WriteLine($"Handling document link: {request.TextDocument.Uri}"); //asdfg
+
+            var links = GetDocumentLinksToNestedExternalSourceFiles(moduleDispatcher, request, cancellationToken);
             return Task.FromResult(new DocumentLinkContainer<Asdfg>(links));
             //request.WorkDoneToken asdfg
             //request.PartialResultToken asdfg
@@ -49,56 +60,66 @@ namespace Bicep.LanguageServer.Handlers
             ResolveProvider = true,
         };
 
-        public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinks(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
+        public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinksToNestedExternalSourceFiles(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            var currentDocument = request.TextDocument;
 
-            Trace.WriteLine($"Handling document link: {request.TextDocument.Uri}");
-
-            if (request.TextDocument.Uri.Scheme == LangServerConstants.ExternalSourceFileScheme)
+            if (currentDocument.Uri.Scheme == LangServerConstants.ExternalSourceFileScheme)
             {
-                ExternalSourceReference? externalReference;
+                // The document is a source file from an external module, and we've been asked to return nested links within it (to files local to that module or to other external modules)
+                // Decode the URI to get the module and file that are being currently being displayed.
+                ExternalSourceReference? currentDocumentReference;
                 try
                 {
-                    externalReference = new ExternalSourceReference(request.TextDocument.Uri);
+                    currentDocumentReference = new ExternalSourceReference(currentDocument.Uri);
                 }
                 catch (Exception ex)
                 {
-                    Trace.WriteLine($"(Experimental) There was an error retrieving source code for this module: {ex.Message}");
+                    Trace.WriteLine($"There was an error retrieving source code for this module: {ex.Message}");
                     yield break;
                 }
 
-                if (externalReference.RequestedFile is not null)
+                var currentDocumentRelativeFile = currentDocumentReference.RequestedFile;
+                if (currentDocumentRelativeFile is { })
                 {
-                    if (!externalReference.ToArtifactReference().IsSuccess(out var artifactReference, out var message))
+                    if (!currentDocumentReference.ToArtifactReference().IsSuccess(out var currentDocumentArtifact, out var message))
                     {
                         Trace.WriteLine(message);
                         yield break;
                     }
 
-                    if (!moduleDispatcher.TryGetModuleSources(artifactReference).IsSuccess(out var sourceArchive, out var ex))
+                    if (!moduleDispatcher.TryGetModuleSources(currentDocumentArtifact).IsSuccess(out var currentDocumentSourceArchive, out var ex))
                     {
                         Trace.WriteLine(ex.Message);
                         yield break;
                     }
 
-                    //asdfg var source sourceArchive.FindExpectedSourceFile(externalReference.RequestedFile);
-                    if (sourceArchive.DocumentLinks.TryGetValue(externalReference.RequestedFile, out var links))
+                    //asdfg var source currentDocumentSourceArchive.FindExpectedSourceFile(currentDocumentReference.RequestedFile);
+                    if (currentDocumentSourceArchive.DocumentLinks.TryGetValue(currentDocumentRelativeFile, out var nestedLinks))
                     {
-                        foreach (var link in links)
+                        foreach (var nestedLink in nestedLinks)
                         {
-                            var targetFile = "main.json";
-                            var targetFileInfo = sourceArchive.FindExpectedSourceFile(link.Target);
-                            if (targetFileInfo.Source is not null && targetFileInfo.Source.StartsWith("br:"))
+                            // Does this nested link have a pointer to its artifact so we can try restoring it and get the source?
+                            var targetFileInfo = currentDocumentSourceArchive.FindExpectedSourceFile(nestedLink.Target);
+                            if (targetFileInfo.Source is not null && targetFileInfo.Source.StartsWith(OciArtifactReferenceFacts.SchemeWithColon))
                             {
-                                targetFile = targetFileInfo.Source;
+                                // Yes, it's an external module with source.  Resolve it when clicked so we can attempt to retrieve source.
+                                var sourceId = targetFileInfo.Source.Substring(OciArtifactReferenceFacts.SchemeWithColon.Length);
+                                yield return new DocumentLink<Asdfg>()
+                                {
+                                    Range = nestedLink.Range.ToRange(),
+                                    Data = new Asdfg(sourceId),
+                                    //Target = new ExternalSourceReference(request.TextDocument.Uri) asdfg
+                                    //    .WithRequestForSourceFile(targetFileInfo.Path).ToUri().ToString(),
+                                };
                             }
 
                             yield return new DocumentLink()
                             {
-                                Range = link.Range.ToRange(),
+                                // This is a link to a file that we don't have source for, so we'll just display the main.json file
+                                Range = nestedLink.Range.ToRange(),
                                 Target = new ExternalSourceReference(request.TextDocument.Uri)
-                                    .WithRequestForSourceFile(targetFile).ToUri().ToString()
+                                    .WithRequestForSourceFile(targetFileInfo.Path).ToUri().ToString(),
                             };
                         }
                     }
@@ -108,7 +129,28 @@ namespace Bicep.LanguageServer.Handlers
 
         protected override Task<DocumentLink<Asdfg>> HandleResolve(DocumentLink<Asdfg> request, CancellationToken cancellationToken)
         {
+            //asdfg telemetry
+
             Trace.WriteLine($"Resolving document link: {request.Target}");
+
+            var data = request.Data;
+
+            if (!OciArtifactReference.TryParseModule(data.TargetArtifactId).IsSuccess(out var targetArtifactReference, out var error))
+            {
+                Trace.WriteLine(error(DiagnosticBuilder.ForDocumentStart()).Message); //asdfg
+                return Task.FromResult(request);
+            }
+
+            if (!moduleDispatcher.TryGetModuleSources(targetArtifactReference).IsSuccess(out var sourceArchive, out var ex))
+            {
+                Trace.WriteLine(ex.Message); //asdfg?
+                return Task.FromResult(request);
+            }
+
+            request = request with
+            {
+                Target = new ExternalSourceReference(targetArtifactReference, sourceArchive).ToUri().ToString()
+            };
             return Task.FromResult(request);
         }
     }
