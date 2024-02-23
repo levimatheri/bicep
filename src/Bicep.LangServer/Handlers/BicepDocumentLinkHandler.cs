@@ -45,12 +45,15 @@ namespace Bicep.LanguageServer.Handlers
 
         protected override DocumentLinkRegistrationOptions CreateRegistrationOptions(DocumentLinkCapability capability, ClientCapabilities clientCapabilities) => new()
         {
-            DocumentSelector = TextDocumentSelector.ForScheme(LangServerConstants.ExternalSourceFileScheme)
+            DocumentSelector = TextDocumentSelector.ForScheme(LangServerConstants.ExternalSourceFileScheme),
+            ResolveProvider = true,
         };
 
         public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinks(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            Trace.WriteLine($"Handling document link: {request.TextDocument.Uri}");
 
             if (request.TextDocument.Uri.Scheme == LangServerConstants.ExternalSourceFileScheme)
             {
@@ -105,7 +108,8 @@ namespace Bicep.LanguageServer.Handlers
 
         protected override Task<DocumentLink<Asdfg>> HandleResolve(DocumentLink<Asdfg> request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Trace.WriteLine($"Resolving document link: {request.Target}");
+            return Task.FromResult(request);
         }
     }
 }
