@@ -19,6 +19,8 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server.WorkDone;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
+using SharpYaml.Tokens;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Bicep.LanguageServer.Handlers
 {
@@ -90,7 +92,7 @@ namespace Bicep.LanguageServer.Handlers
             return Task.FromResult(new DocumentLinkContainer<Asdfg>(links));
             //request.WorkDoneToken asdfg
             //request.PartialResultToken asdfg
-            
+
         }
 
         protected override DocumentLinkRegistrationOptions CreateRegistrationOptions(DocumentLinkCapability capability, ClientCapabilities clientCapabilities) => new()
@@ -106,7 +108,6 @@ namespace Bicep.LanguageServer.Handlers
         public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinksToNestedExternalSourceFiles(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
         {
             var currentDocument = request.TextDocument;
-
 
             if (currentDocument.Uri.Scheme == LangServerConstants.ExternalSourceFileScheme)
             {
@@ -205,19 +206,59 @@ namespace Bicep.LanguageServer.Handlers
 
 
 
+            string token = new Guid().ToString();
+
+            //asdfg check cap
+
+            Server.Window.SendWorkDoneProgressCreate(new WorkDoneProgressCreateParams() { Token = token });
+
             //WorkDoneProgressCreateExtensions.SendWorkDoneProgressCreate(Server,new WorkDoneProgressCreateParams() {  new WorkDoneProgressBegin() { Title = "asdfg", });
 
+            Server.Client.SendNotification("$/progress", new ProgressParams() { Token = token, Value = "{kind: \"begin\", title: \"asdfg\"}" });//asdfg  new WorkDoneProgressBegin() { Title = "asdfg", });
+            await Task.Delay(2000);
+
             ////string token = WorkDoneToken = new Guid().ToString();
-            Server.SendNotification("progress", new WorkDoneProgressBegin() { Title = "asdfg", });
+            Server.Client.SendNotification("$/progress", new ProgressParams() { Token=token, Value= "{kind: \"report\", title: \"asdfg\"}" });
+        
+            await Task.Delay(2000);
+
+            Server.SendNotification("$/progress", new WorkDoneProgressReport() { Message = "asdfg 2", Percentage = 20 });
+            await Task.Delay(2000);
+
+            Server.SendNotification("$/progress", new WorkDoneProgressReport() { Message = "asdfg 3", Percentage = 20 });
+            await Task.Delay(2000);
 
 
 
+
+            //          await Task.Delay(1000);
+            //          const dataB: WorkDoneProgressBegin = {
+            //          kind: "begin",
+            //  title: "Loading",
+            //  message: "loading",
+            //  percentage: 0,
+            //};
+            //          await connection.sendNotification("$/progress", { token, value: dataB });
+
+            //          await delay(1000);
+            //          const dataR: WorkDoneProgressReport = {
+            //          kind: "report",
+            //  message: "still loading",
+            //  percentage: 50,
+            //};
+            //          await connection.sendNotification("$/progress", { token, value: dataR });
+
+            //          await delay(1000);
+            //          const dataE: WorkDoneProgressEnd = {
+            //          kind: "end",
+            //};
+            //          await connection.sendNotification("$/progress", { token, value: dataE });
 
             //Server.SendNotification(new ProgressParams() { Token = request.WorkDoneToken, Value = new WorkDoneProgressBegin() { Title = "asdfg", Percentage = 0 } });
 
             //// Create a WorkDoneProgress object with a unique token
             //var progress = new WorkDoneProgressBegin() {  Message = "Starting my task...asdfg", Title = "asdfg" };
-            
+
 
             //// Send a begin notification with the title and message of the task
             //await progress.Begin(new WorkDoneProgressBegin
@@ -247,7 +288,7 @@ namespace Bicep.LanguageServer.Handlers
 
 
 
-            //ProgressExtensions.SendProgress(Server,new ProgressParams() {  Token = request.}) => mediator.SendNotification(request);
+            // ProgressExtensions.SendProgress(Server,new ProgressParams() {  Token = new ProgressToken(1), Value = new WorkDoneProgressBegin() { Title = "asdfg", Percentage = 0 } });
 
             //ProgressExtensions.SendProgress(Server, new WorkDoneProgressBegin
             //{
@@ -284,7 +325,7 @@ namespace Bicep.LanguageServer.Handlers
 
 
             // Delay to simulate a long-running operation
-            await Task.Delay(delay, cancellationToken);
+            await Task.Delay(1000 * delay, cancellationToken);
 
             return request with
             {

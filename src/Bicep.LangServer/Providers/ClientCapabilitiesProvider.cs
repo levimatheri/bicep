@@ -28,5 +28,12 @@ namespace Bicep.LanguageServer.Providers
                 clientCapabilities.Window is WindowClientCapabilities windowClientCapabilities &&
                 windowClientCapabilities.ShowDocument.IsSupported;
         }
+
+        public bool DoesClientSupportWorkDoneProgress()
+        {
+            return server.ClientSettings.Capabilities is ClientCapabilities clientCapabilities &&
+                clientCapabilities.Window is WindowClientCapabilities windowClientCapabilities &&
+                windowClientCapabilities.WorkDoneProgress.IsSupported;
+        }
     }
 }
