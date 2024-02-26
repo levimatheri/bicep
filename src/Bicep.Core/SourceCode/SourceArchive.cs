@@ -59,7 +59,7 @@ namespace Bicep.Core.SourceCode
             public const string Bicep = "bicep";
             public const string ArmTemplate = "armTemplate";
             public const string TemplateSpec = "templateSpec";
-            public const string ExternalBicepModule = "externalBicepModule";
+            //public const string ExternalBicepModule = "externalBicepModule"; //asdfg doc
         }
 
         private const string MetadataFileName = "__metadata.json";
@@ -236,8 +236,9 @@ namespace Bicep.Core.SourceCode
                         string source = file.GetOriginalSource();
                         string kind = file switch
                         {
-                            BicepFile bicepFile when artifactReference is {} => SourceKind.ExternalBicepModule,
+                            //adfg BicepFile bicepFile when artifactReference is {} => SourceKind.ExternalBicepModule,
                             BicepFile bicepFile => SourceKind.Bicep,
+                            //asdfg ArmTemplateFile externalCompiledJsonForBicepModule when artifactReference is { } => SourceKind.ExternalBicepModule,
                             ArmTemplateFile armTemplateFile => SourceKind.ArmTemplate,
                             TemplateSpecFile => SourceKind.TemplateSpec,
                             _ => throw new ArgumentException($"Unexpected input source file type {file.GetType().Name}"),

@@ -149,22 +149,12 @@ public class SourceArchiveTests
         fs.AddFile(uri.LocalPath, content);
         string actualContents = fs.File.ReadAllText(uri.LocalPath);
 
-        if (sourceKind == SourceKind.ExternalBicepModule)
-        {
-            artifactReferenceId.Should().NotBeNull();
-        }
-        else
-        {
-            artifactReferenceId.Should().BeNull();
-        }
-
         return new SourceFileWithArtifactReference(
             sourceKind switch
             {
                 SourceArchive.SourceKind.ArmTemplate => SourceFileFactory.CreateArmTemplateFile(uri, actualContents),
                 SourceArchive.SourceKind.Bicep => SourceFileFactory.CreateSourceFile(uri, actualContents),
                 SourceArchive.SourceKind.TemplateSpec => SourceFileFactory.CreateTemplateSpecFile(uri, actualContents),
-                SourceArchive.SourceKind.ExternalBicepModule => SourceFileFactory.CreateArmTemplateFile(uri, actualContents),
                 _ => throw new Exception($"Unrecognized source kind: {sourceKind}")
             },
             artifactReference);
@@ -184,7 +174,8 @@ public class SourceArchiveTests
         var localModuleJson = CreateSourceFile(fs, projectFolder, "localModule.json", SourceArchive.SourceKind.ArmTemplate, LocalModuleDotJsonSource);
         var templateSpecMainJson2 = CreateSourceFile(fs, projectFolder, "folder/template spec 2.json", SourceArchive.SourceKind.TemplateSpec, TemplateSpecJsonSource);
         var externalModuleJson = CreateSourceFile(fs, $"{CacheRoot}/br/mcr.microsoft.com/bicep$storage$storage-account/1.0.1$/main.json",
-                SourceArchive.SourceKind.ExternalBicepModule, ExternalModuleDotJsonSource, "mcr.microsoft.com/bicep/storage/storage-account:1.0.1");
+                SourceArchive.SourceKind.ArmTemplate /* the actual source archived is the compiled JSON */, ExternalModuleDotJsonSource, "mcr.microsoft.com/bicep/storage/storage-account:1.0.1");
+
 
         using var stream = SourceArchive.PackSourcesIntoStream(
             mainBicep.SourceFile.FileUri,
@@ -204,7 +195,7 @@ public class SourceArchiveTests
                 new ("standalone.json", "files/standalone.json", SourceArchive.SourceKind.ArmTemplate, StandaloneJsonSource, null),
                 new ("localModule.json", "files/localModule.json", SourceArchive.SourceKind.ArmTemplate,  LocalModuleDotJsonSource, null),
                 new ("<cache>/br/mcr.microsoft.com/bicep$storage$storage-account/1.0.1$/main.json", "files/_cache_/br/mcr.microsoft.com/bicep$storage$storage-account/1.0.1$/main.json",
-                    SourceArchive.SourceKind.ExternalBicepModule, ExternalModuleDotJsonSource, "mcr.microsoft.com/bicep/storage/storage-account:1.0.1"),
+                    SourceArchive.SourceKind.ArmTemplate, ExternalModuleDotJsonSource, "br:mcr.microsoft.com/bicep/storage/storage-account:1.0.1"),
             });
     }
 
@@ -221,7 +212,7 @@ public class SourceArchiveTests
         var localModuleJson = CreateSourceFile(fs, projectFolder, "modules/localJsonModule.json", SourceArchive.SourceKind.ArmTemplate, LocalModuleDotJsonSource);
         var localModuleBicep = CreateSourceFile(fs, projectFolder, "modules/localBicepModule.bicep", SourceArchive.SourceKind.ArmTemplate, LocalModuleDotJsonSource);
         var externalModuleJson = CreateSourceFile(fs, $"{CacheRoot}/br/mcr.microsoft.com/bicep$storage$storage-account/1.0.1$/main.json",
-            SourceArchive.SourceKind.ExternalBicepModule, ExternalModuleDotJsonSource, "mcr.microsoft.com/bicep/storage/storage-account:1.0.1");
+            SourceArchive.SourceKind.ArmTemplate, ExternalModuleDotJsonSource, "mcr.microsoft.com/bicep/storage/storage-account:1.0.1");
 
         var linksInput = new Dictionary<Uri, SourceCodeDocumentUriLink[]>()
         {
