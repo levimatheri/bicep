@@ -3,13 +3,22 @@
 
 using System.Diagnostics;
 using System.Transactions;
+using Azure.Deployments.Core;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Registry;
 using Bicep.Core.Registry.Oci;
 using Bicep.LanguageServer.Extensions;
+using Bicep.LanguageServer.Providers;
+using OmniSharp.Extensions.JsonRpc;
+using OmniSharp.Extensions.JsonRpc.Server.Messages;
+using OmniSharp.Extensions.LanguageServer.Protocol;
+using OmniSharp.Extensions.LanguageServer.Protocol.Client;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server.WorkDone;
+using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 
 namespace Bicep.LanguageServer.Handlers
 {
@@ -33,31 +42,62 @@ namespace Bicep.LanguageServer.Handlers
     //    public string Child { get; init; }
     //}
 
-    public class BicepDocumentLinkHandler : DocumentLinkHandlerBase<Asdfg>
+    public class BicepDocumentLinkHandler(IModuleDispatcher ModuleDispatcher, ILanguageServerFacade Server)
+        : DocumentLinkHandlerBase<Asdfg>
     {
-        private readonly IModuleDispatcher moduleDispatcher;
-
-        public BicepDocumentLinkHandler(IModuleDispatcher moduleDispatcher)
-        {
-            this.moduleDispatcher = moduleDispatcher;
-        }
-
         protected override Task<DocumentLinkContainer<Asdfg>> HandleParams(DocumentLinkParams request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             Trace.WriteLine($"Handling document link: {request.TextDocument.Uri}"); //asdfg
 
-            var links = GetDocumentLinksToNestedExternalSourceFiles(moduleDispatcher, request, cancellationToken);
+            //using var reporter = Server.ProgressManager.For(
+            //   request, new WorkDoneProgressBegin
+            //   {
+            //       Cancellable = true,
+            //       Message = "This might take a while...",
+            //       Title = "Some long task....",
+            //       Percentage = 0
+            //   },
+            //   cancellationToken
+            //);
+            //await Task.Delay(2000, cancellationToken).ConfigureAwait(false);
+            //reporter.OnNext(
+            //     new WorkDoneProgressReport
+            //     {
+            //         Cancellable = true,
+            //         Percentage = 20
+            //     }
+            // );
+            //await Task.Delay(2000, cancellationToken).ConfigureAwait(false);
+            //reporter.OnNext(
+            //     new WorkDoneProgressReport
+            //     {
+            //         Cancellable = true,
+            //         Percentage = 40
+            //     }
+            // );
+
+            //reporter.OnNext(
+            //      new WorkDoneProgressReport
+            //      {
+            //          Cancellable = true,
+            //          Percentage = 100
+            //      }
+            //  );
+
+            var links = GetDocumentLinksToNestedExternalSourceFiles(ModuleDispatcher, request, cancellationToken);
             return Task.FromResult(new DocumentLinkContainer<Asdfg>(links));
             //request.WorkDoneToken asdfg
             //request.PartialResultToken asdfg
+            
         }
 
         protected override DocumentLinkRegistrationOptions CreateRegistrationOptions(DocumentLinkCapability capability, ClientCapabilities clientCapabilities) => new()
         {
             DocumentSelector = TextDocumentSelector.ForScheme(LangServerConstants.ExternalSourceFileScheme),
             ResolveProvider = true,
+            WorkDoneProgress = true,
         };
 
         /// <summary>
@@ -66,6 +106,7 @@ namespace Bicep.LanguageServer.Handlers
         public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinksToNestedExternalSourceFiles(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
         {
             var currentDocument = request.TextDocument;
+
 
             if (currentDocument.Uri.Scheme == LangServerConstants.ExternalSourceFileScheme)
             {
@@ -79,6 +120,7 @@ namespace Bicep.LanguageServer.Handlers
                     Trace.WriteLine($"There was an error retrieving source code for this module: {ex.Message}");
                     yield break;
                 }
+
 
                 var currentDocumentRelativeFile = currentDocumentReference.RequestedFile;
                 if (currentDocumentRelativeFile is { })
@@ -128,7 +170,8 @@ namespace Bicep.LanguageServer.Handlers
             }
         }
 
-        protected override Task<DocumentLink<Asdfg>> HandleResolve(DocumentLink<Asdfg> request, CancellationToken cancellationToken)
+        private int delay = 10;
+        protected override async Task<DocumentLink<Asdfg>> HandleResolve(DocumentLink<Asdfg> request, CancellationToken cancellationToken)
         {
             //asdfg telemetry
 
@@ -139,20 +182,114 @@ namespace Bicep.LanguageServer.Handlers
             if (!OciArtifactReference.TryParseModule(data.TargetArtifactId).IsSuccess(out var targetArtifactReference, out var error))
             {
                 Trace.WriteLine(error(DiagnosticBuilder.ForDocumentStart()).Message); //asdfg
-                return Task.FromResult(request);
+                return request;
             }
 
-            if (!moduleDispatcher.TryGetModuleSources(targetArtifactReference).IsSuccess(out var sourceArchive, out var ex))
+            var restoreStatus = ModuleDispatcher.GetArtifactRestoreStatus(targetArtifactReference, out var errorBuilder);
+            Trace.WriteLine($"Restore status: {restoreStatus}"); //asdfg: what about failure?
+            if (restoreStatus != ArtifactRestoreStatus.Succeeded)
             {
-                Trace.WriteLine(ex.Message); //asdfg?
-                return Task.FromResult(request);
+                var errorMessage = errorBuilder is { } ? errorBuilder(DiagnosticBuilder.ForDocumentStart()).Message : "The module has not yet been successfully restored.";
+                Trace.WriteLine(errorMessage); //asdfg
+                if (!await ModuleDispatcher.RestoreModules(new[] { targetArtifactReference }, forceRestore: true))
+                {
+                    throw new InvalidOperationException("The module has not yet been successfully restored. asdfg");
+                }
             }
 
-            request = request with
+            if (!ModuleDispatcher.TryGetModuleSources(targetArtifactReference).IsSuccess(out var sourceArchive, out var ex))
+            {
+                Trace.WriteLine(ex.Message); //asdfg
+                throw ex; //asdfg
+            }
+
+
+
+            //WorkDoneProgressCreateExtensions.SendWorkDoneProgressCreate(Server,new WorkDoneProgressCreateParams() {  new WorkDoneProgressBegin() { Title = "asdfg", });
+
+            ////string token = WorkDoneToken = new Guid().ToString();
+            Server.SendNotification("progress", new WorkDoneProgressBegin() { Title = "asdfg", });
+
+
+
+
+            //Server.SendNotification(new ProgressParams() { Token = request.WorkDoneToken, Value = new WorkDoneProgressBegin() { Title = "asdfg", Percentage = 0 } });
+
+            //// Create a WorkDoneProgress object with a unique token
+            //var progress = new WorkDoneProgressBegin() {  Message = "Starting my task...asdfg", Title = "asdfg" };
+            
+
+            //// Send a begin notification with the title and message of the task
+            //await progress.Begin(new WorkDoneProgressBegin
+            //{
+            //    Title = "My Task",
+            //    Message = "Starting my task..."
+            //}, cancellationToken);
+
+            //// Do some work and report the progress
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    await Task.Delay(100, cancellationToken); // Simulate some work
+            //    await progress.Report(new WorkDoneProgressReport
+            //    {
+            //        Message = $"Processing {i + 1}%",
+            //        Percentage = i + 1
+            //    }, cancellationToken);
+            //}
+
+            //// Send an end notification with the message of the task
+            //await progress.End(new WorkDoneProgressEnd
+            //{
+            //    Message = "Finished my task."
+            //}, cancellationToken);
+
+
+
+
+
+            //ProgressExtensions.SendProgress(Server,new ProgressParams() {  Token = request.}) => mediator.SendNotification(request);
+
+            //ProgressExtensions.SendProgress(Server, new WorkDoneProgressBegin
+            //{
+            //    Title = "My Task",
+            ////    Message = "Starting my task..."
+            //});
+            //// Create a WorkDoneProgress object with a unique token
+            //var progress = new WorkDoneProgress(_responseRouter, Guid.NewGuid().ToString());
+
+            //// Send a begin notification with the title and message of the task
+            //await progress.Begin(new WorkDoneProgressBegin
+            //{
+            //    Title = "My Task",
+            //    Message = "Starting my task..."
+            //}, cancellationToken);
+
+            //// Do some work and report the progress
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    await Task.Delay(100, cancellationToken); // Simulate some work
+            //    await progress.Report(new WorkDoneProgressReport
+            //    {
+            //        Message = $"Processing {i + 1}%",
+            //        Percentage = i + 1
+            //    }, cancellationToken);
+            //}
+
+            //// Send an end notification with the message of the task
+            //await progress.End(new WorkDoneProgressEnd
+            //{
+            //    Message = "Finished my task."
+            //}, cancellationToken);
+
+
+
+            // Delay to simulate a long-running operation
+            await Task.Delay(delay, cancellationToken);
+
+            return request with
             {
                 Target = new ExternalSourceReference(targetArtifactReference, sourceArchive).ToUri().ToString()
             };
-            return Task.FromResult(request);
         }
     }
 }
