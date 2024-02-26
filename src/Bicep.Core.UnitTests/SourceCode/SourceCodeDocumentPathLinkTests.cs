@@ -20,7 +20,7 @@ public class SourceCodeDocumentPathLinkTests
             "../modules/target.bicep");
         string serialized = JsonSerializer.Serialize(link);
 
-        serialized.Should().Be("{\"Range\":\"[123:456]-[234:567]\",\"ArtifactId\":\"../modules/target.bicep\"}");
+        serialized.Should().Be("{\"Range\":\"[123:456]-[234:567]\",\"Target\":\"../modules/target.bicep\"}");
 
         var deserialized = JsonSerializer.Deserialize<SourceCodeDocumentPathLink>(serialized);
         deserialized.Should().Be(link);

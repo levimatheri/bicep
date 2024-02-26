@@ -60,14 +60,15 @@ namespace Bicep.LanguageServer.Handlers
             ResolveProvider = true,
         };
 
+        /// <summary>
+        /// This handles the case where the document is a source file from an external module, and we've been asked to return nested links within it (to files local to that module or to other external modules)
+        /// </summary>
         public static IEnumerable<DocumentLink<Asdfg>> GetDocumentLinksToNestedExternalSourceFiles(IModuleDispatcher moduleDispatcher, DocumentLinkParams request, CancellationToken cancellationToken)
         {
             var currentDocument = request.TextDocument;
 
             if (currentDocument.Uri.Scheme == LangServerConstants.ExternalSourceFileScheme)
             {
-                // The document is a source file from an external module, and we've been asked to return nested links within it (to files local to that module or to other external modules)
-                // Decode the URI to get the module and file that are being currently being displayed.
                 ExternalSourceReference? currentDocumentReference;
                 try
                 {
@@ -101,10 +102,10 @@ namespace Bicep.LanguageServer.Handlers
                         {
                             // Does this nested link have a pointer to its artifact so we can try restoring it and get the source?
                             var targetFileInfo = currentDocumentSourceArchive.FindExpectedSourceFile(nestedLink.Target);
-                            if (targetFileInfo.Source is not null && targetFileInfo.Source.StartsWith(OciArtifactReferenceFacts.SchemeWithColon))
+                            if (targetFileInfo.SourceArtifactId is { } && targetFileInfo.SourceArtifactId.StartsWith(OciArtifactReferenceFacts.SchemeWithColon)) //asdfg test ignore if not "br:"
                             {
                                 // Yes, it's an external module with source.  Resolve it when clicked so we can attempt to retrieve source.
-                                var sourceId = targetFileInfo.Source.Substring(OciArtifactReferenceFacts.SchemeWithColon.Length);
+                                var sourceId = targetFileInfo.SourceArtifactId.Substring(OciArtifactReferenceFacts.SchemeWithColon.Length);
                                 yield return new DocumentLink<Asdfg>()
                                 {
                                     Range = nestedLink.Range.ToRange(),

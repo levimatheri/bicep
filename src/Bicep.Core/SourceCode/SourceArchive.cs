@@ -108,17 +108,18 @@ namespace Bicep.Core.SourceCode
             string ArchivePath, // The location (relative to root) of where the file is stored in the archive (munged from Path, e.g. in case Path starts with "../")
             string Kind,        // Kind of source (SourceKind)
             string Contents,    // File contents
-            string? Source  //asdfg
+            string? SourceArtifactId  //asdfg
         );
 
-        public record Source(
-            string ArtifactId,
-            string Entrypoint
-        );
+        //asdfg
+        //public record Source(
+        //    string ArtifactId,
+        //    string Entrypoint
+        //);
 
         public record SourceFileWithArtifactReference( //asdfg?
             ISourceFile SourceFile,
-            ArtifactReference? ArtifactReference);
+            ArtifactReference? SourceArtifactId);
         #endregion
 
         #region Serialization
@@ -144,13 +145,14 @@ namespace Bicep.Core.SourceCode
             string Path,             // the location, relative to the main.bicep file's folder, for the file that will be shown to the end user (required in all Bicep versions)
             string ArchivePath,      // the location (relative to root) of where the file is stored in the archive
             string Kind,             // kind of source (SourceKind)
-            string? Source = null // asdfg
+            string? SourceArtifactId = null // asdfg
         );
 
-        private record SourceDto(
-            string ArtifactId
-            //asdfgstring Entrypoint
-        );
+        //asdfg
+        //private record SourceDto(
+        //    string ArtifactId
+        //    //asdfgstring Entrypoint
+        //);
 
         #endregion
 
@@ -172,7 +174,7 @@ namespace Bicep.Core.SourceCode
         /// in JSON form) into an archive (as a stream)
         /// </summary>
         /// <returns>A .tgz file as a binary stream</returns>
-        public static Stream PackSourcesIntoStream(SourceFileGrouping sourceFileGrouping, string? cacheRoot, IModuleDispatcher moduleDispatcher/*asdfg move externally*/)
+        public static Stream PackSourcesIntoStream(IModuleDispatcher moduleDispatcher/*asdfg move externally*/, SourceFileGrouping sourceFileGrouping, string? cacheRoot)
         {
             //asdfg test properly
             //asdfg
@@ -427,7 +429,7 @@ namespace Bicep.Core.SourceCode
             {
                 var contents = dictionary[info.ArchivePath]
                     ?? throw new BicepException("Incorrectly formatted source file: File entry not found: \"{info.ArchivePath}\"");
-                infos.Add(new SourceFileInfo(info.Path, info.ArchivePath, info.Kind, contents, info.Source));
+                infos.Add(new SourceFileInfo(info.Path, info.ArchivePath, info.Kind, contents, info.SourceArtifactId));
             }
 
             this.InstanceMetadata = metadata;
