@@ -59,6 +59,7 @@ namespace Bicep.Core.SourceCode
             public const string Bicep = "bicep";
             public const string ArmTemplate = "armTemplate";
             public const string TemplateSpec = "templateSpec";
+            public const string ExternalBicepModule = "externalBicepModule";
         }
 
         private const string MetadataFileName = "__metadata.json";
@@ -187,7 +188,7 @@ namespace Bicep.Core.SourceCode
                 .Distinct(x => x.UriResult.Unwrap().ToString());
             // Only want OCI references  //asdfg test
             // Only those that have source themselves
-            var c = b.Where(x => x.ArtifactReference is OciArtifactReference && moduleDispatcher.TryGetModuleSources( x.ArtifactReference).IsSuccess()).ToArray();
+            var c = b.Where(x => x.ArtifactReference is OciArtifactReference && moduleDispatcher.TryGetModuleSources(x.ArtifactReference).IsSuccess()).ToArray();
 
             var artifactByUri = c.ToDictionary(x => x.UriResult.Unwrap(), x => x.ArtifactReference); // Only want OCI references  //asdfg test
 
@@ -235,10 +236,11 @@ namespace Bicep.Core.SourceCode
                         string source = file.GetOriginalSource();
                         string kind = file switch
                         {
+                            BicepFile bicepFile when artifactReference is {} => SourceKind.ExternalBicepModule,
                             BicepFile bicepFile => SourceKind.Bicep,
                             ArmTemplateFile armTemplateFile => SourceKind.ArmTemplate,
                             TemplateSpecFile => SourceKind.TemplateSpec,
-                            _ => throw new ArgumentException($"Unexpected source file type {file.GetType().Name}"),
+                            _ => throw new ArgumentException($"Unexpected input source file type {file.GetType().Name}"),
                         };
 
                         var path = GetPath(file.FileUri);
