@@ -211,6 +211,47 @@ namespace Bicep.Core.IntegrationTests
         }
 
         [TestMethod]
+        public async Task SourceArtifactId_ForExternalModulesWithSource_ShouldHandleAliases()
+        {
+            var clientFactory = await PublishModules(
+                new[] {
+                    ("br:mockregistry.io/test/module1:v1", "param p1 bool", withSource: true),
+                });
+            var moduleDispatcher = GetModuleDispatcher(clientFactory);
+            var result = await CompilationHelper.RestoreAndCompile(
+                GetServices(clientFactory),
+                ("main.bicep", """
+                    module m1 'br/test:module1:v1' = {
+                        params: {
+                            p1: true
+                      }
+                    }
+                    """),
+                ("bicepconfig.json", """
+                    {
+                      "moduleAliases": {
+                        "br": {
+                          "test": {
+                            "registry": "mockregistry.io",
+                            "modulePath": "test"
+                          }
+                        }
+                      }
+                    }
+                    """
+                ));
+            result.Should().NotHaveAnyDiagnostics();
+
+            // act
+            var sourceArchive = CreateSourceArchive(moduleDispatcher, result);
+
+            var file = sourceArchive.FindExpectedSourceFile("<cache>/br/mockregistry.io/test$module1/v1$/main.json");
+            file.SourceArtifact!.FullyQualifiedReference.Should().Be("br:mockregistry.io/test/module1:v1");
+            file.Kind.Should().Be("armTemplate");
+
+        }
+
+        [TestMethod]
         public async Task SourceArtifactId_ShouldHandleMultipleRefsToSameModule()
         {
             var clientFactory = await PublishModules(
