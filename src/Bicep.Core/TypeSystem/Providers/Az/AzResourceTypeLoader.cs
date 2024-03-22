@@ -28,7 +28,7 @@ namespace Bicep.Core.TypeSystem.Providers.Az
 
             var typeNameKeywordsDict = new Dictionary<string, string[]?>(StringComparer.OrdinalIgnoreCase);
             typeNameKeywordsDict["microsoft.web/serverfarms"] = ["appserviceplan", "asp"];// ["appservice", "webapp", "function"];
-            this.typeNameKeywords = typeNameKeywordsDict.ToImmutableDictionary();
+            this.typeNameKeywords = typeNameKeywordsDict.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
 
             // var a = new ResourceTypeReference("microsoft.web/sites", "2020-06-01");
             //a = a with { Aliases = ["appservice", "webapp", "function"] };
@@ -64,6 +64,11 @@ namespace Bicep.Core.TypeSystem.Providers.Az
                     x => x.Value.ToImmutableArray(),
                     StringComparer.OrdinalIgnoreCase),
                 StringComparer.OrdinalIgnoreCase);
+
+            var asdfg = GetSearchKeywords(new ResourceTypeReference("microsoft.web/serverfarms", "2020-06-01"));
+            var asdfg2 = GetAvailableTypes().Where(x => x.Keywords != null).ToArray();
+            var asdfg3 = GetAvailableTypes().Where(x => x.TypeReference .Equals(new ResourceTypeReference("Microsoft.web/serverFarms", "2020-06-01"))).ToArray();
+            var asdfg4 = GetAvailableTypes().Where(x => x.TypeReference.Type.StartsWith("Microsoft.Web/serverFa")).ToArray();
         }
 
         public string[]? GetSearchKeywords(ResourceTypeReference reference) =>

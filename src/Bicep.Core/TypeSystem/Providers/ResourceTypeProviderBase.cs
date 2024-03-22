@@ -15,11 +15,15 @@ public abstract class ResourceTypeProviderBase
 
     protected ResourceTypeProviderBase(IEnumerable< ResourceTypeReferenceInfo> availableResourceTypes/*asdfg ??*/)
     {
+
         // Only enumerate availableResourceTypes once to avoid redundant work
         this.availableResourceTypes = availableResourceTypes.ToImmutableDictionary(x => x.TypeReference, x => x);
         typeReferencesByTypeLazy = new(() => this.availableResourceTypes.Values //asdfg
             .GroupBy(x => x.TypeReference.Type, StringComparer.OrdinalIgnoreCase)
             .ToImmutableDictionary(x => x.Key, x => x.ToImmutableArray()));
+
+        var asdfg = this.availableResourceTypes.Where(x => x.Value.Keywords != null).ToArray();
+
     }
 
     public bool HasDefinedType(ResourceTypeReference typeReference)

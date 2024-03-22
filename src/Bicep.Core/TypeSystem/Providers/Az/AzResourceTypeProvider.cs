@@ -197,6 +197,8 @@ namespace Bicep.Core.TypeSystem.Providers.Az
             this.resourceTypeLoader = resourceTypeLoader;
             definedTypeCache = new ResourceTypeCache();
             generatedTypeCache = new ResourceTypeCache();
+
+             this.availableResourceTypes.TryGetValue(new ResourceTypeReference("microsoft.web/serverfarms", "2020-06-01"), out var asdfg);
         }
 
         private static ObjectType CreateGenericResourceBody(ResourceTypeReference typeReference, Func<string, bool> propertyFilter)
