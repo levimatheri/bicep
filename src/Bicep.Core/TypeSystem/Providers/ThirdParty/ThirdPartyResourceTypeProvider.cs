@@ -15,7 +15,7 @@ namespace Bicep.Core.TypeSystem.Providers.ThirdParty
         private readonly ResourceTypeCache generatedTypeCache;
 
         public ThirdPartyResourceTypeProvider(ThirdPartyResourceTypeLoader resourceTypeLoader, string providerVersion)
-            : base(resourceTypeLoader.GetAvailableTypes().ToImmutableHashSet())
+            : base(resourceTypeLoader.GetAvailableTypes().ToArray())
         {
             Version = providerVersion;
             this.resourceTypeLoader = resourceTypeLoader;
@@ -125,12 +125,6 @@ namespace Bicep.Core.TypeSystem.Providers.ThirdParty
         {
             return null;
         }
-
-        public bool HasDefinedType(ResourceTypeReference typeReference)
-            => availableResourceTypes.Contains(typeReference);
-
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => availableResourceTypes;
 
         public string Version { get; }
     }

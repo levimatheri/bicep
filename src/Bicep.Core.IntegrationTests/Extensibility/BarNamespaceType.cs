@@ -71,7 +71,7 @@ public static class BarNamespaceType
         }.ToImmutableDictionary(x => x.TypeReference);
 
         public BarTypeProvider()
-            : base(ResourceTypes.Keys.ToImmutableHashSet())
+            : base(ResourceTypes.Keys.Select(x => new ResourceTypeReferenceInfo(x, null)).ToArray())
         {
         }
 
@@ -94,12 +94,6 @@ public static class BarNamespaceType
                 resourceType.Body,
                 UniqueIdentifierProperties);
         }
-
-        public bool HasDefinedType(ResourceTypeReference typeReference)
-            => ResourceTypes.ContainsKey(typeReference);
-
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => ResourceTypes.Keys;
 
         public string Version { get; } = "0.0.1";
     }

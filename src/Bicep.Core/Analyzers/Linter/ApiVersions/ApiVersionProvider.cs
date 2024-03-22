@@ -15,15 +15,16 @@ namespace Bicep.Core.Analyzers.Linter.ApiVersions
         // One cache per target scope type
         private readonly Dictionary<ResourceScope, ApiVersionCache> _caches = new();
         private readonly IFeatureProvider features;
-        private readonly IEnumerable<ResourceTypeReference> resourceTypeReferences;
-        public ApiVersionProvider(IFeatureProvider features, IEnumerable<ResourceTypeReference> resourceTypeReferences)
+        private readonly IEnumerable<ResourceTypeReferenceInfo> resourceTypeReferences;
+
+        public ApiVersionProvider(IFeatureProvider features, IEnumerable<ResourceTypeReferenceInfo> resourceTypeReferences)
         {
             this.features = features;
             this.resourceTypeReferences = resourceTypeReferences;
         }
 
         // for unit testing
-        public void InjectTypeReferences(ResourceScope scope, IEnumerable<ResourceTypeReference> resourceTypeReferences)
+        public void InjectTypeReferences(ResourceScope scope, IEnumerable<ResourceTypeReferenceInfo> resourceTypeReferences) //asdfg refactor
         {
             var cache = GetCache(scope);
             Debug.Assert(!cache.typesCached, $"{nameof(InjectTypeReferences)} Types have already been cached for scope {scope}");
@@ -95,25 +96,25 @@ namespace Bicep.Core.Analyzers.Linter.ApiVersions
         private class ApiVersionCache
         {
             public bool typesCached;
-            public ResourceTypeReference[]? injectedTypes;
+            public ResourceTypeReferenceInfo[]? injectedTypes;
 
             public Dictionary<string, List<string>> apiVersionsByResourceTypeName = new(Comparer);
 
-            public void CacheApiVersions(IEnumerable<ResourceTypeReference> resourceTypeReferences)
+            public void CacheApiVersions(IEnumerable<ResourceTypeReferenceInfo> resourceTypeReferences)
             {
                 this.typesCached = true;
 
                 foreach (var resourceTypeReference in resourceTypeReferences)
                 {
-                    if (resourceTypeReference.ApiVersion is string apiVersionString &&
+                    if (resourceTypeReference.TypeReference.ApiVersion is string apiVersionString &&
                         AzureResourceApiVersion.TryParse(apiVersionString, out var apiVersion))
                     {
-                        string fullyQualifiedType = resourceTypeReference.FormatType();
+                        string fullyQualifiedType = resourceTypeReference.TypeReference.FormatType();
                         AddApiVersionToCache(apiVersionsByResourceTypeName, apiVersion /* suffix will have been lower-cased */, fullyQualifiedType);
                     }
                     else
                     {
-                        throw new InvalidOperationException($"Invalid resource type and apiVersion found: {resourceTypeReference.FormatType()}");
+                        throw new InvalidOperationException($"Invalid resource type and apiVersion found: {resourceTypeReference.TypeReference.FormatType()}");
                     }
                 }
 

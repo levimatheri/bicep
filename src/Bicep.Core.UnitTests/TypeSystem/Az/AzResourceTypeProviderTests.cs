@@ -17,7 +17,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Bicep.Core.UnitTests.TypeSystem.Az
 {
     [TestClass]
-    public class AzResourceTypeProviderTests
+    public class AzResourceTypeProviderTests//asdfg
     {
         private static ServiceBuilder Services => new();
 
@@ -51,9 +51,9 @@ namespace Bicep.Core.UnitTests.TypeSystem.Az
                 ResourceTypeGenerationFlags.ExistingResource | ResourceTypeGenerationFlags.HasParentDefined,
             };
 
-            foreach (var providerGrouping in AzNamespaceType.ResourceTypeProvider.GetAvailableTypes().GroupBy(x => x.TypeSegments[0]))
+            foreach (var providerGrouping in AzNamespaceType.ResourceTypeProvider.GetAvailableTypes().GroupBy(x => x.TypeReference.TypeSegments[0]))
             {
-                foreach (var apiVersionGrouping in providerGrouping.GroupBy(x => x.ApiVersion))
+                foreach (var apiVersionGrouping in providerGrouping.GroupBy(x => x.TypeReference.ApiVersion))
                 {
                     var providerName = providerGrouping.Key;
                     var apiVersion = apiVersionGrouping.Key!;
@@ -65,7 +65,7 @@ namespace Bicep.Core.UnitTests.TypeSystem.Az
 
                     foreach (var flags in flagPermutationsToTest)
                     {
-                        var resourceTypes = apiVersionGrouping.Select(x => x.FormatName()).ToList();
+                        var resourceTypes = apiVersionGrouping.Select(x => x.TypeReference.FormatName()).ToList();
 
                         yield return new object[] { providerName, apiVersion, flags, resourceTypes };
                     }
@@ -90,7 +90,7 @@ namespace Bicep.Core.UnitTests.TypeSystem.Az
             {
                 var typeReference = ResourceTypeReference.Parse(availableType);
 
-                resourceTypeProvider.HasDefinedType(typeReference).Should().BeTrue();
+                resourceTypeProvider.HasDefinedType(typeReference).Should().BeTrue(); //asdfg
                 var resourceType = resourceTypeProvider.TryGetDefinedType(AzNamespaceType, typeReference, flags)!;
 
                 try
@@ -147,7 +147,7 @@ namespace Bicep.Core.UnitTests.TypeSystem.Az
             availableTypes.Should().HaveCountGreaterThan(minExpectedTypes);
 
             // verify there aren't any duplicates
-            availableTypes.Select(x => x.FormatName().ToLowerInvariant()).Should().OnlyHaveUniqueItems();
+            availableTypes.Select(x => x.TypeReference.FormatName().ToLowerInvariant()).Should().OnlyHaveUniqueItems();
         }
 
         [TestMethod]

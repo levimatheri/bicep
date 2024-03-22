@@ -52,8 +52,8 @@ public class PublishProviderCommandTests : TestBase
         var azTypeLoader = new AzResourceTypeLoader(typeLoader);
 
         // verify the index works
-        var saTypeReference = azTypeLoader.GetAvailableTypes().Should().Contain(x => x.Name == "Microsoft.Storage/storageAccounts@2022-05-01").Subject;
-        var saType = azTypeLoader.LoadType(saTypeReference);
+        var saTypeReference = azTypeLoader.GetAvailableTypes().Should().Contain(x => x.TypeReference.Name == "Microsoft.Storage/storageAccounts@2022-05-01").Subject;
+        var saType = azTypeLoader.LoadType(saTypeReference.TypeReference);
 
         // verify we can load a type
         var saBodyType = (ObjectType)saType.Body.Type;
@@ -76,8 +76,8 @@ public class PublishProviderCommandTests : TestBase
         var azTypeLoader2 = new AzResourceTypeLoader(typeLoader2);
 
         // verify the index works
-        var saTypeReference2 = azTypeLoader2.GetAvailableTypes().Should().Contain(x => x.Name == "Microsoft.Storage/storageAccounts@2022-05-01").Subject;
-        var saType2 = azTypeLoader2.LoadType(saTypeReference2);
+        var saTypeReference2 = azTypeLoader2.GetAvailableTypes().Should().Contain(x => x.TypeReference.Name == "Microsoft.Storage/storageAccounts@2022-05-01").Subject;
+        var saType2 = azTypeLoader2.LoadType(saTypeReference2.TypeReference);
 
         // verify we can load a type
         var saBodyType2 = (ObjectType)saType2.Body.Type;

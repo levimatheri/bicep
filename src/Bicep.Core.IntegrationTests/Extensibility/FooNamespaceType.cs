@@ -42,7 +42,7 @@ public static class FooNamespaceType
         }.ToImmutableDictionary(x => x.TypeReference);
 
         public FooTypeProvider()
-            : base(ResourceTypes.Keys.ToImmutableHashSet())
+            : base(ResourceTypes.Keys.Select(x => new ResourceTypeReferenceInfo(x, null)))
         {
         }
 
@@ -65,12 +65,6 @@ public static class FooNamespaceType
                 resourceType.Body,
                 UniqueIdentifierProperties);
         }
-
-        public bool HasDefinedType(ResourceTypeReference typeReference)
-            => ResourceTypes.ContainsKey(typeReference);
-
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => ResourceTypes.Keys;
 
         public string Version { get; } = "1.2.3";
     }

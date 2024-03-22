@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace Bicep.Core.Resources;
 
-public class ResourceTypeReferenceJsonConverter : JsonConverter<ResourceTypeReference>
+public class ResourceTypeReferenceJsonConverter : JsonConverter<ResourceTypeReference/* Info?? */>
 {
     public override ResourceTypeReference? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         => reader.GetString() is { } stringValue ? ResourceTypeReference.Parse(stringValue) : null;

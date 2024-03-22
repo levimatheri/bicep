@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Bicep.Core.Resources
 {
+    public record ResourceTypeReferenceInfo(ResourceTypeReference TypeReference, string[]? Keywords) { } //asdfg -> ResourceType or ResourceTypeInfo
+
     public partial class ResourceTypeReference
     {
         public ResourceTypeReference(string type, string? version)
@@ -83,10 +86,10 @@ namespace Bicep.Core.Resources
             }
 
             return Enumerable.SequenceEqual(this.TypeSegments, otherReference.TypeSegments, LanguageConstants.ResourceTypeComparer) &&
-                LanguageConstants.ResourceTypeComparer.Equals(this.ApiVersion, otherReference.ApiVersion);
+                LanguageConstants.ResourceTypeComparer.Equals(this.ApiVersion, otherReference.ApiVersion); //asdfg
         }
 
-        public override int GetHashCode()
+        public override int GetHashCode() //asdfg
             => HashCode.Combine(
                 Enumerable.Select(this.TypeSegments, x => LanguageConstants.ResourceTypeComparer.GetHashCode(x)).Aggregate((a, b) => a ^ b),
                 (this.ApiVersion is null ? 0 : LanguageConstants.ResourceTypeComparer.GetHashCode(this.ApiVersion)));

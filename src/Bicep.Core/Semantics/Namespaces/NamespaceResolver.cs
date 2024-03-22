@@ -143,11 +143,12 @@ namespace Bicep.Core.Semantics.Namespaces
             return fallbackTypes;
         }
 
-        public IEnumerable<ResourceTypeReference> GetAvailableAzureResourceTypes() =>
-            namespaceTypes.Values.SingleOrDefault(x => x.Name.Equals(AzNamespaceType.BuiltInName, StringComparison.Ordinal))?.ResourceTypeProvider.GetAvailableTypes() ??
-            Enumerable.Empty<ResourceTypeReference>();
+        // TODO(#13239): ApiVersionProvider is only used by UseRecentApiVersionRule. Coupling the linter with the semantic model is suboptimal. A better approach would be to integrate ApiVersionProvider into IResourceTypeProvider.
+        public IEnumerable<ResourceTypeReferenceInfo> GetAvailableAzureResourceTypes() =>
+            (namespaceTypes.Values.SingleOrDefault(x => x.Name.Equals(AzNamespaceType.BuiltInName, StringComparison.Ordinal))?.ResourceTypeProvider.GetAvailableTypes() ??
+                Enumerable.Empty<ResourceTypeReferenceInfo>());
 
-        public ILookup<string, ImmutableArray<ResourceTypeReference>> GetGroupedResourceTypes()
+        public ILookup<string, ImmutableArray<ResourceTypeReferenceInfo>> GetGroupedResourceTypes()
         {
             return namespaceTypes.Values
                 .SelectMany(x => x.ResourceTypeProvider.TypeReferencesByType)

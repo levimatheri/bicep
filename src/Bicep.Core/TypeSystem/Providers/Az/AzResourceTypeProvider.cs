@@ -191,7 +191,7 @@ namespace Bicep.Core.TypeSystem.Providers.Az
         }
 
         public AzResourceTypeProvider(IResourceTypeLoader resourceTypeLoader, string providerVersion)
-            : base(resourceTypeLoader.GetAvailableTypes().ToImmutableHashSet())
+            : base(resourceTypeLoader.GetAvailableTypes().ToArray())
         {
             Version = providerVersion;
             this.resourceTypeLoader = resourceTypeLoader;
@@ -415,7 +415,7 @@ namespace Bicep.Core.TypeSystem.Providers.Az
         private static TypePropertyFlags ConvertToReadOnly(TypePropertyFlags typePropertyFlags)
             => (typePropertyFlags | TypePropertyFlags.ReadOnly) & ~TypePropertyFlags.Required;
 
-        public ResourceType? TryGetDefinedType(NamespaceType declaringNamespace, ResourceTypeReference typeReference, ResourceTypeGenerationFlags flags)
+        public ResourceType? TryGetDefinedType(NamespaceType declaringNamespace, ResourceTypeReference typeReference, ResourceTypeGenerationFlags flags)//asdfg?
         {
             if (!HasDefinedType(typeReference))
             {
@@ -472,10 +472,9 @@ namespace Bicep.Core.TypeSystem.Providers.Az
                 UniqueIdentifierProperties);
         }
 
-        public bool HasDefinedType(ResourceTypeReference typeReference)
-            => availableResourceTypes.Contains(typeReference);
-
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => availableResourceTypes;
+        //public string[] GetSearchKeywords(ResourceTypeReference reference)
+        //{
+        //    return resourceTypeLoader.GetSearchKeywords(reference);
+        //}
     }
 }

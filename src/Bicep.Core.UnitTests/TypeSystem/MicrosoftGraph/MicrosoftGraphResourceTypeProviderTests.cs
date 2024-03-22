@@ -23,7 +23,7 @@ namespace Bicep.Core.UnitTests.TypeSystem.MicrosoftGraph
             availableTypes.Should().HaveCountGreaterThanOrEqualTo(minExpectedTypes);
 
             // verify there aren't any duplicates
-            availableTypes.Select(x => x.FormatName().ToLowerInvariant()).Should().OnlyHaveUniqueItems();
+            availableTypes.Select(x => x.TypeReference.FormatName().ToLowerInvariant()).Should().OnlyHaveUniqueItems();
         }
     }
 }

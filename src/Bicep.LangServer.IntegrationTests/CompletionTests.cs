@@ -54,7 +54,7 @@ namespace Bicep.LangServer.IntegrationTests
 
         private static readonly SharedLanguageHelperManager ServerWithExtensibilityEnabled = new();
 
-        private static readonly SharedLanguageHelperManager ServerWithBuiltInTypes = new();
+        private static readonly SharedLanguageHelperManager ServerWithBuiltInTestTypes = new();
 
         private static readonly SharedLanguageHelperManager ServerWithResourceTypedParamsEnabled = new();
 
@@ -89,7 +89,7 @@ namespace Bicep.LangServer.IntegrationTests
                     testContext,
                     services => services.WithFeatureOverrides(new(testContext, ExtensibilityEnabled: true))));
 
-            ServerWithBuiltInTypes.Initialize(
+            ServerWithBuiltInTestTypes.Initialize(
                 async () => await MultiFileLanguageServerHelper.StartLanguageServer(
                     testContext,
                     services => services.WithNamespaceProvider(BuiltInTestTypes.Create())));
@@ -108,7 +108,7 @@ namespace Bicep.LangServer.IntegrationTests
             await ServerWithNamespaceAndTestResolver.DisposeAsync();
             await DefaultServer.DisposeAsync();
             await ServerWithExtensibilityEnabled.DisposeAsync();
-            await ServerWithBuiltInTypes.DisposeAsync();
+            await ServerWithBuiltInTestTypes.DisposeAsync();
             await ServerWithResourceTypedParamsEnabled.DisposeAsync();
         }
 
@@ -262,7 +262,7 @@ hel|lo
 '''|
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -272,7 +272,7 @@ hel|lo
 var interpolatedString = 'abc${|true}def${|}ghi${res|}xyz'
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsNonEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsNonEmpty, '|');
         }
 
         [TestMethod]
@@ -283,7 +283,7 @@ var test = |// comment here
 var test2 = |/* block comment */|
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsNonEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsNonEmpty, '|');
         }
 
         [TestMethod]
@@ -299,7 +299,7 @@ resource testRes 'Test.Rp/readWriteTests@2020-01-01' = {|
 output baz object = {|
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -430,7 +430,7 @@ var test = /|/ comment here|
 var test2 = /|* block c|omment *|/
 ";
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -776,7 +776,7 @@ output string test2 = testRes.properties.|
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                     completions.Should().SatisfyRespectively(
@@ -813,7 +813,7 @@ output string test2 = testRes.properties.|
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                     completions.Should().SatisfyRespectively(
@@ -1105,7 +1105,7 @@ resource testRes5 'Test.Rp/readWriteTests@2020-01-01' |= {
 
 
             await RunCompletionScenarioTest(this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                     completions.Should().SatisfyRespectively(
@@ -1125,7 +1125,7 @@ resource myRes Te|st
 ";
 
                 var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
                 var completions = await file.RequestCompletion(cursor);
 
@@ -1145,7 +1145,7 @@ resource myRes 'Test.Rp/ba|si
 ";
 
                 var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
                 var completions = await file.RequestCompletion(cursor);
 
@@ -1161,7 +1161,7 @@ resource myRes 'Test.Rp/basicTests@|
 ";
 
                 var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+                var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
                 var completions = await file.RequestCompletion(cursor);
 
@@ -1214,7 +1214,7 @@ resource base64 'Microsoft.Foo/foos@2020-09-01' existing | {}
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                     fileWithCursors,
                 completions =>
                         completions.Should().SatisfyRespectively(
@@ -1251,7 +1251,7 @@ output test string |
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                     completions.Should().SatisfyRespectively(
@@ -1355,7 +1355,7 @@ resource testRes2 'Test.Rp/readWriteTests@2020-01-01' = {
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                 completions.Should().SatisfyRespectively(
@@ -1386,7 +1386,7 @@ resource testRes3 'Test.Rp/readWriteTests@2020-01-01' = {
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                    completions.Should().SatisfyRespectively(
@@ -1406,7 +1406,7 @@ resource myRes 'Test.Rp/readWriteTests@2020-01-01' = {|
   }
 |}
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1429,7 +1429,7 @@ resource myRes 'Test.Rp/readWriteTests@2020-01-01' = {
                 }
             }
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsContainResourceLabel, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsContainResourceLabel, '|');
         }
 
         [TestMethod]
@@ -1442,7 +1442,7 @@ resource myRes 'Test.Rp/readWriteTests@2020-01-01' = {
   name: 'myRes'
 }
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1460,7 +1460,7 @@ var obj6 = { |
   prop  | : false
  |  }
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1477,7 +1477,7 @@ var arr4 = [ |
   |  true
 | ]
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1488,7 +1488,7 @@ var unary = |! | true
 var binary = -1 | |+| | 2
 var ternary = true | |?| | 'yes' | |:| | 'no'
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1498,7 +1498,7 @@ var ternary = true | |?| | 'yes' | |:| | 'no'
 |param foo string
 v|ar expr = 1 + 2
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1517,7 +1517,7 @@ resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
   }
 }
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
 
@@ -1529,7 +1529,7 @@ var booleanExp = !|tr|ue| && |fal|se|
 var integerExp = |12|345| + |543|21|
 var nullLit = |n|ull|
 ";
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors, AssertAllCompletionsEmpty, '|');
         }
 
         [TestMethod]
@@ -1783,7 +1783,7 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2019-06-01' 
                 ),
                 '|');
 
-            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTypes, fileWithCursors,
+            await RunCompletionScenarioTest(this.TestContext, ServerWithBuiltInTestTypes, fileWithCursors,
                 completions => completions.Should().SatisfyRespectively(
                     c => c!.Select(x => x.Label).Should().NotContain("provider"),
                     c => c!.Select(x => x.Label).Should().BeEmpty(),
@@ -2110,7 +2110,7 @@ resource abc 'Test.Rp/basicTests@|'
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                     completions.Should().SatisfyRespectively(
@@ -2128,7 +2128,7 @@ resource abc 'Test.Rp/basic|'
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completions =>
                     completions.Should().SatisfyRespectively(
@@ -2149,7 +2149,7 @@ var outTest = abc.|
 ";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == "listNoInput");
@@ -2201,7 +2201,7 @@ var outTest = abc.listWithInput(|)
 ";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == "'2020-01-01'");
@@ -2228,7 +2228,7 @@ var outTest = abc.listWithInput('2020-01-01', |)
 ";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == "required-properties");
@@ -2260,7 +2260,7 @@ var outTest = abc.listWithInput('2020-01-01', {
 ";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == "optionalVal");
@@ -2377,7 +2377,7 @@ var outTest = abc.listWithInput('2020-01-01', {
         public async Task List_functions_accepting_inputs_permit_object_value_completions(string fileWithCursors, string updatedFileWithCursors)
         {
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == "'either'");
@@ -2398,7 +2398,7 @@ resource abc 'Test.Rp/listFuncTests@2020-01-01' existing = {
 var outTest = abc.listWithInput().|
 ";
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == "withInputOutputVal");
@@ -2453,7 +2453,7 @@ var testF = stg.listAccountSas('2021-06-01', {}).|
 param storageAccount string = 'testAccount";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
 
@@ -2475,7 +2475,7 @@ var sorted2 = sort(['abc'], (x, y) => x < |)
 ";
 
             var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletions(cursors);
 
@@ -2496,7 +2496,7 @@ var foo = map([123], |)
 ",
                 '|');
 
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             var updatedFile = file.ApplyCompletion(completions, "arg => ...", "foo");
@@ -2513,7 +2513,7 @@ var foo = sort([123], |)
 ",
                 '|');
 
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             var updatedFile = file.ApplyCompletion(completions, "(arg1, arg2) => ...", "foo", "bar");
@@ -2731,7 +2731,7 @@ param storageAccount1 string = 'testAccount'
 param storageAccount2 string = 'testAccount'";
 
             var (text, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursors[0]);
             completions.Should().Contain(x => x.Label == LanguageConstants.DisableNextLineDiagnosticsKeyword);
@@ -2773,7 +2773,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
 }";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             var completions = await file.RequestCompletion(cursor);
             completions.Should().Contain(x => x.Label == LanguageConstants.DisableNextLineDiagnosticsKeyword);
@@ -3025,7 +3025,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2020-12-01' = {
 resource test";
 
             var (text, cursor) = ParserHelper.GetFileWithSingleCursor(fileWithCursors, '|');
-            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTypes).OpenFile(text);
+            var file = await new ServerRequestHelper(TestContext, ServerWithBuiltInTestTypes).OpenFile(text);
 
             CompilationHelper.Compile(text).ExcludingLinterDiagnostics().Diagnostics.Should().SatisfyRespectively(
                 x => x.Code.Should().Be("BCP226"),
@@ -3045,7 +3045,7 @@ var foo = resourceI|
 
             await RunCompletionScenarioTest(
                 this.TestContext,
-                ServerWithBuiltInTypes,
+                ServerWithBuiltInTestTypes,
                 fileWithCursors,
                 completionLists => completionLists.Should().SatisfyRespectively(
                     completions => completions!.Where(x => x.Label == "resourceId").First().Documentation!.MarkupContent!.Value.Should().EqualIgnoringNewlines(
@@ -4664,3 +4664,5 @@ Source port ranges.
         }
     }
 }
+
+//asdfg add tests here?

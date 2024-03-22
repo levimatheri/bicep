@@ -79,10 +79,10 @@ namespace Bicep.Core.UnitTests.ApiVersions
             tenantTypes.Should().Contain("fake.tenant/whatever");
         }
 
-        private ApiVersionProvider CreateDefaultApiVersionProvider(IEnumerable<ResourceTypeReference>? resourceTypeReferences = null)
+        private ApiVersionProvider CreateDefaultApiVersionProvider(IEnumerable<ResourceTypeReferenceInfo>? resourceTypeReferences = null)
             => new(
                 new FeatureProvider(
                     IConfigurationManager.GetBuiltInConfiguration()),
-                    resourceTypeReferences ?? Enumerable.Empty<ResourceTypeReference>());
+                    resourceTypeReferences ?? Enumerable.Empty<ResourceTypeReferenceInfo>());
     }
 }

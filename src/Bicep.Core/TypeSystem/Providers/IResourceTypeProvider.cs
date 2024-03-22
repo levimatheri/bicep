@@ -26,9 +26,14 @@ namespace Bicep.Core.TypeSystem.Providers
         /// <summary>
         /// Returns the full list of available types defined by this provider.
         /// </summary>
-        IEnumerable<ResourceTypeReference> GetAvailableTypes();
+        IEnumerable<ResourceTypeReferenceInfo> GetAvailableTypes(); //asdfg
 
-        ImmutableDictionary<string, ImmutableArray<ResourceTypeReference>> TypeReferencesByType { get; }
+        ImmutableDictionary<string, ImmutableArray<ResourceTypeReferenceInfo>> TypeReferencesByType { get; }
+
+        public string[] GetSearchKeywords(ResourceTypeReference reference)
+        {
+            return Array.Empty<string>();
+        }
 
         /// <summary>
         /// Returns the version of the type definitions used by this provider.

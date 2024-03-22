@@ -24,7 +24,7 @@ namespace Bicep.Core.TypeSystem.Providers.K8s
         }.ToImmutableHashSet();
 
         public K8sResourceTypeProvider(K8sResourceTypeLoader resourceTypeLoader)
-            : base(resourceTypeLoader.GetAvailableTypes().ToImmutableHashSet())
+            : base(resourceTypeLoader.GetAvailableTypes().ToArray())
         {
             this.resourceTypeLoader = resourceTypeLoader;
             definedTypeCache = new ResourceTypeCache();
@@ -191,12 +191,6 @@ namespace Bicep.Core.TypeSystem.Providers.K8s
                 resourceType.Body,
                 UniqueIdentifierProperties);
         }
-
-        public bool HasDefinedType(ResourceTypeReference typeReference)
-            => availableResourceTypes.Contains(typeReference);
-
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => availableResourceTypes;
 
         public string Version { get; } = "1.0.0";
     }

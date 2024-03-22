@@ -31,8 +31,8 @@ namespace Bicep.Core.UnitTests.Utils
             public ResourceTypeComponents LoadType(ResourceTypeReference reference)
                 => resourceTypes[reference];
 
-            public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-                => resourceTypes.Keys;
+            public IEnumerable<ResourceTypeReferenceInfo> GetAvailableTypes()
+                => resourceTypes.Keys.Select(x => new ResourceTypeReferenceInfo(x, null));
         }
 
         public static IResourceTypeProvider CreateAzResourceTypeProviderWithTypes(IEnumerable<ResourceTypeComponents> resourceTypes)

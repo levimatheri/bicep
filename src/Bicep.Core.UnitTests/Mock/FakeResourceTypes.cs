@@ -21,17 +21,17 @@ namespace Bicep.Core.UnitTests.Mock
             return types.ToArray();
         }
 
-        public static IEnumerable<ResourceTypeReference> GetFakeResourceTypeReferences(string fakeResourceTypesAndVersions)
+        public static IEnumerable<ResourceTypeReferenceInfo> GetFakeResourceTypeReferences(string fakeResourceTypesAndVersions)
         {
             return GetFakeResourceTypeReferences(SplitLines(fakeResourceTypesAndVersions));
         }
 
-        public static IEnumerable<ResourceTypeReference> GetFakeResourceTypeReferences(IEnumerable<string> fakeResourceTypesAndVersions)
+        public static IEnumerable<ResourceTypeReferenceInfo> GetFakeResourceTypeReferences(IEnumerable<string> fakeResourceTypesAndVersions)
         {
             foreach (string line in fakeResourceTypesAndVersions)
             {
-                var resourcType = ResourceTypeReference.Parse(line);
-                yield return resourcType;
+                var resourceType = new ResourceTypeReferenceInfo(ResourceTypeReference.Parse(line), null);
+                yield return resourceType;
             }
         }
 

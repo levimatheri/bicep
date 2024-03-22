@@ -19,7 +19,7 @@ namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
         [TestClass]
         public class InReferenceFunctions
         {
-            private record ExpectedFunctionInfo(string FunctionCall, string? ResourceType, string? ApiVerion);
+            private record ExpectedFunctionInfo(string FunctionCall, string? ResourceType, string? ApiVersion);
             private static readonly ApiVersionProvider apiVersionProvider;
 
             static InReferenceFunctions()
@@ -28,7 +28,7 @@ namespace Bicep.Core.UnitTests.Diagnostics.LinterRuleTests
                 // Note: The compiler does not know about these fake types, only the linter.
                 apiVersionProvider = new ApiVersionProvider(
                     BicepTestConstants.Features,
-                    Enumerable.Empty<ResourceTypeReference>());
+                    Enumerable.Empty<ResourceTypeReferenceInfo>());
                 apiVersionProvider.InjectTypeReferences(
                     ResourceScope.ResourceGroup,
                     FakeResourceTypes.GetFakeResourceTypeReferences(FakeResourceTypes.ResourceScopeTypes));

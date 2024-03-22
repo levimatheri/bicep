@@ -79,11 +79,11 @@ namespace Bicep.LanguageServer.Handlers
                 var namespaces = nsResolver.GetNamespaceNames().Select(nsResolver.TryGetNamespace).WhereNotNull();
                 var azResourceTypeProvider = namespaces.First(ns => ns?.ProviderName == AzNamespaceType.BuiltInName).ResourceTypeProvider;
                 var matchedType = azResourceTypeProvider.GetAvailableTypes()
-                    .Where(x => StringComparer.OrdinalIgnoreCase.Equals(resourceId.FullyQualifiedType, x.FormatType()))
-                    .OrderByDescending(x => x.ApiVersion, ApiVersionComparer.Instance)
+                    .Where(x => StringComparer.OrdinalIgnoreCase.Equals(resourceId.FullyQualifiedType, x.TypeReference.FormatType()))
+                    .OrderByDescending(x => x.TypeReference.ApiVersion, ApiVersionComparer.Instance)
                     .FirstOrDefault();
 
-                if (matchedType is null || matchedType.ApiVersion is null)
+                if (matchedType is null || matchedType.TypeReference.ApiVersion is null)
                 {
                     throw helper.CreateException(
                         $"Failed to find a Bicep type definition for resource of type \"{resourceId.FullyQualifiedType}\".",
@@ -98,13 +98,13 @@ namespace Bicep.LanguageServer.Handlers
                     resource = await azResourceProvider.GetGenericResource(
                         model.Configuration,
                         resourceId,
-                        apiVersion: matchedType.ApiVersion,
+                        apiVersion: matchedType.TypeReference.ApiVersion,
                         cancellationToken);
                 }
                 catch (Exception exception)
                 {
                     // We want to keep going here - we'll try again without the API version.
-                    Trace.WriteLine($"Failed to fetch resource '{resourceId}' with API version {matchedType.ApiVersion}: {exception}");
+                    Trace.WriteLine($"Failed to fetch resource '{resourceId}' with API version {matchedType.TypeReference.ApiVersion}: {exception}");
                 }
 
                 try
@@ -130,7 +130,7 @@ namespace Bicep.LanguageServer.Handlers
                         Unit.Value);
                 }
 
-                var resourceDeclaration = CreateResourceSyntax(resource.Value, resourceId, matchedType);
+                var resourceDeclaration = CreateResourceSyntax(resource.Value, resourceId, matchedType.TypeReference);
                 var insertContext = GetInsertContext(context, request.Position);
                 var replacement = GenerateCodeReplacement(context.Compilation, resourceDeclaration, insertContext);
 
@@ -151,7 +151,7 @@ namespace Bicep.LanguageServer.Handlers
                     },
                 }, cancellationToken);
 
-                return (Unit.Value, BicepTelemetryEvent.InsertResourceSuccess(resourceId.FullyQualifiedType, matchedType.ApiVersion));
+                return (Unit.Value, BicepTelemetryEvent.InsertResourceSuccess(resourceId.FullyQualifiedType, matchedType.TypeReference.ApiVersion));
             });
 
         private record InsertContext(

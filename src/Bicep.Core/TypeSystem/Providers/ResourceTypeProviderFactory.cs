@@ -46,6 +46,7 @@ namespace Bicep.Core.TypeSystem.Providers
         }
         public IResourceTypeProvider GetBuiltInAzResourceTypesProvider()
            => azResourceTypeProviderLazy.Value;
+
         private ResultWithDiagnostic<IResourceTypeProvider> GetDynamicallyLoadedResourceTypesProvider(ResourceTypesProviderDescriptor providerDescriptor)
         {
             var fullyQualifiedArtifactReference = providerDescriptor.ArtifactReference?.FullyQualifiedReference ?? throw new UnreachableException($"the reference is validated prior to a call to {nameof(this.GetResourceTypeProvider)}");

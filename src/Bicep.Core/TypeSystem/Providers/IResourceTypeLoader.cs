@@ -10,6 +10,11 @@ namespace Bicep.Core.TypeSystem.Providers
     {
         ResourceTypeComponents LoadType(ResourceTypeReference reference);
 
-        IEnumerable<ResourceTypeReference> GetAvailableTypes();
+        IEnumerable<ResourceTypeReferenceInfo> GetAvailableTypes();//asdfg - yes, Info
+
+        //public string[] GetSearchKeywords(ResourceTypeReference reference)//asdfg?
+        //{
+        //    return Array.Empty<string>();
+        //}
     }
 }

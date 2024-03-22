@@ -23,8 +23,8 @@ namespace Bicep.Core.TypeSystem.Providers.ThirdParty
                 kvp => kvp.Value);
         }
 
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => availableTypes.Keys;
+        public IEnumerable<ResourceTypeReferenceInfo> GetAvailableTypes()
+            => availableTypes.Keys.Select(x => new ResourceTypeReferenceInfo(x, Array.Empty<string>()));
 
         public ResourceTypeComponents LoadType(ResourceTypeReference reference)
         {

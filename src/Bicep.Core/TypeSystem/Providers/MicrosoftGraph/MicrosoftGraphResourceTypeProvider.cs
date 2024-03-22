@@ -32,7 +32,7 @@ namespace Bicep.Core.TypeSystem.Providers.MicrosoftGraph
                 UniqueNamePropertyName);
 
         public MicrosoftGraphResourceTypeProvider(MicrosoftGraphResourceTypeLoader resourceTypeLoader)
-            : base(resourceTypeLoader.GetAvailableTypes().ToImmutableHashSet())
+            : base(resourceTypeLoader.GetAvailableTypes().ToArray())
         {
             this.resourceTypeLoader = resourceTypeLoader;
             definedTypeCache = new ResourceTypeCache();
@@ -163,12 +163,6 @@ namespace Bicep.Core.TypeSystem.Providers.MicrosoftGraph
 
         public ResourceType? TryGenerateFallbackType(NamespaceType declaringNamespace, ResourceTypeReference typeReference, ResourceTypeGenerationFlags flags)
             => null;
-
-        public bool HasDefinedType(ResourceTypeReference typeReference)
-            => availableResourceTypes.Contains(typeReference);
-
-        public IEnumerable<ResourceTypeReference> GetAvailableTypes()
-            => availableResourceTypes;
 
         public string Version { get; } = "1.0.0";
     }
