@@ -4,65 +4,53 @@
 using System.Collections.Immutable;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
-using Bicep.Local.Extension.Rpc;
 
 namespace Bicep.Local.Extension.Protocol;
 
-public record Resource(
-    string Type,
-    string? ApiVersion,
-    string? Status,
-    JsonObject Identifiers,
-    JsonObject? Config,
-    JsonObject Properties);
+public record ExtensibilityOperationRequest(
+    ExtensibleImportData Import,
+    ExtensibleResourceData Resource);
 
-public record ResourceSpecification(
-    string Type,
-    string? ApiVersion,
-    JsonObject Properties,
+public record ExtensibilityOperationResponse(
+    ExtensibleResourceData? Resource,
+    ExtensibleResourceMetadata? ResourceMetadata,
+    ImmutableArray<ExtensibilityError>? Errors);
+
+public record ExtensibleImportData(
+    string Provider,
+    string Version,
     JsonObject? Config);
 
-public record ResourceReference(
+public record ExtensibleResourceData(
     string Type,
-    string? ApiVersion,
-    JsonObject Identifiers,
-    JsonObject? Config);
+    JsonObject? Properties);
 
-public record ErrorData(
-    Error Error);
+public record ExtensibleResourceMetadata(
+    ImmutableArray<string>? ReadOnlyProperties,
+    ImmutableArray<string>? ImmutableProperties,
+    ImmutableArray<string>? DynamicProperties);
 
-public record Error(
+public record ExtensibilityError(
     string Code,
-    string Target,
     string Message,
-    ErrorDetail[]? Details,
-    JsonObject? InnerError);
-
-public record ErrorDetail(
-    string Code,
-    string Target,
-    string Message);
-
-public record LocalExtensibilityOperationResponse(
-    Resource? Resource,
-    ErrorData? ErrorData);
+    string Target);
 
 public interface IGenericResourceHandler
 {
-    Task<LocalExtensibilityOperationResponse> CreateOrUpdate(
-        ResourceSpecification request,
+    Task<ExtensibilityOperationResponse> Save(
+        ExtensibilityOperationRequest request,
         CancellationToken cancellationToken);
 
-    Task<LocalExtensibilityOperationResponse> Preview(
-        ResourceSpecification request,
+    Task<ExtensibilityOperationResponse> PreviewSave(
+        ExtensibilityOperationRequest request,
         CancellationToken cancellationToken);
 
-    Task<LocalExtensibilityOperationResponse> Get(
-        ResourceReference request,
+    Task<ExtensibilityOperationResponse> Get(
+        ExtensibilityOperationRequest request,
         CancellationToken cancellationToken);
 
-    Task<LocalExtensibilityOperationResponse> Delete(
-        ResourceReference request,
+    Task<ExtensibilityOperationResponse> Delete(
+        ExtensibilityOperationRequest request,
         CancellationToken cancellationToken);
 }
 

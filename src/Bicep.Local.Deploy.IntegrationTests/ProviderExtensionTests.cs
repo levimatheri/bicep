@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
 using Bicep.Core.UnitTests.Mock;
@@ -62,42 +60,34 @@ public class ProviderExtensionTests : TestBase
     [TestMethod]
     public async Task Save_request_works_as_expected()
     {
-        JsonObject identifiers = new()
-                {
-                    { "name", "someName" },
-                    { "namespace", "someNamespace" }
-                };
-
         var handlerMock = StrictMock.Of<IResourceHandler>();
-        handlerMock.SetupGet(x => x.ResourceType).Returns("apps/Deployment");
+        handlerMock.SetupGet(x => x.ResourceType).Returns("apps/Deployment@v1");
 
-        handlerMock.Setup(x => x.CreateOrUpdate(It.IsAny<Protocol.ResourceSpecification>(), It.IsAny<CancellationToken>()))
-            .Returns<Protocol.ResourceSpecification, CancellationToken>((req, _) =>
-                Task.FromResult(new Protocol.LocalExtensibilityOperationResponse(
-                    new Protocol.Resource(req.Type, req.ApiVersion, "Succeeded", identifiers, req.Config, req.Properties),
-                    null)));
+        handlerMock.Setup(x => x.Save(It.IsAny<Protocol.ExtensibilityOperationRequest>(), It.IsAny<CancellationToken>()))
+            .Returns<Protocol.ExtensibilityOperationRequest, CancellationToken>((req, _) =>
+                Task.FromResult(new Protocol.ExtensibilityOperationResponse(req.Resource, null, null)));
 
         await RunExtensionTest(
             builder => builder.AddHandler(handlerMock.Object),
             async (client, token) =>
             {
-                var request = new Extension.Rpc.ResourceSpecification
+                var request = new Extension.Rpc.ExtensibilityOperationRequest
                 {
-                    ApiVersion = "v1",
-                    Type = "apps/Deployment",
-                    Config = """
+                    Import = new()
+                    {
+                        Provider = "Kubernetes",
+                        Version = "1.0.0",
+                        Config = """
                         {
-                            "kubeConfig": {
-                                "type": "string",
-                                "defaultValue": "redacted"
-                            },
-                            "namespace": {
-                                "type": "string",
-                                "defaultValue": "default"
-                            }
+                          "kubeConfig": "redacted",
+                          "namespace": "default"
                         }
-                    """,
-                    Properties = """
+                        """
+                    },
+                    Resource = new()
+                    {
+                        Type = "apps/Deployment@v1",
+                        Properties = """
                         {
                           "metadata": {
                             "name": "echo-server"
@@ -134,18 +124,13 @@ public class ProviderExtensionTests : TestBase
                           }
                         }
                         """
+                    }
                 };
 
-                var response = await client.CreateOrUpdateAsync(request, cancellationToken: token);
+                var response = await client.SaveAsync(request, cancellationToken: token);
 
                 response.Should().NotBeNull();
-                response.Resource.Should().NotBeNull();
-                response.Resource.Type.Should().Be("apps/Deployment");
-                response.Resource.Identifiers.Should().NotBeNullOrEmpty();
-                var responseIdentifiers = JsonObject.Parse(response.Resource.Identifiers)!.AsObject();
-                responseIdentifiers.Should().NotBeNullOrEmpty();
-                responseIdentifiers["name"]!.GetValue<string>().Should().Be(identifiers["name"]!.GetValue<string>());
-                responseIdentifiers["namespace"]!.GetValue<string>().Should().Be(identifiers["namespace"]!.GetValue<string>());
+                response.Resource!.Type.Should().Be("apps/Deployment@v1");
             });
     }
 }

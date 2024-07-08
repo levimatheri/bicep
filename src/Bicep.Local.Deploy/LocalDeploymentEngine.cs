@@ -77,9 +77,9 @@ internal class LocalDeploymentEngine
 
             var (template, parameters) = ParseTemplateAndParameters(templateString, parametersString);
 
-            if (template.Resources.Any(x => x.Extension is null))
+            if (template.Resources.Any(x => x.Import is null))
             {
-                throw new NotImplementedException("Only resources with extensions are supported");
+                throw new NotImplementedException("Only resources with imports are supported");
             }
 
             var context = DeploymentContextWithScopeDefinition.CreateAtResourceGroup(
