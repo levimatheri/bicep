@@ -646,6 +646,15 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
         //    var newVar = 1 + 2 + 3 + 4
         //    var a = newVar
         //    """)]
+        //
+        //asdfg issue: should we expand selection?
+        //[DataRow("""
+        //    param p1 int = 1 + |2
+        //    """,
+        //    """
+        //    var newVar = 2
+        //    param p1 int = 1 + newVar
+        //    """)]
         //[DataRow("""
         //    var a = 1 + 2
         //    var b = '${a}|{a}'
@@ -814,21 +823,15 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
         //    asdfg we shouldn't allow this
         //    """,
         //    DisplayName = "cursor contains multiple unrelated lines")]
+        //asdfg bug - not deleting original comments
         [DataRow("""
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in [1, 2, 3]: {
-                name: '|subnet${index}'
-                properties: {
-                  addressPrefix: '10.|0.${index}.0/24'
-                }
-              }
-            ]
+            param p1 int = 1 + /*comments1*/|2/*comments2*/
             """,
             """
-            asdfg we shouldn't allow this
+            var newVar = /*comments1*/2/*comments2*/
+            param p1 int = 1 + newVar
             """,
-            DisplayName = "asdfg")]
-        //asdfg test: module, expression with comments
+            DisplayName = "Expression with comments")]
         //asdfg resource/user-defined types
         [DataTestMethod]
         public async Task Extract_variable_is_suggested(string fileWithCursors, string expectedText)
