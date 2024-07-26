@@ -124,6 +124,13 @@ namespace Bicep.LanguageServer.Handlers
                 && SyntaxMatcher.FindLastNodeOfType<StatementSyntax, StatementSyntax>(matchingNodes) is (StatementSyntax statementSyntax, _))
             {
                 var varName = "newVar"; //asdfg
+                var propertySyntax = SyntaxMatcher.FindLastNodeOfType<ObjectPropertySyntax>(matchingNodes);
+                if (propertySyntax is (ObjectPropertySyntax propertyAccessSyntax, _)
+                    && propertyAccessSyntax.TryGetKeyText() is string propertyName)
+                {
+                    varName = propertyName;
+                }
+
                 var declarationSyntax = SyntaxFactory.CreateVariableDeclaration(varName, value);
                 //var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
                 var declarationText = $"{declarationSyntax}\n";

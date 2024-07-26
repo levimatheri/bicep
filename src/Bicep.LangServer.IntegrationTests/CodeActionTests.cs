@@ -646,7 +646,6 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
             var newVar = 1 + 2 + 3 + 4
             var a = newVar
             """)]
-        //asdfg
         [DataRow("""
             // comment 1
             @secure
@@ -679,7 +678,6 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
             ]
             """,
             DisplayName = "Inside a data structure")]
-        //asdfg should be named 'location'
         [DataRow("""
             // My comment here
             resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
@@ -693,15 +691,15 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
             """,
             """
             // My comment here
-            var newVar = 'westus'
+            var location = 'westus'
             resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
               name: 'name'
-              location: |'westus'
+              location: location
               kind: 'StorageV2'
               sku: {
                 name: 'Premium_LRS'
               }
-            }            
+            }
             """)]
         //asdfg renaming conflicts
         //[DataRow("""
