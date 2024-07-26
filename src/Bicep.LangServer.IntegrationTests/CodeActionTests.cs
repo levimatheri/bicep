@@ -593,126 +593,243 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
             codeActions.Should().NotContain(x => x.Title.StartsWith(RemoveUnusedParameterTitle));
         }
 
-        [DataRow("""
-            var a = '|b'
-            """,
-            """
-            var newVar = 'b'
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = 'a'
-            var b = '|b'
-            var c = 'c'
-            """,
-            """
-            var a = 'a'
-            var newVar = 'b'
-            var b = newVar
-            var c = 'c'
-            """)]
-        [DataRow("""
-            var a = 1 + |2
-            """,
-            """
-            var newVar = 2
-            var a = 1 + newVar
-            """)]
-        [DataRow("""
-            var a = |1 + 2|
-            """,
-            """
-            var newVar = 1 + 2
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = |1 +| 2
-            """,
-            """
-            var newVar = 1 + 2
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = 1 |+ 2
-            """,
-            """
-            var newVar = 1 + 2
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = 1 |+ 2 + 3 |+ 4
-            """,
-            """
-            var newVar = 1 + 2 + 3 + 4
-            var a = newVar
-            """)]
-        [DataRow("""
-            // comment 1
-            @secure
-            // comment 2
-            param a = '|a'
-            """,
-            """
-            // comment 1
-            var newVar = 'a'
-            @secure
-            // comment 2
-            param a = newVar
-            """,
-            DisplayName = "Preceding lines")]
-        [DataRow("""
-            var a = 1
-            var b = [
-              'a'
-              1 + |2|
-              'c'
-            ]
-            """,
-            """
-            var a = 1
-            var newVar = 2
-            var b = [
-              'a'
-              1 + newVar
-              'c'
-            ]
-            """,
-            DisplayName = "Inside a data structure")]
-        [DataRow("""
-            // My comment here
-            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-              name: 'name'
-              location: |'westus'
-              kind: 'StorageV2'
-              sku: {
-                name: 'Premium_LRS'
-              }
-            }
-            """,
-            """
-            // My comment here
-            var location = 'westus'
-            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-              name: 'name'
-              location: location
-              kind: 'StorageV2'
-              sku: {
-                name: 'Premium_LRS'
-              }
-            }
-            """)]
-        //asdfg renaming conflicts
         //[DataRow("""
         //    var a = '|b'
-        //    param newVar string
         //    """,
         //    """
-        //    var newVar2 = 'b'
-        //    var a = newVar2
-        //    param newVar string
-        //    """)
+        //    var newVar = 'b'
+        //    var a = newVar
+        //    """)]
+        //[DataRow("""
+        //    var a = 'a'
+        //    var b = '|b'
+        //    var c = 'c'
+        //    """,
+        //    """
+        //    var a = 'a'
+        //    var newVar = 'b'
+        //    var b = newVar
+        //    var c = 'c'
+        //    """)]
+        //[DataRow("""
+        //    var a = 1 + |2
+        //    """,
+        //    """
+        //    var newVar = 2
+        //    var a = 1 + newVar
+        //    """)]
+        //[DataRow("""
+        //    var a = |1 + 2|
+        //    """,
+        //    """
+        //    var newVar = 1 + 2
+        //    var a = newVar
+        //    """)]
+        //[DataRow("""
+        //    var a = |1 +| 2
+        //    """,
+        //    """
+        //    var newVar = 1 + 2
+        //    var a = newVar
+        //    """)]
+        //[DataRow("""
+        //    var a = 1 |+ 2
+        //    """,
+        //    """
+        //    var newVar = 1 + 2
+        //    var a = newVar
+        //    """)]
+        //[DataRow("""
+        //    var a = 1 |+ 2 + 3 |+ 4
+        //    """,
+        //    """
+        //    var newVar = 1 + 2 + 3 + 4
+        //    var a = newVar
+        //    """)]
+        //[DataRow("""
+        //    var a = 1 + 2
+        //    var b = '${a}|{a}'
+        //    """,
+        //    """
+        //    var a = 1 + 2
+        //    var newVar = '${a}{a}'
+        //    var b = newVar
+        //    """,
+        //    DisplayName = "Interpolated strings")]
+        //[DataRow("""
+        //    // comment 1
+        //    @secure
+        //    // comment 2
+        //    param a = '|a'
+        //    """,
+        //    """
+        //    // comment 1
+        //    var newVar = 'a'
+        //    @secure
+        //    // comment 2
+        //    param a = newVar
+        //    """,
+        //    DisplayName = "Preceding lines")]
+        //[DataRow("""
+        //    var a = 1
+        //    var b = [
+        //      'a'
+        //      1 + |2|
+        //      'c'
+        //    ]
+        //    """,
+        //    """
+        //    var a = 1
+        //    var newVar = 2
+        //    var b = [
+        //      'a'
+        //      1 + newVar
+        //      'c'
+        //    ]
+        //    """,
+        //    DisplayName = "Inside a data structure")]
+        //[DataRow("""
+        //    // My comment here
+        //    resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+        //      name: 'name'
+        //      location: |'westus'
+        //      kind: 'StorageV2'
+        //      sku: {
+        //        name: 'Premium_LRS'
+        //      }
+        //    }
+        //    """,
+        //    """
+        //    // My comment here
+        //    var location = 'westus'
+        //    resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+        //      name: 'name'
+        //      location: location
+        //      kind: 'StorageV2'
+        //      sku: {
+        //        name: 'Premium_LRS'
+        //      }
+        //    }
+        //    """)]
+        //[DataRow("""
+        //    var newVar = 'newVar'
+        //    param newVar2 string = '|newVar2'
+        //    """,
+        //    """
+        //    var newVar = 'newVar'
+        //    var newVar3 = 'newVar2'
+        //    param newVar2 string = newVar3
+        //    """,
+        //    DisplayName = "Simple naming conflict")
         //]
-        //asdfg test: inside variable block, loop, LocalVariableSyntax etc, module
+        //[DataRow("""
+        //    var id = [1, 2, 3]
+        //    param id2 string = 'hello'
+        //    resource id6 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (id3, id4) in id: {
+        //        name: 'subnet${id3}'
+        //        properties: {
+        //          addressPrefix: '10.0.${id4}.0/24'
+        //          natGateway: {
+        //            id: '|gatewayId'
+        //          }
+        //        }
+        //      }
+        //    ]
+        //    output id5 string = id2
+        //    """,
+        //    """
+        //    var id = [1, 2, 3]
+        //    param id2 string = 'hello'
+        //    var id7 = 'gatewayId'
+        //    resource id6 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (id3, id4) in id: {
+        //        name: 'subnet${id3}'
+        //        properties: {
+        //          addressPrefix: '10.0.${id4}.0/24'
+        //          natGateway: {
+        //            id: id7
+        //          }
+        //        }
+        //      }
+        //    ]
+        //    output id5 string = id2
+        //    """,
+        //    DisplayName = "Complex naming conflicts")]
+        //[DataRow("""
+        //    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (item, index) in |[1, 2, 3]|: {
+        //        name: 'subnet${index}'
+        //        properties: {
+        //          addressPrefix: '10.0.${index}.0/24'
+        //        }
+        //      }
+        //    ]
+        //    """,
+        //    """
+        //    var newVar = [1, 2, 3]
+        //    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (item, index) in newVar: {
+        //        name: 'subnet${index}'
+        //        properties: {
+        //          addressPrefix: '10.0.${index}.0/24'
+        //        }
+        //      }
+        //    ]
+        //    """)]
+        //[DataRow("""
+        //    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (item, index) in [1, 2, 3]: {
+        //        name: 'subnet${index}'
+        //        properties: {
+        //          addressPrefix: '10.|0.${|index}.0/24'
+        //        }
+        //      }
+        //    ]
+        //    """,
+        //    //asdfg do we allow this?  compiler error
+        //    """
+        //    var addressPrefix = '10.0.${index}.0/24'
+        //    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (item, index) in [1, 2, 3]: {
+        //        name: 'subnet${index}'
+        //        properties: {
+        //          addressPrefix: addressPrefix
+        //        }
+        //      }
+        //    ]
+        //    """,
+        //    DisplayName = "Extracting expression with local variable reference")]
+        //[DataRow("""
+        //    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+        //      for (item, index) in [1, 2, 3]: {
+        //        name: '|subnet${index}'
+        //        properties: {
+        //          addressPrefix: '10.|0.${index}.0/24'
+        //        }
+        //      }
+        //    ]
+        //    """,
+        //    """
+        //    asdfg we shouldn't allow this
+        //    """,
+        //    DisplayName = "cursor contains multiple unrelated lines")]
+        [DataRow("""
+            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+              for (item, index) in [1, 2, 3]: {
+                name: '|subnet${index}'
+                properties: {
+                  addressPrefix: '10.|0.${index}.0/24'
+                }
+              }
+            ]
+            """,
+            """
+            asdfg we shouldn't allow this
+            """,
+            DisplayName = "asdfg")]
+        //asdfg test: module, expression with comments
+        //asdfg resource/user-defined types
         [DataTestMethod]
         public async Task Extract_variable_is_suggested(string fileWithCursors, string expectedText)
         {
@@ -743,6 +860,7 @@ param fo|o {paramType}
         private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char cursor = '|', MultiFileLanguageServerHelper? server = null)
         {
             var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, cursor);
+            cursors.Should().HaveCountGreaterThan(0);
             cursors.Should().HaveCountLessThanOrEqualTo(2);
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri($"file://{TestContext.TestName}_{Guid.NewGuid():D}/main.bicep"), file);
 

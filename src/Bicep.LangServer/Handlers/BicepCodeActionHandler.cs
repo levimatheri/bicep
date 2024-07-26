@@ -25,6 +25,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using static Bicep.LanguageServer.Completions.BicepCompletionContext;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Bicep.LanguageServer.Handlers
@@ -121,20 +122,33 @@ namespace Bicep.LanguageServer.Handlers
             commandOrCodeActions.AddRange(codeFixes);
 
             if (SyntaxMatcher.FindLastNodeOfType<ExpressionSyntax, ExpressionSyntax>(matchingNodes) is (ExpressionSyntax value, _)
-                && SyntaxMatcher.FindLastNodeOfType<StatementSyntax, StatementSyntax>(matchingNodes) is (StatementSyntax statementSyntax, _))
+                && semanticModel.Binder.GetNearestAncestor<StatementSyntax>(value) is StatementSyntax statementSyntax)
             {
                 var varName = "newVar"; //asdfg
-                var propertySyntax = SyntaxMatcher.FindLastNodeOfType<ObjectPropertySyntax>(matchingNodes);
-                if (propertySyntax is (ObjectPropertySyntax propertyAccessSyntax, _)
-                    && propertyAccessSyntax.TryGetKeyText() is string propertyName)
+                if (semanticModel.Binder.GetNearestAncestor<ObjectPropertySyntax>(value) is { } propertySyntax
+                    && propertySyntax.TryGetKeyText() is string propertyName)
                 {
                     varName = propertyName;
+
                 }
+
+                var activeScopes = ActiveScopesVisitor.GetActiveScopes(compilation.GetEntrypointSemanticModel().Root, value.Span.Position);
+                for (int i = 1; i < int.MaxValue; ++i)
+                {
+                    var tryingName = $"{varName}{(i < 2 ? "" : i)}";
+                    if (!activeScopes.Any(s => s.GetDeclarationsByName(tryingName).Any()))
+                    {
+                        varName = tryingName;
+                        break;
+                    }
+                }
+
+                //var a = semanticModel.Binder.GetReferencedSymbolClosureFor(semanticModel.Binder.Bindings.First().Value.);
+                //var a = semanticModel.DeclaredResources
 
                 var declarationSyntax = SyntaxFactory.CreateVariableDeclaration(varName, value);
                 //var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
-                var declarationText = $"{declarationSyntax}\n";
-                //asdfg this isn't correct - what if it's inside an array value for instance
+                var declarationText = $"{declarationSyntax}\n"; //asdfg \n okay?
                 var statementLine = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, statementSyntax.Span.Position).line;
                 var declarationReplacementSpan = new TextSpan(
                     TextCoordinateConverter.GetOffset(compilationContext.LineStarts, statementLine, 0),
@@ -148,10 +162,10 @@ namespace Bicep.LanguageServer.Handlers
                     new CodeReplacement(declarationReplacementSpan, declarationText));
                 commandOrCodeActions.Add(CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
             }
-            
-            
 
-            
+
+
+
             return new(commandOrCodeActions);
         }
 
