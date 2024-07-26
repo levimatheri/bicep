@@ -45,6 +45,11 @@ namespace Bicep.Core.Parsing
 
         public override string ToString() => $"[{Position}:{Position + Length}]";
 
+        public TextSpan MoveBy(int offset)
+        {
+            return new TextSpan(this.Position +offset, this.Length);
+        }
+
         public bool Contains(int offset) => offset >= this.Position && offset < this.Position + this.Length;
 
         public bool ContainsInclusive(int offset) => offset >= this.Position && offset <= this.Position + this.Length;

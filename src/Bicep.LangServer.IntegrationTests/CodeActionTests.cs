@@ -1,14 +1,18 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Bicep.Core.CodeAction;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
 using Bicep.Core.Parsing;
 using Bicep.Core.Samples;
+using Bicep.Core.Syntax;
 using Bicep.Core.Text;
 using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Assertions;
+using Bicep.Core.UnitTests.PrettyPrintV2;
+using Bicep.Core.UnitTests.Serialization;
 using Bicep.Core.UnitTests.Utils;
 using Bicep.Core.Workspaces;
 using Bicep.LangServer.IntegrationTests.Helpers;
@@ -40,6 +44,7 @@ namespace Bicep.LangServer.IntegrationTests
         private const string RemoveUnusedExistingResourceTitle = "Remove unused existing resource";
         private const string RemoveUnusedParameterTitle = "Remove unused parameter";
         private const string RemoveUnusedVariableTitle = "Remove unused variable";
+        private const string ExtractToVariableTitle = "Extract to variable";
 
         private static readonly SharedLanguageHelperManager DefaultServer = new();
 
@@ -588,6 +593,140 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
             codeActions.Should().NotContain(x => x.Title.StartsWith(RemoveUnusedParameterTitle));
         }
 
+        [DataRow("""
+            var a = '|b'
+            """,
+            """
+            var newVar = 'b'
+            var a = newVar
+            """)]
+        [DataRow("""
+            var a = 'a'
+            var b = '|b'
+            var c = 'c'
+            """,
+            """
+            var a = 'a'
+            var newVar = 'b'
+            var b = newVar
+            var c = 'c'
+            """)]
+        [DataRow("""
+            var a = 1 + |2
+            """,
+            """
+            var newVar = 2
+            var a = 1 + newVar
+            """)]
+        [DataRow("""
+            var a = |1 + 2|
+            """,
+            """
+            var newVar = 1 + 2
+            var a = newVar
+            """)]
+        [DataRow("""
+            var a = |1 +| 2
+            """,
+            """
+            var newVar = 1 + 2
+            var a = newVar
+            """)]
+        [DataRow("""
+            var a = 1 |+ 2
+            """,
+            """
+            var newVar = 1 + 2
+            var a = newVar
+            """)]
+        [DataRow("""
+            var a = 1 |+ 2 + 3 |+ 4
+            """,
+            """
+            var newVar = 1 + 2 + 3 + 4
+            var a = newVar
+            """)]
+        //asdfg
+        [DataRow("""
+            // comment 1
+            @secure
+            // comment 2
+            param a = '|a'
+            """,
+            """
+            // comment 1
+            var newVar = 'a'
+            @secure
+            // comment 2
+            param a = newVar
+            """,
+            DisplayName = "Preceding lines")]
+        [DataRow("""
+            var a = 1
+            var b = [
+              'a'
+              1 + |2|
+              'c'
+            ]
+            """,
+            """
+            var a = 1
+            var newVar = 2
+            var b = [
+              'a'
+              1 + newVar
+              'c'
+            ]
+            """,
+            DisplayName = "Inside a data structure")]
+        //asdfg should be named 'location'
+        [DataRow("""
+            // My comment here
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+              name: 'name'
+              location: |'westus'
+              kind: 'StorageV2'
+              sku: {
+                name: 'Premium_LRS'
+              }
+            }
+            """,
+            """
+            // My comment here
+            var newVar = 'westus'
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+              name: 'name'
+              location: |'westus'
+              kind: 'StorageV2'
+              sku: {
+                name: 'Premium_LRS'
+              }
+            }            
+            """)]
+        //asdfg renaming conflicts
+        //[DataRow("""
+        //    var a = '|b'
+        //    param newVar string
+        //    """,
+        //    """
+        //    var newVar2 = 'b'
+        //    var a = newVar2
+        //    param newVar string
+        //    """)
+        //]
+        //asdfg test: inside variable block, loop, LocalVariableSyntax etc, module
+        [DataTestMethod]
+        public async Task Extract_variable_is_suggested(string fileWithCursors, string expectedText)
+        {
+            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
+            var extract = codeActions.FirstOrDefault(x => x.Title.StartsWith(ExtractToVariableTitle));
+            extract.Should().NotBeNull("should contain an extract to variable action");
+            extract!.Kind.Should().Be(CodeActionKind.RefactorExtract);
+
+            var updatedFile = ApplyCodeAction(bicepFile, extract);
+            updatedFile.Should().HaveSourceText(expectedText);
+        }
+
         private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunParameterSyntaxTest(string paramType, string? decorator = null)
         {
             string fileWithCursors = @$"
@@ -606,12 +745,13 @@ param fo|o {paramType}
         private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char cursor = '|', MultiFileLanguageServerHelper? server = null)
         {
             var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, cursor);
+            cursors.Should().HaveCountLessThanOrEqualTo(2);
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri($"file://{TestContext.TestName}_{Guid.NewGuid():D}/main.bicep"), file);
 
             server ??= await DefaultServer.GetAsync();
             await server.OpenFileOnceAsync(TestContext, file, bicepFile.FileUri);
 
-            var codeActions = await RequestCodeActions(server.Client, bicepFile, cursors.Single());
+            var codeActions = await RequestCodeActions(server.Client, bicepFile, cursors[0], cursors.Count > 1 ? cursors[1] : null);
             return (codeActions, bicepFile);
         }
 
@@ -642,10 +782,11 @@ param fo|o {paramType}
             return DataSets.NonStressDataSets.ToDynamicTestData();
         }
 
-        private static async Task<IEnumerable<CodeAction>> RequestCodeActions(ILanguageClient client, BicepFile bicepFile, int cursor)
+        private static async Task<IEnumerable<CodeAction>> RequestCodeActions(ILanguageClient client, BicepFile bicepFile, int startCursor, int? endCursor = null)//asdfg extract
         {
-            var startPosition = TextCoordinateConverter.GetPosition(bicepFile.LineStarts, cursor);
-            var endPosition = TextCoordinateConverter.GetPosition(bicepFile.LineStarts, cursor);
+            var startPosition = TextCoordinateConverter.GetPosition(bicepFile.LineStarts, startCursor);
+            var endPosition = TextCoordinateConverter.GetPosition(bicepFile.LineStarts, endCursor.GetValueOrDefault(startCursor));
+            endPosition.Should().BeGreaterThanOrEqualTo(startPosition);
 
             var result = await client.RequestCodeAction(new CodeActionParams
             {
@@ -656,36 +797,55 @@ param fo|o {paramType}
             return result!.Select(x => x.CodeAction).WhereNotNull();
         }
 
-        private static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction, params string[] tabStops)
+        private static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction, params string[] tabStops) //asdfg extract
         {
             // only support a small subset of possible edits for now - can always expand this later on
             codeAction.Edit!.Changes.Should().NotBeNull();
             codeAction.Edit.Changes.Should().HaveCount(1);
             codeAction.Edit.Changes.Should().ContainKey(bicepFile.FileUri);
 
-            var changes = codeAction.Edit.Changes![bicepFile.FileUri];
-            changes.Should().HaveCount(1);
+            var bicepText = bicepFile.ProgramSyntax.ToString();
+            var changes = codeAction.Edit.Changes![bicepFile.FileUri].ToArray();
 
-            var replacement = changes.Single();
+            for (int i = 0; i < changes.Length; ++i)
+            {
+                for (int j = i + 1; j < changes.Length; ++j)
+                {
+                    Range.AreIntersecting(changes[i].Range, changes[j].Range).Should().BeFalse("Edits must be non-overlapping (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textEdit)");
+                }
+            }
 
-            var start = PositionHelper.GetOffset(bicepFile.LineStarts, replacement.Range.Start);
-            var end = PositionHelper.GetOffset(bicepFile.LineStarts, replacement.Range.End);
-            var textToInsert = replacement.NewText;
+            // Convert to our coordinates
+            var lineStarts = TextCoordinateConverter.GetLineStarts(bicepText);
+            var convertedChanges = changes.Select(c =>
+                (NewText: c.NewText, Span: c.Range.ToTextSpan(lineStarts)))
+                .ToArray();
 
-            // the handler can contain tabs. convert to double space to simplify printing.
-            textToInsert = textToInsert.Replace("\t", "  ");
+            for (var i = 0; i < changes.Length; ++i)
+            { //asdfg test?
+                var replacement = convertedChanges[i];
 
-            var originalFile = bicepFile.ProgramSyntax.ToString();
-            var replaced = originalFile.Substring(0, start) + textToInsert + originalFile.Substring(end);
+                var start = replacement.Span.Position;
+                var end = replacement.Span.Position + replacement.Span.Length;
+                var textToInsert = replacement.NewText;
 
-            return SourceFileFactory.CreateBicepFile(bicepFile.FileUri, replaced);
-        }
+                // the handler can contain tabs. convert to double space to simplify printing.
+                textToInsert = textToInsert.Replace("\t", "  ");
 
-        private static CodeAction GetSingleCodeAction(IEnumerable<CodeAction> codeActions, string codeActionName)
-        {
-            codeActions.Should().ContainSingle(x => x.Title == codeActionName);
+                bicepText = bicepText.Substring(0, start) + textToInsert + bicepText.Substring(end);
 
-            return codeActions.Single(x => x.Title == codeActionName);
+                // Adjust indices for the remaining changes to account for this replacement
+                int replacementOffset = textToInsert.Length - (end - start);
+                for (int j = i + 1; j < changes.Length; ++j)
+                {
+                    if (convertedChanges[j].Span.Position >= replacement.Span.Position)
+                    {
+                        convertedChanges[j].Span = convertedChanges[j].Span.MoveBy(replacementOffset);
+                    }
+                }
+            }
+
+            return SourceFileFactory.CreateBicepFile(bicepFile.FileUri, bicepText);
         }
 
         private static async Task<BicepFile> FormatDocument(ILanguageClient client, BicepFile bicepFile)

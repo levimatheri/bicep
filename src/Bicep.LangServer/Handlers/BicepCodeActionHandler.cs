@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System.Collections.Immutable;
+using System.Security.Cryptography.Xml;
 using Bicep.Core;
 using Bicep.Core.Analyzers;
 using Bicep.Core.CodeAction;
@@ -10,6 +11,7 @@ using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
 using Bicep.Core.Parsing;
 using Bicep.Core.Semantics;
+using Bicep.Core.Syntax;
 using Bicep.Core.Text;
 using Bicep.Core.Workspaces;
 using Bicep.LanguageServer.CompilationManager;
@@ -54,7 +56,7 @@ namespace Bicep.LanguageServer.Handlers
                 return null;
             }
 
-            var requestStartOffset = PositionHelper.GetOffset(compilationContext.LineStarts, request.Range.Start);
+            var requestStartOffset = PositionHelper.GetOffset(compilationContext.LineStarts, request.Range.Start); //asdfg refactor (and below)
             var requestEndOffset = request.Range.Start != request.Range.End
                 ? PositionHelper.GetOffset(compilationContext.LineStarts, request.Range.End)
                 : requestStartOffset;
@@ -69,7 +71,7 @@ namespace Bicep.LanguageServer.Handlers
                     fixable.Span.ContainsInclusive(requestEndOffset) ||
                     (requestStartOffset <= fixable.Span.Position && fixable.GetEndPosition() <= requestEndOffset))
                 .OfType<IFixable>()
-                .SelectMany(fixable => fixable.Fixes.Select(fix => CreateCodeFix(request.TextDocument.Uri, compilationContext, fix)));
+                .SelectMany(fixable => fixable.Fixes.Select(fix => CreateCodeAction(request.TextDocument.Uri, compilationContext, fix)));
 
             List<CommandOrCodeAction> commandOrCodeActions = new();
 
@@ -115,15 +117,49 @@ namespace Bicep.LanguageServer.Handlers
             var matchingNodes = SyntaxMatcher.FindNodesInRange(compilationContext.ProgramSyntax, requestStartOffset, requestEndOffset);
             var codeFixes = GetDecoratorCodeFixProviders(semanticModel)
                 .SelectMany(provider => provider.GetFixes(semanticModel, matchingNodes))
-                .Select(fix => CreateCodeFix(request.TextDocument.Uri, compilationContext, fix));
+                .Select(fix => CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
             commandOrCodeActions.AddRange(codeFixes);
 
+            if (SyntaxMatcher.FindLastNodeOfType<ExpressionSyntax, ExpressionSyntax>(matchingNodes) is (ExpressionSyntax value, _)
+                && SyntaxMatcher.FindLastNodeOfType<StatementSyntax, StatementSyntax>(matchingNodes) is (StatementSyntax statementSyntax, _))
+            {
+                var varName = "newVar"; //asdfg
+                var declarationSyntax = SyntaxFactory.CreateVariableDeclaration(varName, value);
+                //var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
+                var declarationText = $"{declarationSyntax}\n";
+                //asdfg this isn't correct - what if it's inside an array value for instance
+                var statementLine = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, statementSyntax.Span.Position).line;
+                var declarationReplacementSpan = new TextSpan(
+                    TextCoordinateConverter.GetOffset(compilationContext.LineStarts, statementLine, 0),
+                    0);
+
+                var fix = new CodeFix(
+                    "Extract to variable",
+                    isPreferred: false,
+                    CodeFixKind.RefactorExtract,
+                    new CodeReplacement(value.Span, varName),
+                    new CodeReplacement(declarationReplacementSpan, declarationText));
+                commandOrCodeActions.Add(CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
+            }
+            
+            
+
+            
             return new(commandOrCodeActions);
         }
 
         private IEnumerable<DecoratorCodeFixProvider> GetDecoratorCodeFixProviders(SemanticModel semanticModel)
         {
             var nsResolver = semanticModel.Binder.NamespaceResolver;
+            var a = nsResolver.GetNamespaceNames().Select(nsResolver.TryGetNamespace).WhereNotNull().ToArray();
+            var b = a.SelectMany(ns => ns.DecoratorResolver.GetKnownDecoratorFunctions().Select(kvp => (ns, kvp.Key, kvp.Value))).ToArray();
+            var c = b.ToLookup(t => t.Key);
+            var d = c.SelectMany(grouping => grouping.Count() > 1
+                    ? grouping.SelectMany(tuple => tuple.Value.Overloads.Select(tuple.ns.DecoratorResolver.TryGetDecorator).WhereNotNull().Select(decorator => ($"{tuple.ns.Name}.{tuple.Key}", decorator)))
+                    : grouping.SelectMany(tuple => tuple.Value.Overloads.Select(tuple.ns.DecoratorResolver.TryGetDecorator).WhereNotNull().Select(decorator => (tuple.Key, decorator))))
+                .ToArray();
+            var e = d.Select(t => new DecoratorCodeFixProvider(t.Item1, t.decorator)).ToArray();
+
             return nsResolver.GetNamespaceNames().Select(nsResolver.TryGetNamespace).WhereNotNull()
                 .SelectMany(ns => ns.DecoratorResolver.GetKnownDecoratorFunctions().Select(kvp => (ns, kvp.Key, kvp.Value)))
                 .ToLookup(t => t.Key)
@@ -209,12 +245,13 @@ namespace Bicep.LanguageServer.Handlers
             return Task.FromResult(request);
         }
 
-        private static CommandOrCodeAction CreateCodeFix(DocumentUri uri, CompilationContext context, CodeFix fix)
+        private static CommandOrCodeAction CreateCodeAction(DocumentUri uri, CompilationContext context, CodeFix fix)
         {
             var codeActionKind = fix.Kind switch
             {
                 CodeFixKind.QuickFix => CodeActionKind.QuickFix,
                 CodeFixKind.Refactor => CodeActionKind.Refactor,
+                CodeFixKind.RefactorExtract => CodeActionKind.RefactorExtract,
                 _ => CodeActionKind.Empty,
             };
 
