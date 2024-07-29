@@ -30,10 +30,8 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 namespace Bicep.LangServer.IntegrationTests
 {
     [TestClass]
-    public partial class CodeActionTests
+    public partial class CodeActionTests : CodeActionTestBase
     {
-        private static ServiceBuilder Services => new();
-
         private const string SecureTitle = "Add @secure";
         private const string DescriptionTitle = "Add @description";
         private const string AllowedTitle = "Add @allowed";
@@ -44,38 +42,6 @@ namespace Bicep.LangServer.IntegrationTests
         private const string RemoveUnusedExistingResourceTitle = "Remove unused existing resource";
         private const string RemoveUnusedParameterTitle = "Remove unused parameter";
         private const string RemoveUnusedVariableTitle = "Remove unused variable";
-
-        private static readonly SharedLanguageHelperManager DefaultServer = new();
-
-        private static readonly SharedLanguageHelperManager ServerWithFileResolver = new();
-
-        private static readonly SharedLanguageHelperManager ServerWithBuiltInTypes = new();
-
-        private static readonly SharedLanguageHelperManager ServerWithNamespaceProvider = new();
-
-        [NotNull]
-        public TestContext? TestContext { get; set; }
-
-        [ClassInitialize(InheritanceBehavior.BeforeEachDerivedClass)]
-        public static void ClassInitialize(TestContext testContext)
-        {
-            DefaultServer.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
-
-            ServerWithFileResolver.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
-
-            ServerWithBuiltInTypes.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, services => services.WithNamespaceProvider(BuiltInTestTypes.Create())));
-
-            ServerWithNamespaceProvider.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, services => services.WithNamespaceProvider(BicepTestConstants.NamespaceProvider)));
-        }
-
-        [ClassCleanup(InheritanceBehavior.BeforeEachDerivedClass)]
-        public static async Task ClassCleanup()
-        {
-            await DefaultServer.DisposeAsync();
-            await ServerWithFileResolver.DisposeAsync();
-            await ServerWithBuiltInTypes.DisposeAsync();
-            await ServerWithNamespaceProvider.DisposeAsync();
-        }
 
         [DataTestMethod]
         [DynamicData(nameof(GetData), DynamicDataSourceType.Method, DynamicDataDisplayNameDeclaringType = typeof(DataSet), DynamicDataDisplayName = nameof(DataSet.GetDisplayName))]
@@ -609,111 +575,9 @@ param fo|o {paramType}
             return await RunSyntaxTest(fileWithCursors, '|');
         }
 
-        protected async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char cursor = '|', MultiFileLanguageServerHelper? server = null)
-        {
-            var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, cursor);
-            cursors.Should().HaveCountGreaterThan(0);
-            cursors.Should().HaveCountLessThanOrEqualTo(2);
-            var bicepFile = SourceFileFactory.CreateBicepFile(new Uri($"file://{TestContext.TestName}_{Guid.NewGuid():D}/main.bicep"), file);
-
-            server ??= await DefaultServer.GetAsync();
-            await server.OpenFileOnceAsync(TestContext, file, bicepFile.FileUri);
-
-            var codeActions = await RequestCodeActions(server.Client, bicepFile, cursors[0], cursors.Count > 1 ? cursors[1] : null);
-            return (codeActions, bicepFile);
-        }
-
-        private static IEnumerable<TextSpan> GetOverlappingSpans(TextSpan span)
-        {
-            // NOTE: These code assumes there are no errors in the code that are exactly adject to each other or that overlap
-
-            // Same span.
-            yield return span;
-
-            // Adjacent spans before.
-            int startOffset = Math.Max(0, span.Position - 1);
-            yield return new TextSpan(startOffset, 1);
-            yield return new TextSpan(span.Position, 0);
-
-            // Adjacent spans after.
-            yield return new TextSpan(span.GetEndPosition(), 1);
-            yield return new TextSpan(span.GetEndPosition(), 0);
-
-            // Overlapping spans.
-            yield return new TextSpan(startOffset, 2);
-            yield return new TextSpan(span.Position + 1, span.Length);
-            yield return new TextSpan(startOffset, span.Length + 1);
-        }
-
         private static IEnumerable<object[]> GetData()
         {
             return DataSets.NonStressDataSets.ToDynamicTestData();
-        }
-
-        private static async Task<IEnumerable<CodeAction>> RequestCodeActions(ILanguageClient client, BicepFile bicepFile, int startCursor, int? endCursor = null)//asdfg extract
-        {
-            var startPosition = TextCoordinateConverter.GetPosition(bicepFile.LineStarts, startCursor);
-            var endPosition = TextCoordinateConverter.GetPosition(bicepFile.LineStarts, endCursor.GetValueOrDefault(startCursor));
-            endPosition.Should().BeGreaterThanOrEqualTo(startPosition);
-
-            var result = await client.RequestCodeAction(new CodeActionParams
-            {
-                TextDocument = new TextDocumentIdentifier(bicepFile.FileUri),
-                Range = new Range(startPosition, endPosition),
-            });
-
-            return result!.Select(x => x.CodeAction).WhereNotNull();
-        }
-
-        protected static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction, params string[] tabStops) //asdfg extract
-        {
-            // only support a small subset of possible edits for now - can always expand this later on
-            codeAction.Edit!.Changes.Should().NotBeNull();
-            codeAction.Edit.Changes.Should().HaveCount(1);
-            codeAction.Edit.Changes.Should().ContainKey(bicepFile.FileUri);
-
-            var bicepText = bicepFile.ProgramSyntax.ToString();
-            var changes = codeAction.Edit.Changes![bicepFile.FileUri].ToArray();
-
-            for (int i = 0; i < changes.Length; ++i)
-            {
-                for (int j = i + 1; j < changes.Length; ++j)
-                {
-                    Range.AreIntersecting(changes[i].Range, changes[j].Range).Should().BeFalse("Edits must be non-overlapping (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textEdit)");
-                }
-            }
-
-            // Convert to our coordinates
-            var lineStarts = TextCoordinateConverter.GetLineStarts(bicepText);
-            var convertedChanges = changes.Select(c =>
-                (NewText: c.NewText, Span: c.Range.ToTextSpan(lineStarts)))
-                .ToArray();
-
-            for (var i = 0; i < changes.Length; ++i)
-            { //asdfg test?
-                var replacement = convertedChanges[i];
-
-                var start = replacement.Span.Position;
-                var end = replacement.Span.Position + replacement.Span.Length;
-                var textToInsert = replacement.NewText;
-
-                // the handler can contain tabs. convert to double space to simplify printing.
-                textToInsert = textToInsert.Replace("\t", "  ");
-
-                bicepText = bicepText.Substring(0, start) + textToInsert + bicepText.Substring(end);
-
-                // Adjust indices for the remaining changes to account for this replacement
-                int replacementOffset = textToInsert.Length - (end - start);
-                for (int j = i + 1; j < changes.Length; ++j)
-                {
-                    if (convertedChanges[j].Span.Position >= replacement.Span.Position)
-                    {
-                        convertedChanges[j].Span = convertedChanges[j].Span.MoveBy(replacementOffset);
-                    }
-                }
-            }
-
-            return SourceFileFactory.CreateBicepFile(bicepFile.FileUri, bicepText);
         }
 
         private static async Task<BicepFile> FormatDocument(ILanguageClient client, BicepFile bicepFile)

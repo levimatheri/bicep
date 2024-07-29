@@ -88,9 +88,17 @@ namespace Bicep.Core.UnitTests.Utils
             return (file, cursors.Single());
         }
 
-        public static (string file, IReadOnlyList<TextSpan> selections) GetFileWithSelections(string fileWithSelections, string emptySelectionCursor = "|", string selectionStartCursor = "<<", string selectionEndCursor = ">>")
+        public static (string file, TextSpan selection) GetFileWithSingleSelection(string fileWithSelections, char emptySelectionCursor = '|', string selectionStartCursor = "<<", string selectionEndCursor = ">>")
         {
-            fileWithSelections = fileWithSelections.Replace(emptySelectionCursor, selectionStartCursor + selectionEndCursor);
+            var (file, selections) = GetFileWithSelections(fileWithSelections, emptySelectionCursor, selectionStartCursor, selectionEndCursor);
+            selections.Should().HaveCount(1);
+
+            return (file, selections.Single());
+        }
+
+        public static (string file, IReadOnlyList<TextSpan> selections) GetFileWithSelections(string fileWithSelections, char emptySelectionCursor = '|', string selectionStartCursor = "<<", string selectionEndCursor = ">>")
+        {
+            fileWithSelections = fileWithSelections.Replace(emptySelectionCursor.ToString(), selectionStartCursor + selectionEndCursor);
 
             var fileWithoutSelections = fileWithSelections;
 

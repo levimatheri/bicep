@@ -13,7 +13,7 @@ namespace Bicep.Core.UnitTests.Utils
         [TestMethod]
         public void StartAndEndCursorsWithDifferentLengths()
         {
-            var (file, selections) = ParserHelper.GetFileWithSelections("This is *a <!!file>> with <!!selections>>", "*", "<!!", ">>");
+            var (file, selections) = ParserHelper.GetFileWithSelections("This is *a <!!file>> with <!!selections>>", '*', "<!!", ">>");
             file.Should().Be("This is a file with selections");
             selections.Should().HaveCount(3);
 
