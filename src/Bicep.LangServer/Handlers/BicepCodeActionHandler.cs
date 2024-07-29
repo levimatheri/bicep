@@ -11,6 +11,7 @@ using Bicep.Core.CodeAction.Fixes;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
 using Bicep.Core.Parsing;
+using Bicep.Core.PrettyPrintV2;
 using Bicep.Core.Semantics;
 using Bicep.Core.Syntax;
 using Bicep.Core.Text;
@@ -34,7 +35,7 @@ namespace Bicep.LanguageServer.Handlers
     // Provides code actions/fixes for a range in a Bicep document
     public class BicepCodeActionHandler : CodeActionHandlerBase
     {
-        private const int MaxExpressionLengthInAction = 50;
+        private const int MaxExpressionLengthInAction = 100;
         private readonly IClientCapabilitiesProvider clientCapabilitiesProvider;
         private readonly ICompilationManager compilationManager;
         private readonly DocumentSelectorFactory documentSelectorFactory;
@@ -124,14 +125,14 @@ namespace Bicep.LanguageServer.Handlers
             commandOrCodeActions.AddRange(codeFixes);
 
             commandOrCodeActions.AddRange(
-                GetExtractionRefactoringFixes(request, compilationContext, compilation, semanticModel, nodesInRange)
+                GetExtractionRefactorings(request, compilationContext, compilation, semanticModel, nodesInRange)
                 .Select(fix => CreateCodeAction(documentUri, compilationContext, fix)));
 
             return new(commandOrCodeActions);
         }
 
         // asdfg all params needed?
-        private static IEnumerable<CodeFix> GetExtractionRefactoringFixes(CodeActionParams request, CompilationContext compilationContext, Compilation compilation, SemanticModel semanticModel, List<SyntaxBase> nodesInRange)
+        private static IEnumerable<CodeFix> GetExtractionRefactorings(CodeActionParams request, CompilationContext compilationContext, Compilation compilation, SemanticModel semanticModel, List<SyntaxBase> nodesInRange)
         {
             if (SyntaxMatcher.FindLastNodeOfType<ExpressionSyntax, ExpressionSyntax>(nodesInRange) is not (ExpressionSyntax expressionSyntax, _))
             {
@@ -140,25 +141,26 @@ namespace Bicep.LanguageServer.Handlers
 
             var varName = "newVar"; //asdfg
 
-            if (semanticModel.Binder.GetNearestAncestor<ObjectPropertySyntax>(expressionSyntax, includeSelf: true) is { } propertySyntax)
+            if (semanticModel.Binder.GetParent(expressionSyntax) is ObjectPropertySyntax propertySyntax
+                && propertySyntax.TryGetKeyText() is string propertyName)
             {
-                if (expressionSyntax == propertySyntax) //asdfg comment
-                {
-                    var propertyValueSyntax = propertySyntax.Value as ExpressionSyntax;
-                    if (propertyValueSyntax != null)
-                    {
-                        expressionSyntax = propertyValueSyntax;
-                    }
-                    else
-                    {
-                        yield break;
-                    }
-                }
+                //asdfg comment
+                varName = propertyName;
+            }
+            else if (expressionSyntax is ObjectPropertySyntax propertySyntax2
+                && propertySyntax2.TryGetKeyText() is string propertyName2)
+            {
+                //asdfg combine with last
+                varName = propertyName2;
 
-                if (propertySyntax.TryGetKeyText() is string propertyName)
+                var propertyValueSyntax = propertySyntax2.Value as ExpressionSyntax;
+                if (propertyValueSyntax != null)
                 {
-                    //asdfg comment
-                    varName = propertyName;
+                    expressionSyntax = propertyValueSyntax;
+                }
+                else
+                {
+                    yield break;
                 }
             }
 
@@ -180,7 +182,10 @@ namespace Bicep.LanguageServer.Handlers
 
             var declarationSyntax = SyntaxFactory.CreateVariableDeclaration(varName, expressionSyntax);
             //var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
-            var declarationText = $"{declarationSyntax}\n"; //asdfg \n okay?
+            //var declarationText = SyntaxStringifier.Stringify(declarationSyntax) + "\n"; //asdfg \n okay?
+            var declarationText = PrettyPrinterV2.PrintValid(declarationSyntax, PrettyPrinterV2Options.Default)
+                + "\n"; //asdfg \n okay?
+            //asdfg var declarationText = $"{declarationSyntax}\n"; 
             var statementLine = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, statementSyntax.Span.Position).line;
             var declarationReplacementSpan = new TextSpan(
                 TextCoordinateConverter.GetOffset(compilationContext.LineStarts, statementLine, 0),
@@ -197,7 +202,9 @@ namespace Bicep.LanguageServer.Handlers
         private static string GetQuotedExpressionText(ExpressionSyntax expressionSyntax)
         {
             return "\""
-                + SyntaxStringifier.Stringify(expressionSyntax, newlineReplacement: " ").Truncate(MaxExpressionLengthInAction)
+                + SyntaxStringifier.Stringify(expressionSyntax, newlineReplacement: " ")
+                    .Truncate(MaxExpressionLengthInAction)
+                    .Trim()
                 + "\"";
         }
 

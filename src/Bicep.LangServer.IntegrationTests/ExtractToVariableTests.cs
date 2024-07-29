@@ -271,18 +271,18 @@ namespace Bicep.LangServer.IntegrationTests
                 """,
                 """
                 var properties = {
-                    // Entire properties object selected
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: {
-                      fileUris: [
-                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                      ]
-                      commandToExecute: commandToExecute
-                    }
+                  // Entire properties object selected
+                  publisher: 'Microsoft.Compute'
+                  type: 'CustomScriptExtension'
+                  typeHandlerVersion: '1.8'
+                  autoUpgradeMinorVersion: true
+                  settings: {
+                    fileUris: [
+                      uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                    ]
+                    commandToExecute: commandToExecute
                   }
+                }
                 resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
                   parent: vmName_resource
                   name: 'cse-windows'
@@ -367,6 +367,17 @@ namespace Bicep.LangServer.IntegrationTests
             ]
             """,
             DisplayName = "asdfg_InvalidSelections: cursor contains multiple unrelated lines")]
+        [DataRow("""
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: {
+                osProfile: {
+                 | computerName: vmName
+                }
+              }
+            }
+            """)]
         public async Task InvalidSelections(string fileWithCursors)
         {
             // Expect no code actions offered
@@ -374,7 +385,7 @@ namespace Bicep.LangServer.IntegrationTests
         }
 
         [TestMethod]
-        public async Task ShouldHandleJustPropertyKeySelected()
+        public async Task IfJustPropertyNameSelected_ThenExtractPropertyValue()
         {
             await RunExtractToVariableTest("""
                 resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
@@ -396,12 +407,13 @@ namespace Bicep.LangServer.IntegrationTests
                 }                
                 """,
                 """
-                var settings = { // Property key selected - extract just the value
-                      fileUris: [
-                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                      ]
-                      commandToExecute: commandToExecute
-                    }
+                var settings = {
+                  // Property key selected - extract just the value
+                  fileUris: [
+                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                  ]
+                  commandToExecute: commandToExecute
+                }
                 resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
                   parent: vmName_resource
                   name: 'cse-windows'
@@ -415,6 +427,168 @@ namespace Bicep.LangServer.IntegrationTests
                   }
                 }                
                 """);
+        }
+
+        [DataTestMethod]
+        [DataRow("""
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: {
+                osProfile: {
+                 | computerName: vmName
+                }
+              }
+            }
+            """,
+            null,
+            DisplayName = "Empty selection in object")]
+        [DataRow("""
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: <<{
+                osProfile: {
+                 computerName: vmName
+                }
+              }>>
+            }
+            """,
+            """
+            var properties = {
+              osProfile: {
+                computerName: vmName
+              }
+            }
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: properties
+            }
+            """,
+            DisplayName = "Full object selected")]
+        [DataRow("""
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: { <<
+                osProfile: {
+                 computerName: vmName
+                }
+              }>>
+            }
+            """,
+            """
+            var properties = {
+                osProfile: {
+                 computerName: vmName
+                }
+              }
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: properties
+            }
+            """,
+            DisplayName = "Partial object selected")]
+        public async Task OnlyPickUpObjectsAndArraysIfNonEmptySelection(string fileWithCursors, string? expectedText)
+        {
+            // Expect no code actions offered
+            await RunExtractToVariableTest(fileWithCursors, expectedText);
+        }
+
+        [DataTestMethod]
+        [DataRow("""
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: {
+                osProfile: {
+                  computerName: vmName
+                  myproperty: {
+                    abc: [
+                      {
+                        def: [
+                          'ghi'
+                          '|jkl'
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }            
+            """,
+            """
+            var newVar = 'jkl'
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: {
+                osProfile: {
+                  computerName: vmName
+                  myproperty: {
+                    abc: [
+                      {
+                        def: [
+                          'ghi'
+                          newVar
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }            
+            """,
+            DisplayName = "Array element, don't pick up property name")]
+        [DataRow("""
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: {
+                osProfile: {
+                  computerName: vmName
+                  myproperty: {
+                    abc: <<[
+                      {
+                        def: [
+                          'ghi'
+                          'jkl'
+                        ]
+                      }
+                    ]>>
+                  }
+                }
+              }
+            }            
+            """,
+            """
+            var abc = [
+              {
+                def: [
+                  'ghi'
+                  'jkl'
+                ]
+              }
+            ]
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+              name: vmName
+              location: location
+              properties: {
+                osProfile: {
+                  computerName: vmName
+                  myproperty: {
+                    abc: abc
+                  }
+                }
+              }
+            }            
+            """,
+            DisplayName = "Full property value as array, pick up property name")]      
+        public async Task PickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithCursors, string expectedText)
+        {
+            await RunExtractToVariableTest(fileWithCursors, expectedText);
         }
 
         private async Task RunExtractToVariableTest(string fileWithCursors, string? expectedText)

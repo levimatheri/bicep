@@ -47,7 +47,7 @@ namespace Bicep.Core.Syntax
         /// <param name="syntax">The syntax node.</param>
         /// <typeparam name="TSyntax">The type of node to query.</typeparam>
         /// <returns>The nearest ancestor or <c>null</c>.</returns>
-        public static TSyntax? GetNearestAncestor<TSyntax>(this ISyntaxHierarchy hierarchy, SyntaxBase syntax, bool includeSelf = false)
+        public static TSyntax? GetNearestAncestor<TSyntax>(this ISyntaxHierarchy hierarchy, SyntaxBase syntax, bool includeSelf = false) //adsfg not needed?
             where TSyntax : SyntaxBase
             => EnumerateAncestorsUpwards(hierarchy, syntax, includeSelf)
                 .OfType<TSyntax>()
