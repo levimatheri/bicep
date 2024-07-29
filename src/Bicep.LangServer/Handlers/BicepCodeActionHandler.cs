@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.Xml;
 using Bicep.Core;
 using Bicep.Core.Analyzers;
@@ -115,58 +116,81 @@ namespace Bicep.LanguageServer.Handlers
                 commandOrCodeActions.AddRange(editLinterRuleActions);
             }
 
-            var matchingNodes = SyntaxMatcher.FindNodesInRange(compilationContext.ProgramSyntax, requestStartOffset, requestEndOffset);
+            var nodesInRange = SyntaxMatcher.FindNodesInRange(compilationContext.ProgramSyntax, requestStartOffset, requestEndOffset);
             var codeFixes = GetDecoratorCodeFixProviders(semanticModel)
-                .SelectMany(provider => provider.GetFixes(semanticModel, matchingNodes))
+                .SelectMany(provider => provider.GetFixes(semanticModel, nodesInRange))
                 .Select(fix => CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
             commandOrCodeActions.AddRange(codeFixes);
 
-            if (SyntaxMatcher.FindLastNodeOfType<ExpressionSyntax, ExpressionSyntax>(matchingNodes) is (ExpressionSyntax value, _)
-                && semanticModel.Binder.GetNearestAncestor<StatementSyntax>(value) is StatementSyntax statementSyntax)
+            commandOrCodeActions.AddRange(
+                GetExtractionRefactoringFixes(request, compilationContext, compilation, semanticModel, nodesInRange)
+                .Select(fix => CreateCodeAction(documentUri, compilationContext, fix)));
+
+            return new(commandOrCodeActions);
+        }
+
+        // asdfg all params needed?
+        private static IEnumerable<CodeFix> GetExtractionRefactoringFixes(CodeActionParams request, CompilationContext compilationContext, Compilation compilation, SemanticModel semanticModel, List<SyntaxBase> nodesInRange)
+        {
+            if (SyntaxMatcher.FindLastNodeOfType<ExpressionSyntax, ExpressionSyntax>(nodesInRange) is not (ExpressionSyntax expressionSyntax, _))
             {
-                var varName = "newVar"; //asdfg
-                if (semanticModel.Binder.GetNearestAncestor<ObjectPropertySyntax>(value) is { } propertySyntax
-                    && propertySyntax.TryGetKeyText() is string propertyName)
-                {
-                    varName = propertyName;
+                yield break;
+            }
 
-                }
+            var varName = "newVar"; //asdfg
 
-                var activeScopes = ActiveScopesVisitor.GetActiveScopes(compilation.GetEntrypointSemanticModel().Root, value.Span.Position);
-                for (int i = 1; i < int.MaxValue; ++i)
+            if (semanticModel.Binder.GetNearestAncestor<ObjectPropertySyntax>(expressionSyntax, includeSelf: true) is { } propertySyntax)
+            {
+                if (expressionSyntax == propertySyntax) //asdfg comment
                 {
-                    var tryingName = $"{varName}{(i < 2 ? "" : i)}";
-                    if (!activeScopes.Any(s => s.GetDeclarationsByName(tryingName).Any()))
+                    var propertyValueSyntax = propertySyntax.Value as ExpressionSyntax;
+                    if (propertyValueSyntax != null)
                     {
-                        varName = tryingName;
-                        break;
+                        expressionSyntax = propertyValueSyntax;
+                    }
+                    else
+                    {
+                        yield break;
                     }
                 }
 
-                //var a = semanticModel.Binder.GetReferencedSymbolClosureFor(semanticModel.Binder.Bindings.First().Value.);
-                //var a = semanticModel.DeclaredResources
-
-                var declarationSyntax = SyntaxFactory.CreateVariableDeclaration(varName, value);
-                //var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
-                var declarationText = $"{declarationSyntax}\n"; //asdfg \n okay?
-                var statementLine = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, statementSyntax.Span.Position).line;
-                var declarationReplacementSpan = new TextSpan(
-                    TextCoordinateConverter.GetOffset(compilationContext.LineStarts, statementLine, 0),
-                    0);
-
-                var fix = new CodeFix(
-                    "Extract to variable",
-                    isPreferred: false,
-                    CodeFixKind.RefactorExtract,
-                    new CodeReplacement(value.Span, varName),
-                    new CodeReplacement(declarationReplacementSpan, declarationText));
-                commandOrCodeActions.Add(CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
+                if (propertySyntax.TryGetKeyText() is string propertyName)
+                {
+                    //asdfg comment
+                    varName = propertyName;
+                }
             }
 
+            var activeScopes = ActiveScopesVisitor.GetActiveScopes(compilation.GetEntrypointSemanticModel().Root, expressionSyntax.Span.Position);
+            for (int i = 1; i < int.MaxValue; ++i)
+            {
+                var tryingName = $"{varName}{(i < 2 ? "" : i)}";
+                if (!activeScopes.Any(s => s.GetDeclarationsByName(tryingName).Any()))
+                {
+                    varName = tryingName;
+                    break;
+                }
+            }
 
+            if (semanticModel.Binder.GetNearestAncestor<StatementSyntax>(expressionSyntax) is not StatementSyntax statementSyntax)
+            {
+                yield break;
+            }
 
+            var declarationSyntax = SyntaxFactory.CreateVariableDeclaration(varName, expressionSyntax);
+            //var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
+            var declarationText = $"{declarationSyntax}\n"; //asdfg \n okay?
+            var statementLine = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, statementSyntax.Span.Position).line;
+            var declarationReplacementSpan = new TextSpan(
+                TextCoordinateConverter.GetOffset(compilationContext.LineStarts, statementLine, 0),
+                0);
 
-            return new(commandOrCodeActions);
+            yield return new CodeFix(
+                "Extract to variable",
+                isPreferred: false,
+                CodeFixKind.RefactorExtract,
+                new CodeReplacement(expressionSyntax.Span, varName),
+                new CodeReplacement(declarationReplacementSpan, declarationText));
         }
 
         private IEnumerable<DecoratorCodeFixProvider> GetDecoratorCodeFixProviders(SemanticModel semanticModel)

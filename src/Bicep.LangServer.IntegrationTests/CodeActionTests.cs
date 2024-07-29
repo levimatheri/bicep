@@ -30,7 +30,7 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 namespace Bicep.LangServer.IntegrationTests
 {
     [TestClass]
-    public class CodeActionTests
+    public partial class CodeActionTests
     {
         private static ServiceBuilder Services => new();
 
@@ -44,7 +44,6 @@ namespace Bicep.LangServer.IntegrationTests
         private const string RemoveUnusedExistingResourceTitle = "Remove unused existing resource";
         private const string RemoveUnusedParameterTitle = "Remove unused parameter";
         private const string RemoveUnusedVariableTitle = "Remove unused variable";
-        private const string ExtractToVariableTitle = "Extract to variable";
 
         private static readonly SharedLanguageHelperManager DefaultServer = new();
 
@@ -57,7 +56,7 @@ namespace Bicep.LangServer.IntegrationTests
         [NotNull]
         public TestContext? TestContext { get; set; }
 
-        [ClassInitialize]
+        [ClassInitialize(InheritanceBehavior.BeforeEachDerivedClass)]
         public static void ClassInitialize(TestContext testContext)
         {
             DefaultServer.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext));
@@ -69,7 +68,7 @@ namespace Bicep.LangServer.IntegrationTests
             ServerWithNamespaceProvider.Initialize(async () => await MultiFileLanguageServerHelper.StartLanguageServer(testContext, services => services.WithNamespaceProvider(BicepTestConstants.NamespaceProvider)));
         }
 
-        [ClassCleanup]
+        [ClassCleanup(InheritanceBehavior.BeforeEachDerivedClass)]
         public static async Task ClassCleanup()
         {
             await DefaultServer.DisposeAsync();
@@ -593,257 +592,6 @@ extension 'br:example.azurecr.io/test/radius:1.0.0'
             codeActions.Should().NotContain(x => x.Title.StartsWith(RemoveUnusedParameterTitle));
         }
 
-        [DataRow("""
-            var a = '|b'
-            """,
-            """
-            var newVar = 'b'
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = 'a'
-            var b = '|b'
-            var c = 'c'
-            """,
-            """
-            var a = 'a'
-            var newVar = 'b'
-            var b = newVar
-            var c = 'c'
-            """)]
-        [DataRow("""
-            var a = 1 + |2
-            """,
-            """
-            var newVar = 2
-            var a = 1 + newVar
-            """)]
-        [DataRow("""
-            var a = |1 + 2|
-            """,
-            """
-            var newVar = 1 + 2
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = |1 +| 2
-            """,
-            """
-            var newVar = 1 + 2
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = 1 |+ 2
-            """,
-            """
-            var newVar = 1 + 2
-            var a = newVar
-            """)]
-        [DataRow("""
-            var a = 1 |+ 2 + 3 |+ 4
-            """,
-            """
-            var newVar = 1 + 2 + 3 + 4
-            var a = newVar
-            """)]
-        //asdfg issue: should we expand selection?
-        [DataRow("""
-            param p1 int = 1 + |2
-            """,
-            """
-            var newVar = 2
-            param p1 int = 1 + newVar
-            """)]
-        [DataRow("""
-            var a = 1 + 2
-            var b = '${a}|{a}'
-            """,
-            """
-            var a = 1 + 2
-            var newVar = '${a}{a}'
-            var b = newVar
-            """,
-            DisplayName = "Interpolated strings")]
-        [DataRow("""
-            // comment 1
-            @secure
-            // comment 2
-            param a = '|a'
-            """,
-            """
-            // comment 1
-            var newVar = 'a'
-            @secure
-            // comment 2
-            param a = newVar
-            """,
-            DisplayName = "Preceding lines")]
-        [DataRow("""
-            var a = 1
-            var b = [
-              'a'
-              1 + |2|
-              'c'
-            ]
-            """,
-            """
-            var a = 1
-            var newVar = 2
-            var b = [
-              'a'
-              1 + newVar
-              'c'
-            ]
-            """,
-            DisplayName = "Inside a data structure")]
-        [DataRow("""
-            // My comment here
-            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-              name: 'name'
-              location: |'westus'
-              kind: 'StorageV2'
-              sku: {
-                name: 'Premium_LRS'
-              }
-            }
-            """,
-            """
-            // My comment here
-            var location = 'westus'
-            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-              name: 'name'
-              location: location
-              kind: 'StorageV2'
-              sku: {
-                name: 'Premium_LRS'
-              }
-            }
-            """)]
-        [DataRow("""
-            var newVar = 'newVar'
-            param newVar2 string = '|newVar2'
-            """,
-            """
-            var newVar = 'newVar'
-            var newVar3 = 'newVar2'
-            param newVar2 string = newVar3
-            """,
-            DisplayName = "Simple naming conflict")
-        ]
-        [DataRow("""
-            var id = [1, 2, 3]
-            param id2 string = 'hello'
-            resource id6 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (id3, id4) in id: {
-                name: 'subnet${id3}'
-                properties: {
-                  addressPrefix: '10.0.${id4}.0/24'
-                  natGateway: {
-                    id: '|gatewayId'
-                  }
-                }
-              }
-            ]
-            output id5 string = id2
-            """,
-            """
-            var id = [1, 2, 3]
-            param id2 string = 'hello'
-            var id7 = 'gatewayId'
-            resource id6 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (id3, id4) in id: {
-                name: 'subnet${id3}'
-                properties: {
-                  addressPrefix: '10.0.${id4}.0/24'
-                  natGateway: {
-                    id: id7
-                  }
-                }
-              }
-            ]
-            output id5 string = id2
-            """,
-            DisplayName = "Complex naming conflicts")]
-        [DataRow("""
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in |[1, 2, 3]|: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: '10.0.${index}.0/24'
-                }
-              }
-            ]
-            """,
-            """
-            var newVar = [1, 2, 3]
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in newVar: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: '10.0.${index}.0/24'
-                }
-              }
-            ]
-            """)]
-        [DataRow("""
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in [1, 2, 3]: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: '10.|0.${|index}.0/24'
-                }
-              }
-            ]
-            """,
-            //asdfg do we allow this?  compiler error
-            """
-            var addressPrefix = '10.0.${index}.0/24'
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in [1, 2, 3]: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: addressPrefix
-                }
-              }
-            ]
-            """,
-            DisplayName = "Extracting expression with local variable reference")]
-        //[DataRow("""
-        //    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-        //      for (item, index) in [1, 2, 3]: {
-        //        name: '|subnet${index}'
-        //        properties: {
-        //          addressPrefix: '10.|0.${index}.0/24'
-        //        }
-        //      }
-        //    ]
-        //    """,
-        //    """
-        //    asdfg we shouldn't allow this
-        //    """,
-        //    DisplayName = "cursor contains multiple unrelated lines")]
-        ////asdfg bug - not deleting original comments
-        //[DataRow("""
-        //    param p1 int = 1 + /*comments1*/|2/*comments2*/
-        //    """,
-        //    """
-        //    var newVar = /*comments1*/2/*comments2*/
-        //    param p1 int = 1 + newVar
-        //    """,
-        //    DisplayName = "Expression with comments")]
-        //asdfg resource/user-defined types
-        [DataTestMethod]
-        public async Task Extract_variable_is_suggested(string fileWithCursors, string expectedText)
-        {
-            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
-            var extract = codeActions.FirstOrDefault(x => x.Title.StartsWith(ExtractToVariableTitle));
-            extract.Should().NotBeNull("should contain an extract to variable action");
-            extract!.Kind.Should().Be(CodeActionKind.RefactorExtract);
-
-            var updatedFile = ApplyCodeAction(bicepFile, extract);
-            updatedFile.Should().HaveSourceText(expectedText);
-        }
-
         private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunParameterSyntaxTest(string paramType, string? decorator = null)
         {
             string fileWithCursors = @$"
@@ -856,10 +604,12 @@ param fo|o {paramType}
 param fo|o {paramType}
 ";
             }
+
+            fileWithCursors.Should().NotBeNull("should contain an extract to variable action");
             return await RunSyntaxTest(fileWithCursors, '|');
         }
 
-        private async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char cursor = '|', MultiFileLanguageServerHelper? server = null)
+        protected async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char cursor = '|', MultiFileLanguageServerHelper? server = null)
         {
             var (file, cursors) = ParserHelper.GetFileWithCursors(fileWithCursors, cursor);
             cursors.Should().HaveCountGreaterThan(0);
@@ -915,7 +665,7 @@ param fo|o {paramType}
             return result!.Select(x => x.CodeAction).WhereNotNull();
         }
 
-        private static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction, params string[] tabStops) //asdfg extract
+        protected static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction, params string[] tabStops) //asdfg extract
         {
             // only support a small subset of possible edits for now - can always expand this later on
             codeAction.Edit!.Changes.Should().NotBeNull();
