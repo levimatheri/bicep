@@ -108,7 +108,7 @@ namespace Bicep.LangServer.IntegrationTests
             var newVar = '${a}{a}'
             var b = newVar
             """,
-            DisplayName = "Interpolated strings")]
+            DisplayName = "Full interpolated string")]
         [DataRow("""
             // comment 1
             @secure
