@@ -34,6 +34,7 @@ namespace Bicep.LanguageServer.Handlers
     // Provides code actions/fixes for a range in a Bicep document
     public class BicepCodeActionHandler : CodeActionHandlerBase
     {
+        private const int MaxExpressionLengthInAction = 50;
         private readonly IClientCapabilitiesProvider clientCapabilitiesProvider;
         private readonly ICompilationManager compilationManager;
         private readonly DocumentSelectorFactory documentSelectorFactory;
@@ -186,11 +187,18 @@ namespace Bicep.LanguageServer.Handlers
                 0);
 
             yield return new CodeFix(
-                "Extract to variable",
+                $"Introduce variable for \"{GetQuotedExpressionText(expressionSyntax)}\"",
                 isPreferred: false,
                 CodeFixKind.RefactorExtract,
                 new CodeReplacement(expressionSyntax.Span, varName),
                 new CodeReplacement(declarationReplacementSpan, declarationText));
+        }
+
+        private static string GetQuotedExpressionText(ExpressionSyntax expressionSyntax)
+        {
+            return "\""
+                + SyntaxStringifier.Stringify(expressionSyntax, newlineReplacement: " ").Truncate(MaxExpressionLengthInAction)
+                + "\"";
         }
 
         private IEnumerable<DecoratorCodeFixProvider> GetDecoratorCodeFixProviders(SemanticModel semanticModel)

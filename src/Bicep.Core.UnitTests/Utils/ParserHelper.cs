@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Text;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Parsing;
 using Bicep.Core.Syntax;
@@ -86,6 +87,38 @@ namespace Bicep.Core.UnitTests.Utils
 
             return (file, cursors.Single());
         }
+
+        public static (string file, IReadOnlyList<TextSpan> selections) GetFileWithSelections(string fileWithSelections, string emptySelectionCursor = "|", string selectionStartCursor = "<<", string selectionEndCursor = ">>")
+        {
+            fileWithSelections = fileWithSelections.Replace(emptySelectionCursor, selectionStartCursor + selectionEndCursor);
+
+            var fileWithoutSelections = fileWithSelections;
+
+            var selections = new List<TextSpan>();
+            int startPosition, endPosition;
+            int nextPosition = 0;
+
+            while ((startPosition = fileWithoutSelections.IndexOf(selectionStartCursor, nextPosition)) != -1
+                && (endPosition = fileWithoutSelections.IndexOf(selectionEndCursor, startPosition)) != -1)
+            {
+                var span = new TextSpan(startPosition, endPosition - startPosition - selectionStartCursor.Length);
+
+                fileWithoutSelections = fileWithoutSelections.Substring(0, startPosition)
+                    + fileWithoutSelections.Substring(startPosition + selectionStartCursor.Length, span.Length)
+                    + fileWithoutSelections.Substring(endPosition + selectionEndCursor.Length);
+
+                selections.Add(span);
+                nextPosition = span.Position + span.Length;
+            }
+
+            if (fileWithoutSelections.IndexOf(selectionStartCursor) != -1 || fileWithoutSelections.IndexOf(selectionEndCursor) != -1)
+            {
+                throw new ArgumentException($"{nameof(GetFileWithSelections)}: Mismatched selection cursors in input string");
+            }
+
+            return (fileWithoutSelections, selections);
+        }
+
     }
 }
 
