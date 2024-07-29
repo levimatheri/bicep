@@ -164,7 +164,7 @@ namespace Bicep.LangServer.IntegrationTests
                 }
             }
             """)]
-        public async Task BasicCases(string fileWithCursors, string expectedText)
+        public async Task Basics(string fileWithCursors, string expectedText)
         {
             await RunExtractToVariableTest(fileWithCursors, expectedText);
         }
