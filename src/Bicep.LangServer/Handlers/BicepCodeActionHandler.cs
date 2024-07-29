@@ -187,7 +187,7 @@ namespace Bicep.LanguageServer.Handlers
                 0);
 
             yield return new CodeFix(
-                $"Introduce variable for \"{GetQuotedExpressionText(expressionSyntax)}\"",
+                $"Introduce variable for {GetQuotedExpressionText(expressionSyntax)}",
                 isPreferred: false,
                 CodeFixKind.RefactorExtract,
                 new CodeReplacement(expressionSyntax.Span, varName),
