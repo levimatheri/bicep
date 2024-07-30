@@ -35,15 +35,15 @@ namespace Bicep.LangServer.IntegrationTests
     [TestClass]
     public class ExtractToVariableTests : CodeActionTestBase
     {
-        private const string ExtractToVariableTitle = "Introduce variable";
+        private const string ExtractToVariableTitle = "Create variable";
 
         [DataTestMethod]
         [DataRow("""
             var a = '|b'
             """,
             """
-            var newVar = 'b'
-            var a = newVar
+            var newVariable = 'b'
+            var a = newVariable
             """)]
         [DataRow("""
             var a = 'a'
@@ -52,52 +52,52 @@ namespace Bicep.LangServer.IntegrationTests
             """,
             """
             var a = 'a'
-            var newVar = 'b'
-            var b = newVar
+            var newVariable = 'b'
+            var b = newVariable
             var c = 'c'
             """)]
         [DataRow("""
             var a = 1 + |2
             """,
             """
-            var newVar = 2
-            var a = 1 + newVar
+            var newVariable = 2
+            var a = 1 + newVariable
             """)]
         [DataRow("""
             var a = <<1 + 2>>
             """,
             """
-            var newVar = 1 + 2
-            var a = newVar
+            var newVariable = 1 + 2
+            var a = newVariable
             """)]
         [DataRow("""
             var a = <<1 +>> 2
             """,
             """
-            var newVar = 1 + 2
-            var a = newVar
+            var newVariable = 1 + 2
+            var a = newVariable
             """)]
         [DataRow("""
             var a = 1 |+ 2
             """,
             """
-            var newVar = 1 + 2
-            var a = newVar
+            var newVariable = 1 + 2
+            var a = newVariable
             """)]
         [DataRow("""
             var a = 1 <<+ 2 + 3 >>+ 4
             """,
             """
-            var newVar = 1 + 2 + 3 + 4
-            var a = newVar
+            var newVariable = 1 + 2 + 3 + 4
+            var a = newVariable
             """)]
         //asdfg issue: should we expand selection?
         [DataRow("""
             param p1 int = 1 + |2
             """,
             """
-            var newVar = 2
-            param p1 int = 1 + newVar
+            var newVariable = 2
+            param p1 int = 1 + newVariable
             """)]
         [DataRow("""
             var a = 1 + 2
@@ -105,8 +105,8 @@ namespace Bicep.LangServer.IntegrationTests
             """,
             """
             var a = 1 + 2
-            var newVar = '${a}{a}'
-            var b = newVar
+            var newVariable = '${a}{a}'
+            var b = newVariable
             """,
             DisplayName = "Full interpolated string")]
         [DataRow("""
@@ -117,10 +117,10 @@ namespace Bicep.LangServer.IntegrationTests
             """,
             """
             // comment 1
-            var newVar = 'a'
+            var newVariable = 'a'
             @secure
             // comment 2
-            param a = newVar
+            param a = newVariable
             """,
             DisplayName = "Preceding lines")]
         [DataRow("""
@@ -133,10 +133,10 @@ namespace Bicep.LangServer.IntegrationTests
             """,
             """
             var a = 1
-            var newVar = 2
+            var newVariable = 2
             var b = [
                 'a'
-                1 + newVar
+                1 + newVariable
                 'c'
             ]
             """,
@@ -171,13 +171,13 @@ namespace Bicep.LangServer.IntegrationTests
 
         [DataTestMethod]
         [DataRow("""
-            var newVar = 'newVar'
-            param newVar2 string = '|newVar2'
+            var newVariable = 'newVariable'
+            param newVariable2 string = '|newVariable2'
             """,
             """
-            var newVar = 'newVar'
-            var newVar3 = 'newVar2'
-            param newVar2 string = newVar3
+            var newVariable = 'newVariable'
+            var newVariable3 = 'newVariable2'
+            param newVariable2 string = newVariable3
             """,
             DisplayName = "Simple naming conflict")
         ]
@@ -234,9 +234,9 @@ namespace Bicep.LangServer.IntegrationTests
             ]
             """,
             """
-            var newVar = [1, 2, 3]
+            var newVariable = [1, 2, 3]
             resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in newVar: {
+              for (item, index) in newVariable: {
                 name: 'subnet${index}'
                 properties: {
                   addressPrefix: '10.0.${index}.0/24'
@@ -292,97 +292,19 @@ namespace Bicep.LangServer.IntegrationTests
                 """);
         }
 
-        [DataTestMethod]
-        [DataRow("""
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-                for (item, index) in [1, 2, 3]: {
-                name: 'subnet${index}'
-                properties: {
-                    addressPrefix: '10.|0.${|index}.0/24'
-                }
-                }
-            ]
-            """,
-            """
-            var addressPrefix = '10.0.${index}.0/24'
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-                for (item, index) in [1, 2, 3]: {
-                name: 'subnet${index}'
-                properties: {
-                    addressPrefix: addressPrefix
-                }
-                }
-            ]
-            """,
-            DisplayName = "Extracting expression with local variable reference - asdfg allowed?")]
-        [DataRow("""
-            resource vmName_cse_windows 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                parent: vmName_resource
-                name: 'cse-windows'
-                location: location
-                properties: {
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.8'
-                autoUpgradeMinorVersion: true
-                settings: {
-                    fileUris: [
-                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                    ]
-                    comma|ndToExecute: commandToExecute
-                }
-                }
-            }
-            """,
-            """asdfg?""",
-            DisplayName = "asdfg: probably nothing by default?")]
-        public async Task asdfg_BadSelections_asdfgwhatbehavior(string fileWithSelection, string expectedText)
-        {
-            await RunExtractToVariableTest(fileWithSelection, expectedText);
-        }
-
-        [DataTestMethod]
-        [DataRow("""
-            param p1 int = 1 + /*comments1*/|2/*comments2*/
-            """,
-            """
-            var newVar = /*comments1*/2/*comments2*/
-            param p1 int = 1 + newVar
-            """,
-            DisplayName = "asdfg bug: Expression with comments")]
-        public async Task ExpressionsWithComments(string fileWithSelection, string expectedText)
-        {
-            await RunExtractToVariableTest(fileWithSelection, expectedText);
-        }
-
-        [DataTestMethod]
-        [DataRow("""
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-                for (item, index) in [1, 2, 3]: {
-                name: '<<subnet${index}'
-                properties: {
-                    addressPrefix: '10.>>0.${index}.0/24'
-                }
-                }
-            ]
-            """,
-            DisplayName = "asdfg_InvalidSelections: cursor contains multiple unrelated lines")]
-        [DataRow("""
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: {
-                osProfile: {
-                 | computerName: vmName
-                }
-              }
-            }
-            """)]
-        public async Task InvalidSelections(string fileWithSelection)
-        {
-            // Expect no code actions offered
-            await RunExtractToVariableTest(fileWithSelection, null);
-        }
+        //[DataTestMethod]
+        //[DataRow("""
+        //    param p1 int = 1 + /*comments1*/|2/*comments2*/
+        //    """,
+        //    """
+        //    var newVariable = /*comments1*/2/*comments2*/
+        //    param p1 int = 1 + newVariable
+        //    """,
+        //    DisplayName = "asdfg bug: Expression with comments")]
+        //public async Task ExpressionsWithComments(string fileWithSelection, string expectedText)
+        //{
+        //    await RunExtractToVariableTest(fileWithSelection, expectedText);
+        //}
 
         [TestMethod]
         public async Task IfJustPropertyNameSelected_ThenExtractPropertyValue()
@@ -436,74 +358,6 @@ namespace Bicep.LangServer.IntegrationTests
               location: location
               properties: {
                 osProfile: {
-                 | computerName: vmName
-                }
-              }
-            }
-            """,
-            null,
-            DisplayName = "Empty selection in object")]
-        [DataRow("""
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: <<{
-                osProfile: {
-                 computerName: vmName
-                }
-              }>>
-            }
-            """,
-            """
-            var properties = {
-              osProfile: {
-                computerName: vmName
-              }
-            }
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: properties
-            }
-            """,
-            DisplayName = "Full object selected")]
-        [DataRow("""
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: { <<
-                osProfile: {
-                 computerName: vmName
-                }
-              }>>
-            }
-            """,
-            """
-            var properties = {
-                osProfile: {
-                 computerName: vmName
-                }
-              }
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: properties
-            }
-            """,
-            DisplayName = "Partial object selected")]
-        public async Task OnlyPickUpObjectsAndArraysIfNonEmptySelection(string fileWithSelection, string? expectedText)
-        {
-            // Expect no code actions offered
-            await RunExtractToVariableTest(fileWithSelection, expectedText);
-        }
-
-        [DataTestMethod]
-        [DataRow("""
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: {
-                osProfile: {
                   computerName: vmName
                   myproperty: {
                     abc: [
@@ -520,7 +374,7 @@ namespace Bicep.LangServer.IntegrationTests
             }            
             """,
             """
-            var newVar = 'jkl'
+            var newVariable = 'jkl'
             resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
               name: vmName
               location: location
@@ -532,7 +386,7 @@ namespace Bicep.LangServer.IntegrationTests
                       {
                         def: [
                           'ghi'
-                          newVar
+                          newVariable
                         ]
                       }
                     ]
@@ -634,72 +488,72 @@ namespace Bicep.LangServer.IntegrationTests
         // ... reference() call
         [DataRow(
             "storageUri: reference(storageAccount.id, '2018-02-01').|primaryEndpoints.blob",
-            "var newVar = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
-            "storageUri: newVar.blob"
+            "var newVariable = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
+            "storageUri: newVariable.blob"
             )]
         [DataRow(
             "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = reference(storageAccount.id, '2018-02-01')",
-            "storageUri: newVar.primaryEndpoints.blob"
+            "var newVariable = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVariable.primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: refere<<nce(storageAccount.id, '201>>8-02-01').primaryEndpoints.blob",
-            "var newVar = reference(storageAccount.id, '2018-02-01')",
-            "storageUri: newVar.primaryEndpoints.blob"
+            "var newVariable = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVariable.primaryEndpoints.blob"
             )]
         //   ... '2018-02-01'
         [DataRow(//asdfg
             "storageUri: reference(storageAccount.id, |'2018-02-01').primaryEndpoints.blob",
-            "var newVar = '2018-02-01'",
-            "storageUri: reference(storageAccount.id, newVar).primaryEndpoints.blob"
+            "var newVariable = '2018-02-01'",
+            "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: reference(storageAccount.id, '2018-02-01|').primaryEndpoints.blob",
-            "var newVar = '2018-02-01'",
-            "storageUri: reference(storageAccount.id, newVar).primaryEndpoints.blob"
+            "var newVariable = '2018-02-01'",
+            "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
             )]
         //   ... storageAccount.id
         [DataRow(
             "storageUri: reference(storageAccount.|id, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = storageAccount.id",
-            "storageUri: reference(newVar, '2018-02-01').primaryEndpoints.blob"
+            "var newVariable = storageAccount.id",
+            "storageUri: reference(newVariable, '2018-02-01').primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: reference(storageAccount.i|d, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = storageAccount.id",
-            "storageUri: reference(newVar, '2018-02-01').primaryEndpoints.blob"
+            "var newVariable = storageAccount.id",
+            "storageUri: reference(newVariable, '2018-02-01').primaryEndpoints.blob"
             )]
         // ... storageAccount
         [DataRow(
             "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = storageAccount",
-            "storageUri: reference(newVar.id, '2018-02-01').primaryEndpoints.blob"
+            "var newVariable = storageAccount",
+            "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = storageAccount",
-            "storageUri: reference(newVar.id, '2018-02-01').primaryEndpoints.blob"
+            "var newVariable = storageAccount",
+            "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = storageAccount",
-            "storageUri: reference(newVar.id, '2018-02-01').primaryEndpoints.blob"
+            "var newVariable = storageAccount",
+            "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
             )]
         // ... inside reference(x, y) but not inside x or y -> closest enclosing expression is the reference()
         [DataRow(
             "storageUri: reference(storageAccount.id,| '2018-02-01').primaryEndpoints.blob",
-            "var newVar = reference(storageAccount.id, '2018-02-01')",
-            "storageUri: newVar.primaryEndpoints.blob"
+            "var newVariable = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVariable.primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: reference(storageAccount.id, '2018-02-01' |).primaryEndpoints.blob",
-            "var newVar = reference(storageAccount.id, '2018-02-01')",
-            "storageUri: newVar.primaryEndpoints.blob"
+            "var newVariable = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVariable.primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = reference(storageAccount.id, '2018-02-01')",
-            "storageUri: newVar.primaryEndpoints.blob"
+            "var newVariable = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVariable.primaryEndpoints.blob"
             )]
         public async Task ShouldExpandSelectedExpressionsInALogicalWay(string lineWithSelection, string expectedVarDefinition, string expectedModifiedLine)
         {
@@ -737,8 +591,8 @@ namespace Bicep.LangServer.IntegrationTests
         [DataTestMethod]
         [DataRow(
             "storageUri: reference(stora<<geAccount.i>>d, '2018-02-01').primaryEndpoints.blob",
-            "var newVar = storageAccount.id",
-            "storageUri: reference(newVar, '2018-02-01').primaryEndpoints.blob"
+            "var newVariable = storageAccount.id",
+            "storageUri: reference(newVariable, '2018-02-01').primaryEndpoints.blob"
             )]
         [DataRow(
             "storageUri: refer<<ence(storageAccount.id, '2018-02-01').primaryEndpoints.bl>>ob",

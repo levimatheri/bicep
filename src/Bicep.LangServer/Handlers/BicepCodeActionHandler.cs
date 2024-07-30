@@ -10,6 +10,7 @@ using Bicep.Core.CodeAction;
 using Bicep.Core.CodeAction.Fixes;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
+using Bicep.Core.Navigation;
 using Bicep.Core.Parsing;
 using Bicep.Core.PrettyPrintV2;
 using Bicep.Core.Semantics;
@@ -139,7 +140,7 @@ namespace Bicep.LanguageServer.Handlers
                 yield break;
             }
 
-            var varName = "newVar"; //asdfg - change to "newVariable" or "variable1"
+            var varName = "newVariable";
 
             if (semanticModel.Binder.GetParent(expressionSyntax) is ObjectPropertySyntax propertySyntax
                 && propertySyntax.TryGetKeyText() is string propertyName)
@@ -192,7 +193,7 @@ namespace Bicep.LanguageServer.Handlers
                 0);
 
             yield return new CodeFix(
-                $"Introduce variable for {GetQuotedExpressionText(expressionSyntax)}",
+                $"Create variable for {GetQuotedExpressionText(expressionSyntax)}",
                 isPreferred: false,
                 CodeFixKind.RefactorExtract,
                 new CodeReplacement(expressionSyntax.Span, varName),
