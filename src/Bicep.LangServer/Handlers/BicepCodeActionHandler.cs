@@ -139,7 +139,7 @@ namespace Bicep.LanguageServer.Handlers
                 yield break;
             }
 
-            var varName = "newVar"; //asdfg
+            var varName = "newVar"; //asdfg - change to "newVariable" or "variable1"
 
             if (semanticModel.Binder.GetParent(expressionSyntax) is ObjectPropertySyntax propertySyntax
                 && propertySyntax.TryGetKeyText() is string propertyName)

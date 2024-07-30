@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Bicep.Core.CodeAction;
 using Bicep.Core.Diagnostics;
@@ -67,6 +68,8 @@ namespace Bicep.LangServer.IntegrationTests
         }
         protected async Task<(IEnumerable<CodeAction> codeActions, BicepFile bicepFile)> RunSyntaxTest(string fileWithCursors, char emptyCursor = '|', MultiFileLanguageServerHelper? server = null)
         {
+            Trace.WriteLine("Input bicep:\n" + fileWithCursors + "\n");
+
             var (file, selection) = ParserHelper.GetFileWithSingleSelection(fileWithCursors, emptyCursor);
             var bicepFile = SourceFileFactory.CreateBicepFile(new Uri($"file://{TestContext.TestName}_{Guid.NewGuid():D}/main.bicep"), file);
 

@@ -164,9 +164,9 @@ namespace Bicep.LangServer.IntegrationTests
                 }
             }
             """)]
-        public async Task Basics(string fileWithCursors, string expectedText)
+        public async Task Basics(string fileWithSelection, string expectedText)
         {
-            await RunExtractToVariableTest(fileWithCursors, expectedText);
+            await RunExtractToVariableTest(fileWithSelection, expectedText);
         }
 
         [DataTestMethod]
@@ -215,9 +215,9 @@ namespace Bicep.LangServer.IntegrationTests
             output id5 string = id2
             """,
             DisplayName = "Complex naming conflicts")]
-        public async Task ShouldRenameToAvoidConflicts(string fileWithCursors, string expectedText)
+        public async Task ShouldRenameToAvoidConflicts(string fileWithSelection, string expectedText)
         {
-            await RunExtractToVariableTest(fileWithCursors, expectedText);
+            await RunExtractToVariableTest(fileWithSelection, expectedText);
         }
 
         [TestMethod]
@@ -336,9 +336,9 @@ namespace Bicep.LangServer.IntegrationTests
             """,
             """asdfg?""",
             DisplayName = "asdfg: probably nothing by default?")]
-        public async Task asdfg_BadSelections_asdfgwhatbehavior(string fileWithCursors, string expectedText)
+        public async Task asdfg_BadSelections_asdfgwhatbehavior(string fileWithSelection, string expectedText)
         {
-            await RunExtractToVariableTest(fileWithCursors, expectedText);
+            await RunExtractToVariableTest(fileWithSelection, expectedText);
         }
 
         [DataTestMethod]
@@ -350,9 +350,9 @@ namespace Bicep.LangServer.IntegrationTests
             param p1 int = 1 + newVar
             """,
             DisplayName = "asdfg bug: Expression with comments")]
-        public async Task ExpressionsWithComments(string fileWithCursors, string expectedText)
+        public async Task ExpressionsWithComments(string fileWithSelection, string expectedText)
         {
-            await RunExtractToVariableTest(fileWithCursors, expectedText);
+            await RunExtractToVariableTest(fileWithSelection, expectedText);
         }
 
         [DataTestMethod]
@@ -378,10 +378,10 @@ namespace Bicep.LangServer.IntegrationTests
               }
             }
             """)]
-        public async Task InvalidSelections(string fileWithCursors)
+        public async Task InvalidSelections(string fileWithSelection)
         {
             // Expect no code actions offered
-            await RunExtractToVariableTest(fileWithCursors, null);
+            await RunExtractToVariableTest(fileWithSelection, null);
         }
 
         [TestMethod]
@@ -491,10 +491,10 @@ namespace Bicep.LangServer.IntegrationTests
             }
             """,
             DisplayName = "Partial object selected")]
-        public async Task OnlyPickUpObjectsAndArraysIfNonEmptySelection(string fileWithCursors, string? expectedText)
+        public async Task OnlyPickUpObjectsAndArraysIfNonEmptySelection(string fileWithSelection, string? expectedText)
         {
             // Expect no code actions offered
-            await RunExtractToVariableTest(fileWithCursors, expectedText);
+            await RunExtractToVariableTest(fileWithSelection, expectedText);
         }
 
         [DataTestMethod]
@@ -585,15 +585,207 @@ namespace Bicep.LangServer.IntegrationTests
               }
             }            
             """,
-            DisplayName = "Full property value as array, pick up property name")]      
-        public async Task PickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithCursors, string expectedText)
+            DisplayName = "Full property value as array, pick up property name")]
+        public async Task PickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithSelection, string expectedText)
         {
-            await RunExtractToVariableTest(fileWithCursors, expectedText);
+            await RunExtractToVariableTest(fileWithSelection, expectedText);
         }
 
-        private async Task RunExtractToVariableTest(string fileWithCursors, string? expectedText)
+        [DataTestMethod]
+        //
+        // Closest ancestor expression is the top-level expression itself -> offer to update full expression
+        //
+        [DataRow(
+            "storageUri:| reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.|blob",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.<<blo>>b",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        //
+        // Cursor is inside the property name -> offer full expression
+        //
+        [DataRow(
+            "storageUri|: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        [DataRow(
+            "<<storageUri: re>>ference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        [DataRow(
+            "<<storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob>>",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        //
+        // Cursor is inside a subexpression -> only offer to extract that specific subexpression
+        //
+        // ... reference() call
+        [DataRow(
+            "storageUri: reference(storageAccount.id, '2018-02-01').|primaryEndpoints.blob",
+            "var newVar = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
+            "storageUri: newVar.blob"
+            )]
+        [DataRow(
+            "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVar.primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: refere<<nce(storageAccount.id, '201>>8-02-01').primaryEndpoints.blob",
+            "var newVar = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVar.primaryEndpoints.blob"
+            )]
+        //   ... '2018-02-01'
+        [DataRow(//asdfg
+            "storageUri: reference(storageAccount.id, |'2018-02-01').primaryEndpoints.blob",
+            "var newVar = '2018-02-01'",
+            "storageUri: reference(storageAccount.id, newVar).primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAccount.id, '2018-02-01|').primaryEndpoints.blob",
+            "var newVar = '2018-02-01'",
+            "storageUri: reference(storageAccount.id, newVar).primaryEndpoints.blob"
+            )]
+        //   ... storageAccount.id
+        [DataRow(
+            "storageUri: reference(storageAccount.|id, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = storageAccount.id",
+            "storageUri: reference(newVar, '2018-02-01').primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAccount.i|d, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = storageAccount.id",
+            "storageUri: reference(newVar, '2018-02-01').primaryEndpoints.blob"
+            )]
+        // ... storageAccount
+        [DataRow(
+            "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = storageAccount",
+            "storageUri: reference(newVar.id, '2018-02-01').primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = storageAccount",
+            "storageUri: reference(newVar.id, '2018-02-01').primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = storageAccount",
+            "storageUri: reference(newVar.id, '2018-02-01').primaryEndpoints.blob"
+            )]
+        // ... inside reference(x, y) but not inside x or y -> closest enclosing expression is the reference()
+        [DataRow(
+            "storageUri: reference(storageAccount.id,| '2018-02-01').primaryEndpoints.blob",
+            "var newVar = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVar.primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAccount.id, '2018-02-01' |).primaryEndpoints.blob",
+            "var newVar = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVar.primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = reference(storageAccount.id, '2018-02-01')",
+            "storageUri: newVar.primaryEndpoints.blob"
+            )]
+        public async Task ShouldExpandSelectedExpressionsInALogicalWay(string lineWithSelection, string expectedVarDefinition, string expectedModifiedLine)
         {
-            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithCursors, '|');
+            string inputWithSelection = $$"""
+                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+
+                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+                  properties: {
+                    diagnosticsProfile: {
+                      bootDiagnostics: {
+                        {{lineWithSelection}}
+                      }
+                    }
+                  }
+                }
+                """;
+
+            string expectedOutput = $$"""
+                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+
+                {{expectedVarDefinition}}
+                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+                  properties: {
+                    diagnosticsProfile: {
+                      bootDiagnostics: {
+                        {{expectedModifiedLine}}
+                      }
+                    }
+                  }
+                }
+                """;
+            await RunExtractToVariableTest(inputWithSelection, expectedOutput);
+        }
+
+        [DataTestMethod]
+        [DataRow(
+            "storageUri: reference(stora<<geAccount.i>>d, '2018-02-01').primaryEndpoints.blob",
+            "var newVar = storageAccount.id",
+            "storageUri: reference(newVar, '2018-02-01').primaryEndpoints.blob"
+            )]
+        [DataRow(
+            "storageUri: refer<<ence(storageAccount.id, '2018-02-01').primaryEndpoints.bl>>ob",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        [DataRow(
+            "storageUri: reference(storageAccount.id, '2018-02-01').primar<<yEndpoints.blob>>",
+            "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+            "storageUri: storageUri"
+            )]
+        public async Task IfThereIsASelection_ThenPickUpEverythingInTheSelection_AfterExpanding(string lineWithSelection, string expectedVarDefinition, string expectedModifiedLine)
+        {
+            string inputWithSelection = $$"""
+                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+
+                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+                  properties: {
+                    diagnosticsProfile: {
+                      bootDiagnostics: {
+                        {{lineWithSelection}}
+                      }
+                    }
+                  }
+                }
+                """;
+
+            string expectedOutput = $$"""
+                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+
+                {{expectedVarDefinition}}
+                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+                  properties: {
+                    diagnosticsProfile: {
+                      bootDiagnostics: {
+                        {{expectedModifiedLine}}
+                      }
+                    }
+                  }
+                }
+                """;
+            await RunExtractToVariableTest(inputWithSelection, expectedOutput);
+        }
+
+        private async Task RunExtractToVariableTest(string fileWithSelection, string? expectedText)
+        {
+            (var codeActions, var bicepFile) = await RunSyntaxTest(fileWithSelection, '|');
             var extract = codeActions.FirstOrDefault(x => x.Title.StartsWith(ExtractToVariableTitle));
 
             if (expectedText == null)
