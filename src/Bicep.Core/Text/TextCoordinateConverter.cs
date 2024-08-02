@@ -72,6 +72,7 @@ namespace Bicep.Core.Text
             return lineStarts[line] + character;
         }
 
+        // If the actual line start was not found, returns the 2's-complement of the next line start
         private static int BinarySearch(IReadOnlyList<int> values, int target)
         {
             int start = 0;

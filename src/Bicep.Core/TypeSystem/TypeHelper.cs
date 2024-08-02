@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Reflection.Metadata;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
 using Bicep.Core.Parsing;
@@ -45,6 +46,14 @@ namespace Bicep.Core.TypeSystem
             };
         }
 
+        /// <summary>
+        /// asdfg Collapses multiple types into either:
+        /// * The 'never' type, if there are no types in the source list.
+        /// * A single type, if the source types can be collapsed into a single type.
+        /// * A union type.
+        /// </summary>
+        public static TypeSymbol MakeNullable(ITypeReference typeReference) => CreateTypeUnion(typeReference, LanguageConstants.Null); //asdfg test
+
         public static LambdaType CreateLambdaType(IEnumerable<ITypeReference> argumentTypes, IEnumerable<ITypeReference> optionalArgumentTypes, TypeSymbol returnType)
             => new(argumentTypes.ToImmutableArray(), optionalArgumentTypes.ToImmutableArray(), returnType);
 
@@ -64,7 +73,7 @@ namespace Bicep.Core.TypeSystem
         public static TypeSymbol CreateTypeUnion(params ITypeReference[] members)
             => CreateTypeUnion((IEnumerable<ITypeReference>)members);
 
-        public static bool IsLiteralType(TypeSymbol type) => type switch
+        public static bool IsLiteralType(TypeSymbol type) => type switch //asdfgasdfg
         {
             StringLiteralType or
             IntegerLiteralType or
@@ -147,7 +156,7 @@ namespace Bicep.Core.TypeSystem
         }
 
         /// <summary>
-        /// Gets the type of the property whose name we can obtain at compile-time.
+        /// Gets the type of the property whose name we can obtain at compile-time. asdfg??
         /// </summary>
         /// <param name="baseType">The base object type</param>
         /// <param name="propertyExpressionPositionable">The position of the property name expression</param>
@@ -331,14 +340,14 @@ namespace Bicep.Core.TypeSystem
         /// transformed to <code>string | int</code>.
         /// Otherwise, this method will return null.
         /// </remarks>
-        public static TypeSymbol? TryRemoveNullability(TypeSymbol type) => type switch
+        public static TypeSymbol? TryRemoveNullability(TypeSymbol type) => type switch //asdfg use?
         {
             UnionType union when union.Members.Where(m => !ReferenceEquals(m.Type, LanguageConstants.Null)).ToImmutableArray() is { } sansNull &&
                 sansNull.Length < union.Members.Length => CreateTypeUnion(sansNull),
             _ => null,
         };
 
-        public static bool IsNullable(TypeSymbol type) => TryRemoveNullability(type) is not null;
+        public static bool IsNullable(TypeSymbol type) => TryRemoveNullability(type) is not null; //asdfgasdfg
 
         public static bool IsRequired(TypeProperty typeProperty)
             => typeProperty.Flags.HasFlag(TypePropertyFlags.Required) && !TypeHelper.IsNullable(typeProperty.TypeReference.Type);

@@ -1032,7 +1032,7 @@ There might also be a link to something [link](www.google.com)
         public async Task Hovers_are_displayed_on_type_property_access()
         {
             var (text, cursors) = ParserHelper.GetFileWithCursors("""
-                type t = {
+                type testType = {
                     @description('A named property')
                     property: string
                     *: int
