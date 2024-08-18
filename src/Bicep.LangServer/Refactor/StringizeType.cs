@@ -11,6 +11,8 @@ namespace Bicep.LanguageServer.Refactor
 {
     //asdfg discriminated object type
     //asdfg TypeKind.Never
+    //asdfg experimental resource types
+
     public static class StringizeType
     {
         private const string UnknownTypeName = "object? /* unknown */"; //asdfg
