@@ -1627,7 +1627,8 @@ var v1 = newParameter
 
         [DataTestMethod]//asdfg
         //asdfg apostrophes 
-        [DataRow("""
+        [DataRow(
+            """
                 // My comment here
                 resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
                   name: 'testResource/cassandraKeyspace'
@@ -1635,7 +1636,7 @@ var v1 = newParameter
                     resource: {
                       id: 'id'
                     }
-                    <<options: {}>>
+                    <<options>>: {}
                   }
                 }
                 """,
@@ -1652,7 +1653,84 @@ var v1 = newParameter
                     options: options
                   }
                 }
-                """)]
+                """,
+            DisplayName = "Resource property description")]
+        [DataRow(
+            """
+                type t = {
+                  @description('My string\'s field')
+                  myString: string
+
+                  @description('''
+                My int's field
+                is very long
+                ''')
+                  myInt: int
+                }
+
+                param p t = {
+                  myString: |'hello'
+                  myInt: 42
+                }
+                """,
+            """
+                type t = {
+                  @description('My string\'s field')
+                  myString: string
+
+                  @description('''
+                My int's field
+                is very long
+                ''')
+                  myInt: int
+                }
+
+                @description('My string\'s field')
+                param myString string = 'hello'
+                param p t = {
+                  myString: myString
+                  myInt: 42
+                }
+                """,
+            DisplayName = "Apostrophe in description")]
+        [DataRow(
+            """
+                type t = {
+                  @description('My string\'s field')
+                  myString: string
+
+                  @description('''
+                My int's field
+                is very long
+                ''')
+                  myInt: int
+                }
+
+                param p t = {
+                  myString: 'hello'
+                  myInt: |42
+                }
+                """,
+            """
+                type t = {
+                  @description('My string\'s field')
+                  myString: string
+
+                  @description('''
+                My int's field
+                is very long
+                ''')
+                  myInt: int
+                }
+
+                @description('My int\'s field\nis very long\n')
+                param myInt int = 42
+                param p t = {
+                  myString: 'hello'
+                  myInt: myInt
+                }
+                """,
+            DisplayName = "multiline description")]
         public async Task Params_ShouldPickUpDescriptions(string fileWithSelection, string expectedParamText)
         {
             await RunExtractToParameterTest(fileWithSelection, expectedParamText);
