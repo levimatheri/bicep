@@ -18,6 +18,7 @@ using Bicep.LanguageServer.CompilationManager;
 using Bicep.LanguageServer.Completions;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using static Bicep.LanguageServer.Completions.BicepCompletionContext;
+using static Bicep.LanguageServer.Refactor.TypeStringifier;
 using static Google.Protobuf.Reflection.ExtensionRangeOptions.Types;
 
 namespace Bicep.LanguageServer.Refactor
@@ -174,23 +175,23 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
             var declaredType = semanticModel.GetDeclaredType(expressionSyntax);
             var newParamType = NullIfErrorOrAny(declaredType) ?? NullIfErrorOrAny(inferredType);
 
-            var stringifiedNewParamTypeLoose = TypeStringifier.Stringify(newParamType, typeProperty, TypeStringifier.Strictness.Loose);
-            var stringifiedNewParamTypeMedium = TypeStringifier.Stringify(newParamType, typeProperty, TypeStringifier.Strictness.Medium);
+            var stringifiedNewParamTypeLoose = Stringify(newParamType, typeProperty, Strictness.Loose);
+            var stringifiedNewParamTypeMedium = Stringify(newParamType, typeProperty, Strictness.Medium);
 
 #if true
             yield return CreateExtractParameterCodeFix(
                 "OPTION 1:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             yield return CreateExtractParameterCodeFix(
                 "Extract parameter",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
             {
                 var customTypedParamExtraction = CreateExtractParameterCodeFix(
                    "Extract parameter with strict typing",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Medium);
+                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
                 yield return customTypedParamExtraction;
             }
 #endif
@@ -198,17 +199,17 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 #if true
             yield return CreateExtractParameterCodeFix(
                 "OPTION 2:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             yield return CreateExtractParameterCodeFix(
                 $"Create parameter for {GetQuotedExpressionText(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
             {
                 var customTypedParamExtraction = CreateExtractParameterCodeFix(
                     $"Create parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Medium);
+                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
                 yield return customTypedParamExtraction;
             }
 #endif
@@ -216,16 +217,16 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 #if true
             yield return CreateExtractParameterCodeFix(
                 "OPTION 3:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
             yield return CreateExtractParameterCodeFix(
                 $"Extract parameter for {GetQuotedExpressionText(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
             {
                 var customTypedParamExtraction = CreateExtractParameterCodeFix(
                     $"Extract parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Medium);
+                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
                 yield return customTypedParamExtraction;
             }
 #endif
@@ -233,16 +234,16 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 #if true
             yield return CreateExtractParameterCodeFix(
                 "OPTION 4:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
             yield return CreateExtractParameterCodeFix(
                 $"Create parameter for {GetQuotedExpressionText(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
             {
                 var customTypedParamExtraction = CreateExtractParameterCodeFix(
                     $"Create parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Medium);
+                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
                 yield return customTypedParamExtraction;
             }
 #endif
@@ -250,16 +251,16 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 #if true
             yield return CreateExtractParameterCodeFix(
                 "OPTION 5:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
             yield return CreateExtractParameterCodeFix(
-                $"Create parameter of type {GetQuotedExpressionText(stringifiedNewParamTypeLoose)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                $"Create parameter of type {GetQuotedTypeText(stringifiedNewParamTypeLoose)}",
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
             {
                 var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Create parameter of type {GetQuotedExpressionText(stringifiedNewParamTypeMedium)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Medium);
+                    $"Create parameter of type {GetQuotedTypeText(stringifiedNewParamTypeMedium)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
                 yield return customTypedParamExtraction;
             }
 #endif
@@ -267,17 +268,17 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 #if true
             yield return CreateExtractParameterCodeFix(
                 "OPTION 6:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             yield return CreateExtractParameterCodeFix(
                 $"Extract parameter of type {stringifiedNewParamTypeLoose}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Loose);
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
 
             if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
             {
                 var customTypedParamExtraction = CreateExtractParameterCodeFix(
                     $"Extract parameter of type {stringifiedNewParamTypeMedium}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, TypeStringifier.Strictness.Medium);
+                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
                 yield return customTypedParamExtraction;
             }
 #endif
@@ -291,7 +292,7 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
             string newParamName,
             int definitionInsertionPosition,
             ExpressionSyntax expressionSyntax,
-            TypeStringifier.Strictness strictness)
+            Strictness strictness)
         {
             var declaration = CreateNewParameterDeclaration(semanticModel, typeProperty, stringifiedNewParamType, newParamName, expressionSyntax, strictness);
 
