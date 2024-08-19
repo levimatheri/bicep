@@ -13,10 +13,10 @@ namespace Bicep.LanguageServer.Refactor
     //asdfg TypeKind.Never
     //asdfg experimental resource types
 
-    public static class StringizeType
+    public static class TypeStringifier
     {
-        private const string UnknownTypeName = "object? /* unknown */"; //asdfg
-        private const string AnyTypeName = "object? /* any */"; //asdfg
+        private const string UnknownTypeName = "object? /* unknown */";
+        private const string AnyTypeName = "object? /* any */";
         private const string RecursiveTypeName = "object /* recursive */";
         private const string ErrorTypeName = "object /* error */";
         //asdfg private const string NeverTypeName = "object /* never */";
@@ -32,12 +32,12 @@ namespace Bicep.LanguageServer.Refactor
         //asdfg recursive types
         // Note: This is "best effort" code for now. Ideally we should handle this exactly, but Bicep doesn't support expressing all the types it actually supports
         // Note: Returns type as a single line
-        public static string Stringize(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness)
+        public static string Stringify(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness)
         {
-            return StringizeHelper(type, typeProperty, strictness, []);
+            return StringifyHelper(type, typeProperty, strictness, []);
         }
 
-        private static string StringizeHelper(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness, TypeSymbol[] visitedTypes)
+        private static string StringifyHelper(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness, TypeSymbol[] visitedTypes)
         {
             // asdfg also check stack depth
             if (type == null)
@@ -58,7 +58,7 @@ namespace Bicep.LanguageServer.Refactor
             {
                 // Won't recursive forever because now typeProperty = null
                 // Note though that because this is by nature recursive with the same type, we must pass in previousVisitedTypes
-                return StringizeHelper(TypeHelper.MakeNullable(type), null, strictness, previousVisitedTypes);
+                return StringifyHelper(TypeHelper.MakeNullable(type), null, strictness, previousVisitedTypes);
             }
 
             // Convert "( unionMember1 | null )" => "unionMember1?"
@@ -69,7 +69,7 @@ namespace Bicep.LanguageServer.Refactor
                 // All other cases, display as the original union (i.e., we want "false|true|null" instead of "(false|true)?"
                 if (nullableUnionType.Members.Length == 2)
                 {
-                    return $"{StringizeHelper(nonNullableType, null, strictness, visitedTypes)}?"; //asdfg testpoint
+                    return $"{StringifyHelper(nonNullableType, null, strictness, visitedTypes)}?"; //asdfg testpoint
                 }
             }
 
@@ -107,17 +107,17 @@ namespace Bicep.LanguageServer.Refactor
                         {
                             // Bicep infers a tuple type from literals such as "[1, 2]", turn these
                             // into the more likely intended int[] if all the members are of the same type
-                            return Arrayize(tupleType.Item.Type, strictness, visitedTypes);
+                            return Arrayify(tupleType.Item.Type, strictness, visitedTypes);
                         }
                     }
 
-                    return $"[{string.Join(", ", tupleType.Items.Select(tt => StringizeHelper(tt.Type, null, strictness, visitedTypes)))}]";
+                    return $"[{string.Join(", ", tupleType.Items.Select(tt => StringifyHelper(tt.Type, null, strictness, visitedTypes)))}]";
 
                 // e.g. "int[]"
                 case TypedArrayType when strictness == Strictness.Loose:
                     return LanguageConstants.Array.Name;
                 case TypedArrayType typedArrayType:
-                    return Arrayize(typedArrayType.Item.Type, strictness, visitedTypes);
+                    return Arrayify(typedArrayType.Item.Type, strictness, visitedTypes);
 
                 // plain old "array"
                 case ArrayType:
@@ -134,7 +134,7 @@ namespace Bicep.LanguageServer.Refactor
                     {
                         itemType = TypeHelper.MakeNullable(itemType); //asdfg???
                     }
-                    return StringizeHelper(itemType, null, Strictness.Loose, visitedTypes);
+                    return StringifyHelper(itemType, null, Strictness.Loose, visitedTypes);
 
                 case UnionType:
                     return type.Name;
@@ -175,16 +175,16 @@ namespace Bicep.LanguageServer.Refactor
             };
         }
 
-        private static string Arrayize(TypeSymbol type, Strictness strictness, TypeSymbol[] visitedTypes)
+        private static string Arrayify(TypeSymbol type, Strictness strictness, TypeSymbol[] visitedTypes)
         {
-            string stringizedType = StringizeHelper(type, null, strictness, visitedTypes);
+            string stringifiedType = StringifyHelper(type, null, strictness, visitedTypes);
             bool needsParentheses = type switch
             {
                 UnionType unionType => true, // also works for nullable types
                 _ => false
             };
 
-            return needsParentheses ? $"({stringizedType})[]" : $"{stringizedType}[]";
+            return needsParentheses ? $"({stringifiedType})[]" : $"{stringifiedType}[]";
         }
 
         private static TypeSymbol Widen(TypeSymbol type, Strictness strictness)
@@ -227,7 +227,7 @@ namespace Bicep.LanguageServer.Refactor
         private static string GetFormattedTypeProperty(TypeProperty property, Strictness strictness, TypeSymbol[] visitedTypes)
         {
             return
-                $"{StringUtils.EscapeBicepPropertyName(property.Name)}: {StringizeHelper(property.TypeReference.Type, property, strictness, visitedTypes)}";
+                $"{StringUtils.EscapeBicepPropertyName(property.Name)}: {StringifyHelper(property.TypeReference.Type, property, strictness, visitedTypes)}";
         }
     }
 }

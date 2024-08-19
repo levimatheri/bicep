@@ -399,9 +399,9 @@ namespace Bicep.Core.Syntax
                 AssignmentToken,
                 value);
 
-        public static ParameterDeclarationSyntax CreateParameterDeclaration(string name, SyntaxBase type, SyntaxBase? defaultValue = null)
+        public static ParameterDeclarationSyntax CreateParameterDeclaration(string name, SyntaxBase type, SyntaxBase? defaultValue = null, IEnumerable<SyntaxBase>? leadingNodes = null)
             => new(
-                [],
+                leadingNodes ?? [],
                 ParameterKeywordToken,
                 CreateIdentifierWithTrailingSpace(name),
                 type,

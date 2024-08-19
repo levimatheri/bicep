@@ -39,7 +39,7 @@ public class DecoratorCodeFixProvider : ICodeFixProvider
         }
 
         var decoratorSyntax = SyntaxFactory.CreateDecorator(decoratorName, GetEmptyParams());
-        var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence(); //asdfg exctract
+        var newline = semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence();
         var decoratorText = $"{decoratorSyntax}{newline}";
         var newSpan = new TextSpan(decorableSyntax.Span.Position, 0);
         var codeReplacement = new CodeReplacement(newSpan, decoratorText);

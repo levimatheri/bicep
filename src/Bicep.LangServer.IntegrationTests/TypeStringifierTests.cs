@@ -26,7 +26,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Bicep.LangServer.IntegrationTests;
 
 [TestClass]
-public class StringizeTypeTests
+public class TypeStringifierTests
 {
     private static bool debugPrintAllSyntaxNodeTypes = false;
 
@@ -620,9 +620,9 @@ public class StringizeTypeTests
             DebugPrintAllSyntaxNodeTypes(semanticModel);
         }
 
-        var looseSyntax = StringizeType.Stringize(typeSymbol, typeProperty, StringizeType.Strictness.Loose);
-        var mediumStrictSyntax = StringizeType.Stringize(typeSymbol, typeProperty, StringizeType.Strictness.Medium);
-        var strictSyntax = StringizeType.Stringize(typeSymbol, typeProperty, StringizeType.Strictness.Strict);
+        var looseSyntax = TypeStringifier.Stringify(typeSymbol, typeProperty, TypeStringifier.Strictness.Loose);
+        var mediumStrictSyntax = TypeStringifier.Stringify(typeSymbol, typeProperty, TypeStringifier.Strictness.Medium);
+        var strictSyntax = TypeStringifier.Stringify(typeSymbol, typeProperty, TypeStringifier.Strictness.Strict);
 
         using (new AssertionScope())
         {
