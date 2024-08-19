@@ -16,6 +16,7 @@ using Bicep.Core.TypeSystem;
 using Bicep.Core.TypeSystem.Types;
 using Bicep.LanguageServer.CompilationManager;
 using Bicep.LanguageServer.Completions;
+using Google.Protobuf.WellKnownTypes;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using static Bicep.LanguageServer.Completions.BicepCompletionContext;
 using static Bicep.LanguageServer.Refactor.TypeStringifier;
@@ -78,7 +79,8 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
     // Provides code actions/fixes for a range in a Bicep document
     public static class ExtractVarAndParam
     {
-        private const int MaxExpressionLengthInCodeAction = 75;
+        private const int MaxExpressionLengthInCodeAction = 25;
+        private static int option = 1;
 
         static string NewLine(SemanticModel semanticModel) => semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence();
 
@@ -178,110 +180,110 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
             var stringifiedNewParamTypeLoose = Stringify(newParamType, typeProperty, Strictness.Loose);
             var stringifiedNewParamTypeMedium = Stringify(newParamType, typeProperty, Strictness.Medium);
 
-#if true
-            yield return CreateExtractParameterCodeFix(
-                "OPTION 1:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            yield return CreateExtractParameterCodeFix(
-                "Extract parameter",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+            if (option == 1)
             {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                   "Extract parameter with strict typing",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
+                yield return CreateExtractParameterCodeFix(
+                    "Extract parameter",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                       "Extract parameter with strict typing",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
             }
-#endif
 
-#if true
-            yield return CreateExtractParameterCodeFix(
-                "OPTION 2:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            yield return CreateExtractParameterCodeFix(
-                $"Create parameter for {GetQuotedExpressionText(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+            if (option == 2)
             {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Create parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
+                yield return CreateExtractParameterCodeFix(
+                    $"Create parameter for {GetQuotedExpressionText(expressionSyntax)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                        $"Create parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
             }
-#endif
 
-#if true
-            yield return CreateExtractParameterCodeFix(
-                "OPTION 3:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter for {GetQuotedExpressionText(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+            if (option == 3)
             {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
+                yield return CreateExtractParameterCodeFix(
+                    $"Extract parameter for {GetQuotedExpressionText(expressionSyntax)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                        $"Extract parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
             }
-#endif
 
-#if true
-            yield return CreateExtractParameterCodeFix(
-                "OPTION 4:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-            yield return CreateExtractParameterCodeFix(
-                $"Create parameter for {GetQuotedExpressionText(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+            if (option == 4)
             {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Create parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
+                yield return CreateExtractParameterCodeFix(
+                    $"Create parameter for {GetQuotedExpressionText(expressionSyntax)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                        $"Create parameter with strict typing for {GetQuotedExpressionText(expressionSyntax)}",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
             }
-#endif
 
-#if true
-            yield return CreateExtractParameterCodeFix(
-                "OPTION 5:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-            yield return CreateExtractParameterCodeFix(
-                $"Create parameter of type {GetQuotedTypeText(stringifiedNewParamTypeLoose)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+            if (option == 5)
             {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Create parameter of type {GetQuotedTypeText(stringifiedNewParamTypeMedium)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
+                yield return CreateExtractParameterCodeFix(
+                    $"Create parameter of type {GetQuotedTypeText(stringifiedNewParamTypeLoose)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                        $"Create parameter of type {GetQuotedTypeText(stringifiedNewParamTypeMedium)}",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
             }
-#endif
 
-#if true
-            yield return CreateExtractParameterCodeFix(
-                "OPTION 6:",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter of type {stringifiedNewParamTypeLoose}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+            if (option == 6)
             {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter of type {stringifiedNewParamTypeMedium}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
+                yield return CreateExtractParameterCodeFix(
+                    $"Extract parameter of type {GetQuotedTypeText(stringifiedNewParamTypeLoose)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                        $"Extract parameter of type {GetQuotedTypeText(stringifiedNewParamTypeMedium)}",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
             }
-#endif
+
+            if (option == 7)
+            {
+                yield return CreateExtractParameterCodeFix(
+                    $"Extract parameter for {GetQuotedExpressionText(expressionSyntax)} of type {GetQuotedTypeText(stringifiedNewParamTypeLoose)}",
+                    semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+                if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+                {
+                    var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                        $"Extract parameterfor {GetQuotedExpressionText(expressionSyntax)} of type {GetQuotedTypeText(stringifiedNewParamTypeMedium)}",
+                        semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+                    yield return customTypedParamExtraction;
+                }
+            }
         }
 
         private static CodeFix CreateExtractParameterCodeFix(
