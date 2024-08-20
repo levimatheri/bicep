@@ -81,7 +81,7 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 public static class ExtractVarAndParam
 {
     private const int MaxExpressionLengthInCodeAction = 35;
-    private static int option = 3; //asdfg
+    private static int option = 5; //asdfg
     private static Regex regexCompactWhitespace = new("\\s+");
 
     static string NewLine(SemanticModel semanticModel) => semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence();
@@ -135,7 +135,7 @@ public static class ExtractVarAndParam
             //
             // `object.topPropertyName.propertyName`
             //   -> default to the name "propertyName"
-            //  
+            //
             // More than two levels is less likely to be desirable
 
             string lastPartName = propertyAccessSyntax.PropertyName.IdentifierName;
