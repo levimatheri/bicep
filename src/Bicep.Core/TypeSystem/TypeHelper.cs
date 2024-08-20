@@ -340,14 +340,14 @@ namespace Bicep.Core.TypeSystem
         /// transformed to <code>string | int</code>.
         /// Otherwise, this method will return null.
         /// </remarks>
-        public static TypeSymbol? TryRemoveNullability(TypeSymbol type) => type switch //asdfg use?
+        public static TypeSymbol? TryRemoveNullability(TypeSymbol type) => type switch
         {
             UnionType union when union.Members.Where(m => !ReferenceEquals(m.Type, LanguageConstants.Null)).ToImmutableArray() is { } sansNull &&
                 sansNull.Length < union.Members.Length => CreateTypeUnion(sansNull),
             _ => null,
         };
 
-        public static bool IsNullable(TypeSymbol type) => TryRemoveNullability(type) is not null; //asdfgasdfg
+        public static bool IsNullable(TypeSymbol type) => TryRemoveNullability(type) is not null;
 
         public static bool IsRequired(TypeProperty typeProperty)
             => typeProperty.Flags.HasFlag(TypePropertyFlags.Required) && !TypeHelper.IsNullable(typeProperty.TypeReference.Type);

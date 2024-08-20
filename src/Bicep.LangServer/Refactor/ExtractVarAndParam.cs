@@ -36,7 +36,12 @@ namespace Bicep.LanguageServer.Refactor;
 
 // asdfg Convert var to param
 
-/*
+/*asdfg
+ 
+ * type myMixedTypeArrayType = ('fizz' | 42 | {an: 'object'} | null)[]
+ * 
+ * 
+ 
 Nullable-typed parameters may not be assigned default values. They have an implicit default of 'null' that cannot be overridden.bicep(BCP326):
 
     var commandToExecute = 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1'
@@ -81,7 +86,6 @@ resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' 
 public static class ExtractVarAndParam
 {
     private const int MaxExpressionLengthInCodeAction = 35;
-    private static int option = 5; //asdfg
     private static Regex regexCompactWhitespace = new("\\s+");
 
     static string NewLine(SemanticModel semanticModel) => semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence();
@@ -100,7 +104,9 @@ public static class ExtractVarAndParam
         TypeProperty? typeProperty = null; // asdfg better name
         string? defaultNewName = null;
 
-        // Semi-intelligent default names for new variable
+        // Pick a semi-intelligent default name for the new param and variable.
+        // Also, adjust the expression we're replacing if a property itself has been selected.
+
         if (semanticModel.Binder.GetParent(expressionSyntax) is ObjectPropertySyntax propertySyntax
             && propertySyntax.TryGetKeyText() is string propertyName)
         {
@@ -165,69 +171,12 @@ public static class ExtractVarAndParam
         var statementLineNumber = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, statementSyntax.Span.Position).line;
         var definitionInsertionPosition = TextCoordinateConverter.GetOffset(compilationContext.LineStarts, statementLineNumber, 0);
 
-        if (option == 1)
-        {
-            yield return new CodeFix(
+        yield return new CodeFix(
            $"Extract variable",
            isPreferred: false,
            CodeFixKind.RefactorExtract,
            new CodeReplacement(expressionSyntax.Span, newVarName),
            new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
-        if (option == 2)
-        {
-            yield return new CodeFix(
-           $"Extract variable for {GetQuotedStringifiedType(expressionSyntax)}",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
-        if (option == 3)
-        {
-            yield return new CodeFix(
-           $"Extract variable for {GetQuotedStringifiedType(expressionSyntax)}",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
-        if (option == 4)
-        {
-            yield return new CodeFix(
-           $"Extract variable for {GetQuotedStringifiedType(expressionSyntax)}",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
-        if (option == 5)
-        {
-            yield return new CodeFix(
-           $"Extract variable",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
-        if (option == 6)
-        {
-            yield return new CodeFix(
-           $"Extract variable for {GetQuotedStringifiedType(expressionSyntax)}",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
-        if (option == 7)
-        {
-            yield return new CodeFix(
-           $"Extract variable for {GetQuotedStringifiedType(expressionSyntax)}",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), varDeclaration));
-        }
 
         // For the new param's type, try to use the declared type if there is one (i.e. the type of
         //   what we're assigning to), otherwise use the actual calculated type of the expression
@@ -235,128 +184,24 @@ public static class ExtractVarAndParam
         var declaredType = semanticModel.GetDeclaredType(expressionSyntax);
         var newParamType = NullIfErrorOrAny(declaredType) ?? NullIfErrorOrAny(inferredType);
 
-        var stringifiedNewParamTypeLoose = Stringify(newParamType, typeProperty, Strictness.Loose);
-        var stringifiedNewParamTypeMedium = Stringify(newParamType, typeProperty, Strictness.Medium);
+        // Don't create nullable params - they're not allowed to have default values asdfg test
+        var ignoreTopLevelNullability = true;
 
-        if (option == 1)
+        var stringifiedNewParamTypeLoose = Stringify(newParamType, typeProperty, Strictness.Loose, ignoreTopLevelNullability);
+        var stringifiedNewParamTypeMedium = Stringify(newParamType, typeProperty, Strictness.Medium, ignoreTopLevelNullability);
+
+        yield return CreateExtractParameterCodeFix(
+            $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}",
+            semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
+
+        if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
         {
-            yield return CreateExtractParameterCodeFix(
-                "Extract parameter",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                   "Extract parameter with strict typing",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
+            var customTypedParamExtraction = CreateExtractParameterCodeFix(
+                $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
+                semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
+            yield return customTypedParamExtraction;
         }
 
-        if (option == 2)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter for {GetQuotedStringifiedType(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Create parameter with strict typing for {GetQuotedStringifiedType(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
-
-        if (option == 3)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter for {GetQuotedStringifiedType(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter with strict typing for {GetQuotedStringifiedType(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
-
-        if (option == 4)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter for {GetQuotedStringifiedType(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter with strict typing for {GetQuotedStringifiedType(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
-
-        if (option == 5)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
-
-        if (option == 6)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
-
-        if (option == 7)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter for {GetQuotedStringifiedType(expressionSyntax)} of type {GetQuotedText(stringifiedNewParamTypeLoose)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameterfor {GetQuotedStringifiedType(expressionSyntax)} of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
-
-        if (option == 8)
-        {
-            yield return CreateExtractParameterCodeFix(
-                $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)} for {GetQuotedStringifiedType(expressionSyntax)}",
-                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Loose);
-
-            if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
-            {
-                var customTypedParamExtraction = CreateExtractParameterCodeFix(
-                    $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)} for {GetQuotedStringifiedType(expressionSyntax)}",
-                    semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, definitionInsertionPosition, expressionSyntax, Strictness.Medium);
-                yield return customTypedParamExtraction;
-            }
-        }
     }
 
     private static CodeFix CreateExtractParameterCodeFix(
@@ -424,11 +269,6 @@ public static class ExtractVarAndParam
         }
 
         return preferredName;
-    }
-
-    private static string GetQuotedStringifiedType(ExpressionSyntax expressionSyntax)
-    {
-        return GetQuotedText(SyntaxStringifier.Stringify(expressionSyntax));
     }
 
     private static string GetQuotedText(string text)

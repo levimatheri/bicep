@@ -23,22 +23,34 @@ public static class TypeStringifier
 
     public enum Strictness
     {
-        Strict, // Create syntax representing the exact type, e.g. `{ p1: 123, p2: 'abc' | 'def' }`
-        Medium, // Widen literal types, e.g. => `{ p1: int, p2: 'abc' | 'def' }`, empty arrays/objects, tuples, etc, hopefully more in line with user needs
-        Loose,  // Widen everything to basic types only, e.g. => `object`
+        /// <summary>
+        /// Create syntax representing the exact type, e.g. `{ p1: 123, p2: 'abc' | 'def' }`
+        /// </summary>
+        Strict,
+
+        /// <summary>
+        /// Widen literal types when not part of a union, e.g. => `{ p1: int, p2: 'abc' | 'def' }`, empty arrays/objects, tuples, etc, hopefully more in line with user needs
+        /// </summary>
+        Medium,
+
+        /// <summary>
+        /// Widen everything to basic types only, e.g. => `object`
+        /// </summary>
+        Loose,
     }
 
-    //asdfg should this be creating syntax nodes?  Probably...
-    //asdfg recursive types
     // Note: This is "best effort" code for now. Ideally we should handle this exactly, but Bicep doesn't support expressing all the types it actually supports
     // Note: Returns type as a single line
-    public static string Stringify(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness)
+    //asdfg consider better solution than ignoreTopLevelNullability, like removing the nullability before passing it in
+    public static string Stringify(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness, bool removeTopLevelNullability = false)
     {
-        return StringifyHelper(type, typeProperty, strictness, []);
+        return StringifyHelper(type, typeProperty, strictness, [], removeTopLevelNullability);
     }
 
-    private static string StringifyHelper(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness, TypeSymbol[] visitedTypes)
+    private static string StringifyHelper(TypeSymbol? type, TypeProperty? typeProperty, Strictness strictness, TypeSymbol[] visitedTypes, bool removeTopLevelNullability = false)
     {
+        //asdfg why are we never calling StringifyHelper with a non-null typeProperty during recursion?.  Should we?
+
         // asdfg also check stack depth
         if (type == null)
         {
@@ -53,29 +65,33 @@ public static class TypeStringifier
         TypeSymbol[] previousVisitedTypes = visitedTypes;
         visitedTypes = [..previousVisitedTypes, type];
 
+        type = Widen(type, strictness); //asdfg??
+
         // If from an object property that is implicitly allowed to be null (like for many resource properties)
-        if (typeProperty?.Flags.HasFlag(TypePropertyFlags.AllowImplicitNull) == true)
+        if (!removeTopLevelNullability && typeProperty?.Flags.HasFlag(TypePropertyFlags.AllowImplicitNull) == true)
         {
             // Won't recursive forever because now typeProperty = null
             // Note though that because this is by nature recursive with the same type, we must pass in previousVisitedTypes
             return StringifyHelper(TypeHelper.MakeNullable(type), null, strictness, previousVisitedTypes);
         }
 
-        // Convert "( unionMember1 | null )" => "unionMember1?"
-        if (type is UnionType nullableUnionType && TypeHelper.TryRemoveNullability(type) is TypeSymbol nonNullableType)
+        // Displayable nullable types (always represented as a union type containing "null" as a member")
+        //   as "type?" rather than "type|null"
+        if (TypeHelper.TryRemoveNullability(type) is TypeSymbol nonNullableType)
         {
-            // Type is nullable (i.e., a union which includes a null member).  If there is only a single
-            //   member in the original type besides the null, then display as "member?" instead of "member | null".
-            // All other cases, display as the original union (i.e., we want "false|true|null" instead of "(false|true)?"
-            if (nullableUnionType.Members.Length == 2)
+            if (removeTopLevelNullability)
             {
-                return $"{StringifyHelper(nonNullableType, null, strictness, visitedTypes)}?"; //asdfg testpoint
+                return StringifyHelper(nonNullableType, null, strictness, visitedTypes);//asdfg testpoint
+            }
+            else
+            {
+                return Nullableify(nonNullableType, strictness, visitedTypes);//asdfg testpoint
             }
         }
 
         switch (type)
         {
-            // Literal types - keep as is if strict
+            // Literal types - keep as is if strict asdfg??
             case StringLiteralType
                or IntegerLiteralType
                or BooleanLiteralType
@@ -178,20 +194,48 @@ public static class TypeStringifier
     private static string Arrayify(TypeSymbol type, Strictness strictness, TypeSymbol[] visitedTypes)
     {
         string stringifiedType = StringifyHelper(type, null, strictness, visitedTypes);
-        bool needsParentheses = type switch
-        {
-            UnionType unionType => true, // also works for nullable types
-            _ => false
-        };
+        bool needsParentheses = NeedsParentheses(type, strictness);
 
         return needsParentheses ? $"({stringifiedType})[]" : $"{stringifiedType}[]";
     }
 
+    private static string Nullableify(TypeSymbol type, Strictness strictness, TypeSymbol[] visitedTypes)
+    {
+        string stringifiedType = StringifyHelper(type, null, strictness, visitedTypes);
+        bool needsParentheses = NeedsParentheses(type, strictness);
+
+        return needsParentheses ? $"({stringifiedType})?" : $"{stringifiedType}?";
+    }
+
+    private static bool NeedsParentheses(TypeSymbol type, Strictness strictness)
+    {
+        // If the type is '1|2', with non-strict, we need to check whether 'int' needs parentheses, not '1|2'
+        // Therefore, widen first
+        bool needsParentheses = Widen(type, strictness) switch
+        {
+            UnionType { Members.Length: > 1 } => true, // also works for nullable types
+            _ => false
+        };
+        return needsParentheses;
+    }
+
     private static TypeSymbol Widen(TypeSymbol type, Strictness strictness)
     {
-        if (strictness == Strictness.Strict)
+        if (strictness != Strictness.Loose)
         {
             return type;
+        }
+
+        if (type is UnionType unionType)
+        {
+            // Widen non-null members to a single type (which are all supposed to be literal types of the same type) asdfg
+            var widenedType = Widen(FirstNonNullUnionMember(unionType) ?? unionType.Members.FirstOrDefault()?.Type ?? LanguageConstants.Null, strictness);
+            if (TypeHelper.IsNullable(unionType))
+            {
+                // If it had "|null" before, add it back
+                widenedType = TypeHelper.MakeNullable(widenedType); //asdfg??? testpoint
+            }
+            return widenedType;
         }
 
         // ... otherwise widen to simple types

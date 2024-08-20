@@ -28,8 +28,107 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using static Google.Protobuf.Reflection.SourceCodeInfo.Types;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
-//asdfg
-/*
+
+/* asdfg
+
+type myMixedTypeArrayType = ('fizz' | 42 | {an: 'object'} | null)[]
+
+
+
+type negativeIntLiteral = -10
+type negatedIntReference = -negativeIntLiteral
+type negatedBoolLiteral = !true
+type negatedBoolReference = !negatedBoolLiteral
+type t = {
+  a: negativeIntLiteral
+  b: negatedIntReference
+  c: negatedBoolLiteral
+  d: negatedBoolReference
+}
+param p t = {
+  a: -10
+  b: 10
+  c: false
+  d: true
+}
+
+
+extract sku: - end up with 'string'|string, and also required 'tier'
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' = {
+  name: storageAccountConfig.name
+  location: location
+  sku: {
+    name: storageAccountConfig.sku
+  }
+  kind: 'StorageV2'
+}
+
+
+https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/data-types#custom-tagged-union-data-type
+
+
+
+
+
+type anObject = {
+  property: string
+  optionalProperty: string?
+}
+ 
+param aParameter anObject = {
+  property: 'value'
+  otionalProperty: 'value'
+}
+
+
+
+module type appears (dependsOn)
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-04-01' = <<{
+  name: storageAccountName
+  location: location
+  sku: {
+    name: storageAccountSKU
+  }
+  kind: 'StorageV2'
+}>>
+
+
+
+type invalidRecursiveObjectType = {
+  level1: {
+    level2: {
+      level3: {
+        level4: {
+          level5: invalidRecursiveObjectType
+        }
+      }
+    }
+  }
+}
+param p invalidRecursiveObjectType = {
+              level1: {
+                level2: {
+                  level3: {
+                    level4: {
+                      level5: null
+                    }
+                  }
+                }
+              }
+            }
+
+
+
+type obj = {
+  @description('The object ID')
+  id: int
+
+  @description('Additional properties')
+  @minLength(10)
+  *: string
+}
+
 
 
 var blah1 = [<<{ foo: 'bar' }>>, { foo: 'baz' }]
@@ -80,8 +179,8 @@ namespace Bicep.LangServer.IntegrationTests;
 [TestClass]
 public class ExtractVarAndParamTests : CodeActionTestBase
 {
-    private const string ExtractToVariableTitle = "Create variable for";
-    private const string ExtractToParameterTitle = "Create parameter ";
+    private const string ExtractToVariableTitle = "Extract variable";
+    private const string ExtractToParameterTitle = "Extract parameter";
 
     //asdfg param p2 'foo' | 'bar' | string = 'bar'
     // asdfg nullable

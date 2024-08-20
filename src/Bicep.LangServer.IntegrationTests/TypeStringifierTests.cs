@@ -83,6 +83,37 @@ public class TypeStringifierTests
 
     [DataTestMethod]
     [DataRow(
+        "type testType = 123|234",
+        "type loose = int",
+        "type medium = 123 | 234",
+        "type strict = 123 | 234")]
+    [DataRow(
+        "type testType = 'abc' | 'def' | null",
+        "type loose = string?",
+        "type medium = ('abc' | 'def')?",
+        "type strict = ('abc' | 'def')?")]
+    [DataRow(
+        "type testType = ('abc' | 'def')[]",
+        "type loose = array",
+        "type medium = ('abc' | 'def')[]",
+        "type strict = ('abc' | 'def')[]")]
+    [DataRow(
+        "type testType = { a: 'abc' | 'def' }",
+        "type loose = object",
+        "type medium = { a: 'abc' | 'def' }",
+        "type strict = { a: 'abc' | 'def' }")]
+    [DataRow(
+        "type testType = 123|null",
+        "type loose = int?",
+        "type medium = int?",  // I think "123?" would also be acceptable, it's not obvious which is better
+        "type strict = 123?")]
+    public void DontWidenLiteralTypesWithMediumWhenPartOfAUnion(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
+    {
+        RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);
+    }
+
+    [DataTestMethod]
+    [DataRow(
         "type testType = object",
         "type loose = object",
         "type medium = object",
@@ -118,26 +149,31 @@ public class TypeStringifierTests
     }
 
     [DataTestMethod]
+    //[DataRow(asdfg
+    //    "type testType = 'abc' | 'def' | 'ghi'",
+    //    "type loose = string",
+    //    "type medium = 'abc' | 'def' | 'ghi'",
+    //    "type strict = 'abc' | 'def' | 'ghi'")]
+    //[DataRow(
+    //    "type testType = 1 | 2 | 3 | -1",
+    //    "type loose = int",
+    //    "type medium = -1 | 1 | 2 | 3",
+    //    "type strict = -1 | 1 | 2 | 3")]
+    //[DataRow(
+    //    "type testType = true|false",
+    //    "type loose = bool",
+    //    "type medium = false | true",
+    //    "type strict = false | true")]
+    //[DataRow(
+    //    "type testType = null|true|false",
+    //    "type loose = bool?",
+    //    "type medium = (false | true)?",
+    //    "type strict = (false | true)?")]
     [DataRow(
-        "type testType = 'abc' | 'def' | 'ghi'",
-        "type loose = string",
-        "type medium = 'abc' | 'def' | 'ghi'",
-        "type strict = 'abc' | 'def' | 'ghi'")]
-    [DataRow(
-        "type testType = 1 | 2 | 3 | -1",
-        "type loose = int",
-        "type medium = -1 | 1 | 2 | 3",
-        "type strict = -1 | 1 | 2 | 3")]
-    [DataRow(
-        "type testType = true|false",
-        "type loose = bool",
-        "type medium = false | true",
-        "type strict = false | true")]
-    [DataRow(
-        "type testType = null|true|false",
-        "type loose = bool?",
-        "type medium = false | null | true",
-        "type strict = false | null | true")]
+        "type testType = { a: 'a'|null, b: 'a'|'b'|null, c: 'a'|'b'|'c'|null }",
+        "type loose = object",
+        "type medium = { a: string?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }",
+        "type strict = { a: 'a'?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }")]
     public void UnionTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
     {
         RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);
@@ -321,8 +357,8 @@ public class TypeStringifierTests
     [DataRow(
         "type testType = null|true|false",
         "type loose = bool?",
-        "type medium = false | null | true",
-        "type strict = false | null | true")]
+        "type medium = (false | true)?",
+        "type strict = (false | true)?")]
     [DataRow(
         "type testType = (null|true)|null",
         "type loose = bool?",
@@ -336,13 +372,13 @@ public class TypeStringifierTests
     [DataRow(
         "type testType = (null|'a'|'b')|null|'c'",
         "type loose = string?",
-        "type medium = 'a' | 'b' | 'c' | null",
-        "type strict = 'a' | 'b' | 'c' | null")]
+        "type medium = ('a' | 'b' | 'c')?",
+        "type strict = ('a' | 'b' | 'c')?")]
     [DataRow(
-        "type testType = null|(true|false)",
-        "type loose = bool?",
-        "type medium = false | null | true",
-        "type strict = false | null | true")]
+        "type testType = null|(1|2)",
+        "type loose = int?",
+        "type medium = (1 | 2)?",
+        "type strict = (1 | 2)?")]
     [DataRow(
         "type testType = null|['a', 'b']",
         "type loose = array?",
@@ -378,6 +414,20 @@ public class TypeStringifierTests
         "type loose = object?",
         "type medium = object?",
         "type strict = {}?")]
+    [DataRow(
+        """
+            type t = { a: 'a' | null, b: 'a' | 'b' | null, c: 'a' | 'b' | 'c' | null }?
+            param testType { a: testType } = {
+              a: {
+                a: 'a'
+                b: 'a'
+                c: 'c'
+              }
+            }
+            """,
+        "type loose = object?",
+        "type medium = { a: { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }? }",
+        "type strict = { a: { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }? }")]
     public void NullableTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
     {
         RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);
@@ -482,14 +532,14 @@ public class TypeStringifierTests
                 statuses: {
                   code: string?
                   displayStatus: string?
-                  level: 'Error' | 'Info' | 'Warning' | null
+                  level: ('Error' | 'Info' | 'Warning')?
                   message: string?
                   time: string?
                 }[]?
                 substatuses: {
                   code: string?
                   displayStatus: string?
-                  level: 'Error' | 'Info' | 'Warning' | null
+                  level: ('Error' | 'Info' | 'Warning')?
                   message: string?
                   time: string?
                 }[]?
@@ -513,14 +563,14 @@ public class TypeStringifierTests
                 statuses: {
                   code: string?
                   displayStatus: string?
-                  level: 'Error' | 'Info' | 'Warning' | null
+                  level: ('Error' | 'Info' | 'Warning')?
                   message: string?
                   time: string?
                 }[]?
                 substatuses: {
                   code: string?
                   displayStatus: string?
-                  level: 'Error' | 'Info' | 'Warning' | null
+                  level: ('Error' | 'Info' | 'Warning')?
                   message: string?
                   time: string?
                 }[]?
