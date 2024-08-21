@@ -149,12 +149,12 @@ public class TypeStringifierTests
     }
 
     [DataTestMethod]
+    [DataRow(
+        "type testType = 'abc' | 'def' | 'ghi'",
+        "type loose = string",
+        "type medium = 'abc' | 'def' | 'ghi'",
+        "type strict = 'abc' | 'def' | 'ghi'")]
     //[DataRow(asdfg
-    //    "type testType = 'abc' | 'def' | 'ghi'",
-    //    "type loose = string",
-    //    "type medium = 'abc' | 'def' | 'ghi'",
-    //    "type strict = 'abc' | 'def' | 'ghi'")]
-    //[DataRow(
     //    "type testType = 1 | 2 | 3 | -1",
     //    "type loose = int",
     //    "type medium = -1 | 1 | 2 | 3",
@@ -169,17 +169,22 @@ public class TypeStringifierTests
     //    "type loose = bool?",
     //    "type medium = (false | true)?",
     //    "type strict = (false | true)?")]
-    [DataRow(
-        "type testType = { a: 'a'|null, b: 'a'|'b'|null, c: 'a'|'b'|'c'|null }",
-        "type loose = object",
-        "type medium = { a: string?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }",
-        "type strict = { a: 'a'?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }")]
+    //[DataRow(
+    //    "type testType = { a: 'a'|null, b: 'a'|'b'|null, c: 'a'|'b'|'c'|null }",
+    //    "type loose = object",
+    //    "type medium = { a: string?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }",
+    //    "type strict = { a: 'a'?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }")]
     public void UnionTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
     {
         RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);
     }
 
     [DataTestMethod]
+    [DataRow(
+        "type testType = [1, 2, 3]",
+        "type loose = array",
+        "type medium = int[]",
+        "type strict = [1, 2, 3]")]
     [DataRow(
         "type testType = [ object, array, {}, [] ]",
         "type loose = array",
@@ -382,7 +387,7 @@ public class TypeStringifierTests
     [DataRow(
         "type testType = null|['a', 'b']",
         "type loose = array?",
-        "type medium = [string, string]?",
+        "type medium = string[]?",
         "type strict = ['a', 'b']?")]
     [DataRow(
         "type testType = null|{a: 'a', b: 1234?}",
@@ -417,15 +422,9 @@ public class TypeStringifierTests
     [DataRow(
         """
             type t = { a: 'a' | null, b: 'a' | 'b' | null, c: 'a' | 'b' | 'c' | null }?
-            param testType { a: testType } = {
-              a: {
-                a: 'a'
-                b: 'a'
-                c: 'c'
-              }
-            }
+            type testType = { a: testType }
             """,
-        "type loose = object?",
+        "type loose = object",
         "type medium = { a: { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }? }",
         "type strict = { a: { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }? }")]
     public void NullableTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)

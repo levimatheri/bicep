@@ -736,39 +736,50 @@ var v1 = newParameter
     [TestMethod]
     public async Task ShouldHandleArrays()
     {
-        await RunExtractToVariableAndParameterTest("""
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in <<[1, 2, 3]>>: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: '10.0.${index}.0/24'
-                }
-              }
-            ]
-            """,
-                """
-            var newVariable = [1, 2, 3]
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in newVariable: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: '10.0.${index}.0/24'
-                }
-              }
-            ]
-            """,
-                """
-            param newParameter array = [1, 2, 3]
-            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-              for (item, index) in newParameter: {
-                name: 'subnet${index}'
-                properties: {
-                  addressPrefix: '10.0.${index}.0/24'
-                }
-              }
-            ]
-            """,
-                "asdfg");
+        await RunExtractToVariableAndParameterTest(
+            """
+                resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+                  for (item, index) in <<[1, 2, 3]>>: {
+                    name: 'subnet${index}'
+                    properties: {
+                      addressPrefix: '10.0.${index}.0/24'
+                    }
+                  }
+                ]
+                """,
+            """
+                var newVariable = [1, 2, 3]
+                resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+                  for (item, index) in newVariable: {
+                    name: 'subnet${index}'
+                    properties: {
+                      addressPrefix: '10.0.${index}.0/24'
+                    }
+                  }
+                ]
+                """,
+            """
+                param newParameter array = [1, 2, 3]
+                resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+                  for (item, index) in newParameter: {
+                    name: 'subnet${index}'
+                    properties: {
+                      addressPrefix: '10.0.${index}.0/24'
+                    }
+                  }
+                ]
+                """,
+            """
+                param newParameter int[] = [1, 2, 3]
+                resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+                  for (item, index) in newParameter: {
+                    name: 'subnet${index}'
+                    properties: {
+                      addressPrefix: '10.0.${index}.0/24'
+                    }
+                  }
+                ]
+                """);
     }
 
     [TestMethod]
@@ -1371,7 +1382,8 @@ var v1 = newParameter
     }
 
     [DataTestMethod]
-    [DataRow("""
+    [DataRow(
+        """
             resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
               name: vmName
               location: location
@@ -1392,7 +1404,7 @@ var v1 = newParameter
               }
             }
             """,
-    """
+        """
             var newVariable = 'jkl'
             resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
               name: vmName
@@ -1414,99 +1426,55 @@ var v1 = newParameter
               }
             }
             """,
-    """
-            param newParameter string = 'jkl'
-            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-              name: vmName
-              location: location
-              properties: {
-                osProfile: {
-                  computerName: vmName
-                  myproperty: {
-                    abc: [
-                      {
-                        def: [
-                          'ghi'
-                          newParameter
-                        ]
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-            """,
         DisplayName = "Array element, don't pick up property name")]
     [DataRow(
-        """
-                resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-                  name: vmName
-                  location: location
-                  properties: {
-                    osProfile: {
-                      computerName: vmName
-                      myproperty: {
-                        abc: <<[
-                          {
-                            def: [
-                              'ghi'
-                              'jkl'
-                            ]
-                          }
-                        ]>>
-                      }
+    """
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+                name: vmName
+                location: location
+                properties: {
+                osProfile: {
+                    computerName: vmName
+                    myproperty: {
+                    abc: <<[
+                        {
+                        def: [
+                            'ghi'
+                            'jkl'
+                        ]
+                        }
+                    ]>>
                     }
-                  }
                 }
-                """,
+                }
+            }
+            """,
         """
-                var abc = [
-                  {
-                    def: [
-                      'ghi'
-                      'jkl'
-                    ]
-                  }
+            var abc = [
+                {
+                def: [
+                    'ghi'
+                    'jkl'
                 ]
-                resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-                  name: vmName
-                  location: location
-                  properties: {
-                    osProfile: {
-                      computerName: vmName
-                      myproperty: {
-                        abc: abc
-                      }
-                    }
-                  }
                 }
-                """,
-        """
-                param abc array = [
-                  {
-                    def: [
-                      'ghi'
-                      'jkl'
-                    ]
-                  }
-                ]
-                resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
-                  name: vmName
-                  location: location
-                  properties: {
-                    osProfile: {
-                      computerName: vmName
-                      myproperty: {
-                        abc: abc
-                      }
+            ]
+            resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
+                name: vmName
+                location: location
+                properties: {
+                osProfile: {
+                    computerName: vmName
+                    myproperty: {
+                    abc: abc
                     }
-                  }
                 }
-                """,
+                }
+            }
+            """,
         DisplayName = "Full property value as array, pick up property name")]
-    public async Task ShouldPickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithSelection, string? expectedVarText, string expectedLooseParamText, string? expectedMediumParamText)
+    public async Task ShouldPickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithSelection, string? expectedVarText)
     {
-        await RunExtractToVariableAndParameterTest(fileWithSelection, expectedVarText, expectedLooseParamText, expectedMediumParamText);
+        await RunExtractToVariableTest(fileWithSelection, expectedVarText);
     }
 
     [DataTestMethod]

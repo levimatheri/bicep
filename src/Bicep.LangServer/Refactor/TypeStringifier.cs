@@ -65,7 +65,7 @@ public static class TypeStringifier
         TypeSymbol[] previousVisitedTypes = visitedTypes;
         visitedTypes = [..previousVisitedTypes, type];
 
-        type = Widen(type, strictness); //asdfg??
+        type = Widen(type, strictness);
 
         // If from an object property that is implicitly allowed to be null (like for many resource properties)
         if (!removeTopLevelNullability && typeProperty?.Flags.HasFlag(TypePropertyFlags.AllowImplicitNull) == true)
@@ -113,17 +113,18 @@ public static class TypeStringifier
                 }
                 else if (strictness == Strictness.Medium)
                 {
-                    var firstItemType = tupleType.Items.FirstOrDefault()?.Type;
+                    var widenedTypes = tupleType.Items.Select(t => Widen(t.Type, strictness)).ToArray();
+                    var firstItemType = widenedTypes.FirstOrDefault()?.Type;
                     if (firstItemType == null)
                     {
                         // Empty tuple - use "array" to allow items
                         return LanguageConstants.Array.Name;
                     }
-                    else if (tupleType.Items.All(t => t.Type.Name == firstItemType.Name))
+                    else if (widenedTypes.All(t => t.Type.Name == firstItemType.Name))
                     {
                         // Bicep infers a tuple type from literals such as "[1, 2]", turn these
                         // into the more likely intended int[] if all the members are of the same type
-                        return Arrayify(tupleType.Item.Type, strictness, visitedTypes);
+                        return Arrayify(widenedTypes[0], strictness, visitedTypes);
                     }
                 }
 
@@ -182,7 +183,7 @@ public static class TypeStringifier
             case AnyType:
                 return AnyTypeName;
             case ErrorType:
-                return ErrorTypeName; //asdfg test                   
+                return ErrorTypeName; //asdfg test
 
             // Anything else we don't know about
             //asdfg _ => type.Name, //asdfg?
@@ -209,7 +210,7 @@ public static class TypeStringifier
 
     private static bool NeedsParentheses(TypeSymbol type, Strictness strictness)
     {
-        // If the type is '1|2', with non-strict, we need to check whether 'int' needs parentheses, not '1|2'
+        // If the type is '1|2', with loose/medium, we need to check whether 'int' needs parentheses, not '1|2'
         // Therefore, widen first
         bool needsParentheses = Widen(type, strictness) switch
         {
@@ -221,15 +222,17 @@ public static class TypeStringifier
 
     private static TypeSymbol Widen(TypeSymbol type, Strictness strictness)
     {
-        if (strictness != Strictness.Loose)
+        if (strictness == Strictness.Strict)
         {
             return type;
         }
 
-        if (type is UnionType unionType)
+        if (type is UnionType unionType && strictness == Strictness.Loose)
         {
             // Widen non-null members to a single type (which are all supposed to be literal types of the same type) asdfg
-            var widenedType = Widen(FirstNonNullUnionMember(unionType) ?? unionType.Members.FirstOrDefault()?.Type ?? LanguageConstants.Null, strictness);
+            var widenedType = Widen(
+                FirstNonNullUnionMember(unionType) ?? unionType.Members.FirstOrDefault()?.Type ?? LanguageConstants.Null,
+                strictness);
             if (TypeHelper.IsNullable(unionType))
             {
                 // If it had "|null" before, add it back
