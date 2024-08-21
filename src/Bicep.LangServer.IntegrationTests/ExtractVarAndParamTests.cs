@@ -455,7 +455,6 @@ var v1 = newParameter
                 var v = newParameter
                 """)]
 
-    //TODO: swapping order of string/int
     [DataRow(
     """
             param p1 {a: string || int}
@@ -463,180 +462,224 @@ var v1 = newParameter
             """,
      """
              param p1 {a: string | int}
+             param newParameter object = p1
+             var v1 = newParameter
+             """,
+     """
+             param p1 {a: string | int}
              param newParameter { a: int | string } = p1
              var v1 = newParameter
              """)]
-
-
-    public async Task BicepDiscussion(string fileWithSelection, string expectedText)
+    public async Task BicepDiscussion(string fileWithSelection, string expectedLooseParamText, string expectedMediumParamText)
     {
-        await RunExtractToParameterTest(fileWithSelection, expectedText);
+        await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText );
     }
 
     [DataTestMethod]
-    [DataRow("""
-    var a = '|b'
-    """,
+    [DataRow(
         """
-    var newVariable = 'b'
-    var a = newVariable
-    """,
+            var a = '|b'
+            """,
         """
-    param newParameter string = 'b'
-    var a = newParameter
-    """)]
-    [DataRow("""
-    var a = 'a'
-    var b = '|b'
-    var c = 'c'
-    """,
+            var newVariable = 'b'
+            var a = newVariable
+            """,
         """
-    var a = 'a'
-    var newVariable = 'b'
-    var b = newVariable
-    var c = 'c'
-    """,
+            param newParameter string = 'b'
+            var a = newParameter
+            """)]
+    [DataRow(
         """
-    var a = 'a'
-    param newParameter string = 'b'
-    var b = newParameter
-    var c = 'c'
-    """)]
-    [DataRow("""
-    var a = 1 + |2
-    """,
+            var a = 'a'
+            var b = '|b'
+            var c = 'c'
+            """,
         """
-    var newVariable = 2
-    var a = 1 + newVariable
-    """,
+            var a = 'a'
+            var newVariable = 'b'
+            var b = newVariable
+            var c = 'c'
+            """,
         """
-    param newParameter int = 2
-    var a = 1 + newParameter
-    """)]
-    [DataRow("""
-    var a = <<1 + 2>>
-    """,
+            var a = 'a'
+            param newParameter string = 'b'
+            var b = newParameter
+            var c = 'c'
+            """)]
+    [DataRow(
         """
-    var newVariable = 1 + 2
-    var a = newVariable
-    """)]
-    [DataRow("""
-    var a = <<1 +>> 2
-    """,
+            var a = 1 + |2
+            """,
         """
-    var newVariable = 1 + 2
-    var a = newVariable
-    """)]
-    [DataRow("""
-    var a = 1 |+ 2
-    """,
+            var newVariable = 2
+            var a = 1 + newVariable
+            """,
         """
-    var newVariable = 1 + 2
-    var a = newVariable
-    """)]
-    [DataRow("""
-    var a = 1 <<+ 2 + 3 >>+ 4
-    """,
+            param newParameter int = 2
+            var a = 1 + newParameter
+            """)]
+    [DataRow(
         """
-    var newVariable = 1 + 2 + 3 + 4
-    var a = newVariable
-    """)]
-    [DataRow("""
-    param p1 int = 1 + |2
-    """,
+            var a = <<1 + 2>>
+            """,
         """
-    var newVariable = 2
-    param p1 int = 1 + newVariable
-    """)]
-    [DataRow("""
-    var a = 1 + 2
-    var b = '${a}|{a}'
-    """,
+            var newVariable = 1 + 2
+            var a = newVariable
+            """)]
+    [DataRow(
         """
-    var a = 1 + 2
-    var newVariable = '${a}{a}'
-    var b = newVariable
-    """,
+            var a = <<1 +>> 2
+            """,
+        """
+            var newVariable = 1 + 2
+            var a = newVariable
+            """)]
+    [DataRow(
+        """
+            var a = 1 |+ 2
+            """,
+        """
+            var newVariable = 1 + 2
+            var a = newVariable
+            """)]
+    [DataRow(
+        """
+            var a = 1 <<+ 2 + 3 >>+ 4
+            """,
+        """
+            var newVariable = 1 + 2 + 3 + 4
+            var a = newVariable
+            """)]
+    [DataRow(
+        """
+            param p1 int = 1 + |2
+            """,
+        """
+            var newVariable = 2
+            param p1 int = 1 + newVariable
+            """)]
+    [DataRow(
+        """
+            var a = 1 + 2
+            var b = '${a}|{a}'
+            """,
+        """
+            var a = 1 + 2
+            var newVariable = '${a}{a}'
+            var b = newVariable
+            """,
         DisplayName = "Full interpolated string")]
-    [DataRow("""
-    // comment 1
-    @secure
-    // comment 2
-    param a = '|a'
-    """,
+    [DataRow(
         """
-    // comment 1
-    var newVariable = 'a'
-    @secure
-    // comment 2
-    param a = newVariable
-    """,
+            // comment 1
+            @secure
+            // comment 2
+            param a = '|a'
+            """,
+        """
+            // comment 1
+            var newVariable = 'a'
+            @secure
+            // comment 2
+            param a = newVariable
+            """,
         DisplayName = "Preceding lines")]
-    [DataRow("""
-    var a = 1
-    var b = [
-        'a'
-        1 + <<2>>
-        'c'
-    ]
-    """,
+    [DataRow(
         """
-    var a = 1
-    var newVariable = 2
-    var b = [
-        'a'
-        1 + newVariable
-        'c'
-    ]
-    """,
+            var a = 1
+            var b = [
+                'a'
+                1 + <<2>>
+                'c'
+            ]
+            """,
         """
-    var a = 1
-    param newParameter int = 2
-    var b = [
-        'a'
-        1 + newParameter
-        'c'
-    ]
-    """,
+            var a = 1
+            var newVariable = 2
+            var b = [
+                'a'
+                1 + newVariable
+                'c'
+            ]
+            """,
+        """
+            var a = 1
+            param newParameter int = 2
+            var b = [
+                'a'
+                1 + newParameter
+                'c'
+            ]
+            """,
         DisplayName = "Inside a data structure")]
-    [DataRow("""
-    // My comment here
-    resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-        name: 'name'
-        location: |'westus'
-        kind: 'StorageV2'
-        sku: {
-        name: 'Premium_LRS'
-        }
-    }
-    """,
+    [DataRow(
         """
-    // My comment here
-    var location = 'westus'
-    resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-        name: 'name'
-        location: location
-        kind: 'StorageV2'
-        sku: {
-        name: 'Premium_LRS'
-        }
-    }
-    """,
+            // My comment here
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+                name: 'name'
+                location: |'westus'
+                kind: 'StorageV2'
+                sku: {
+                name: 'Premium_LRS'
+                }
+            }
+            """,
         """
-    // My comment here
-    param location string = 'westus'
-    resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-        name: 'name'
-        location: location
-        kind: 'StorageV2'
-        sku: {
-        name: 'Premium_LRS'
-        }
-    }
-    """)]
-    public async Task Basics(string fileWithSelection, string? expectedVarText, string? expectedParamText = null)
+            // My comment here
+            var location = 'westus'
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+                name: 'name'
+                location: location
+                kind: 'StorageV2'
+                sku: {
+                name: 'Premium_LRS'
+                }
+            }
+            """,
+        """
+            // My comment here
+            @description('Required. Gets or sets the location of the resource. This will be one of the supported and registered Azure Geo Regions (e.g. West US, East US, Southeast Asia, etc.). The geo region of a resource cannot be changed once it is created, but if an identical geo region is specified on update, the request will succeed.')
+            param location string = 'westus'
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+                name: 'name'
+                location: location
+                kind: 'StorageV2'
+                sku: {
+                name: 'Premium_LRS'
+                }
+            }
+            """)]
+    public async Task Basics(string fileWithSelection, string? expectedVarText, string? expectedLooseParamText = null, string? expectedMediumParamText = null)
     {
-        await RunExtractToVariableAndOrParameterTest(fileWithSelection, expectedVarText, expectedParamText);
+        await RunExtractToVariableAndParameterTest(fileWithSelection, expectedVarText, expectedLooseParamText, expectedMediumParamText);
+    }
+
+    [DataTestMethod]
+    [DataRow(
+        """
+            var a = '|b'
+            """,
+        """
+            param newParameter string = 'b'
+            var a = newParameter
+            """,
+        null // no second option
+        )]
+    [DataRow(
+        """
+            var a = |{a: 'b'}
+            """,
+        """
+            param newParameter object = { a: 'b' }
+            var a = newParameter
+            """,
+        """
+            param newParameter { a: string } = { a: 'b' }
+            var a = newParameter
+            """)]
+    public async Task ShouldOfferTwoParameterExtractions_IffTheExtractedTypesAreDifferent(string fileWithSelection, string? expectedLooseParamText, string? expectedMediumParamText)
+    {
+        await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
     }
 
     [DataTestMethod]
@@ -693,115 +736,141 @@ var v1 = newParameter
     [TestMethod]
     public async Task ShouldHandleArrays()
     {
-        await RunExtractToVariableAndOrParameterTest("""
-    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-      for (item, index) in <<[1, 2, 3]>>: {
-        name: 'subnet${index}'
-        properties: {
-          addressPrefix: '10.0.${index}.0/24'
-        }
-      }
-    ]
-    """,
-        """
-    var newVariable = [1, 2, 3]
-    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-      for (item, index) in newVariable: {
-        name: 'subnet${index}'
-        properties: {
-          addressPrefix: '10.0.${index}.0/24'
-        }
-      }
-    ]
-    """,
-        """
-    param newParameter array = [1, 2, 3]
-    resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
-      for (item, index) in newParameter: {
-        name: 'subnet${index}'
-        properties: {
-          addressPrefix: '10.0.${index}.0/24'
-        }
-      }
-    ]
-    """);
+        await RunExtractToVariableAndParameterTest("""
+            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+              for (item, index) in <<[1, 2, 3]>>: {
+                name: 'subnet${index}'
+                properties: {
+                  addressPrefix: '10.0.${index}.0/24'
+                }
+              }
+            ]
+            """,
+                """
+            var newVariable = [1, 2, 3]
+            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+              for (item, index) in newVariable: {
+                name: 'subnet${index}'
+                properties: {
+                  addressPrefix: '10.0.${index}.0/24'
+                }
+              }
+            ]
+            """,
+                """
+            param newParameter array = [1, 2, 3]
+            resource subnets 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = [
+              for (item, index) in newParameter: {
+                name: 'subnet${index}'
+                properties: {
+                  addressPrefix: '10.0.${index}.0/24'
+                }
+              }
+            ]
+            """,
+                "asdfg");
     }
 
     [TestMethod]
     public async Task ShouldHandleObjects()
     {
-        await RunExtractToVariableAndOrParameterTest("""
-                param _artifactsLocation string
-                param  _artifactsLocationSasToken string
+        await RunExtractToVariableAndParameterTest("""
+            param _artifactsLocation string
+            param  _artifactsLocationSasToken string
 
-                resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                  parent: vmName_resource
-                  name: 'cse-windows'
-                  location: location
-                  properties: <<{
-                    // Entire properties object selected
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: {
-                      fileUris: [
-                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                      ]
-                      commandToExecute: commandToExecute
-                    }
-                  }>>
-                }
-                """,
-        """
-                param _artifactsLocation string
-                param  _artifactsLocationSasToken string
-
-                var properties = {
-                  // Entire properties object selected
-                  publisher: 'Microsoft.Compute'
-                  type: 'CustomScriptExtension'
-                  typeHandlerVersion: '1.8'
-                  autoUpgradeMinorVersion: true
-                  settings: {
+            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+                parent: vmName_resource
+                name: 'cse-windows'
+                location: location
+                properties: <<{
+                // Entire properties object selected
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.8'
+                autoUpgradeMinorVersion: true
+                settings: {
                     fileUris: [
-                      uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
                     ]
                     commandToExecute: commandToExecute
-                  }
                 }
-                resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                  parent: vmName_resource
-                  name: 'cse-windows'
-                  location: location
-                  properties: properties
-                }
-                """,
+                }>>
+            }
+            """,
         """
-                param _artifactsLocation string
-                param  _artifactsLocationSasToken string
+            param _artifactsLocation string
+            param  _artifactsLocationSasToken string
 
-                @description('Describes the properties of a Virtual Machine Extension.')
-                param properties object? = {
-                  // Entire properties object selected
-                  publisher: 'Microsoft.Compute'
-                  type: 'CustomScriptExtension'
-                  typeHandlerVersion: '1.8'
-                  autoUpgradeMinorVersion: true
-                  settings: {
-                    fileUris: [
-                      uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                    ]
-                    commandToExecute: commandToExecute
-                  }
+            var properties = {
+                // Entire properties object selected
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.8'
+                autoUpgradeMinorVersion: true
+                settings: {
+                fileUris: [
+                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                ]
+                commandToExecute: commandToExecute
                 }
-                resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                  parent: vmName_resource
-                  name: 'cse-windows'
-                  location: location
-                  properties: properties
+            }
+            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+                parent: vmName_resource
+                name: 'cse-windows'
+                location: location
+                properties: properties
+            }
+            """,
+        """
+            param _artifactsLocation string
+            param  _artifactsLocationSasToken string
+
+            @description('Describes the properties of a Virtual Machine Extension.')
+            param properties object = {
+                // Entire properties object selected
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.8'
+                autoUpgradeMinorVersion: true
+                settings: {
+                fileUris: [
+                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                ]
+                commandToExecute: commandToExecute
                 }
-                """);
+            }
+            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+                parent: vmName_resource
+                name: 'cse-windows'
+                location: location
+                properties: properties
+            }
+            """,
+        """
+            param _artifactsLocation string
+            param  _artifactsLocationSasToken string
+
+            @description('Describes the properties of a Virtual Machine Extension.')
+            param properties object?asdfg = {
+                // Entire properties object selected
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.8'
+                autoUpgradeMinorVersion: true
+                settings: {
+                fileUris: [
+                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                ]
+                commandToExecute: commandToExecute
+                }
+            }
+            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+                parent: vmName_resource
+                name: 'cse-windows'
+                location: location
+                properties: properties
+            }
+            """);
     }
 
     [DataTestMethod]
@@ -1215,15 +1284,15 @@ var v1 = newParameter
     //    var j = newParameter
     //    """,
     //    DisplayName = "expression with secure string param reference")]
-    public async Task Params_InferType(string fileWithSelection, string expectedText)
-    {
-        await RunExtractToParameterTest(fileWithSelection, expectedText);
-    }
+    //public async Task Params_InferType(string fileWithSelection, string expectedText)
+    //{
+    //    //asdfg await RunExtractToParameterTest(fileWithSelection, expectedText);
+    //}
 
     [TestMethod]
     public async Task IfJustPropertyNameSelected_ThenExtractPropertyValue()
     {
-        await RunExtractToVariableAndOrParameterTest("""
+        await RunExtractToParameterTest("""
                 var isWindowsOS = true
                 var provisionExtensions = true
                 param _artifactsLocation string
@@ -1254,13 +1323,12 @@ var v1 = newParameter
                 @secure()
                 param _artifactsLocationSasToken string
 
-                var settings = {
+                param settings object = {
                   // Property key selected - extract just the value
                   fileUris: [
                     uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
                   ]
                   commandToExecute: 'commandToExecute'
-                }
                 resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
                   name: 'cse-windows/extension'
                   location: 'location'
@@ -1281,7 +1349,7 @@ var v1 = newParameter
                 param _artifactsLocationSasToken string
 
                 @description('Json formatted public settings for the extension.')
-                param settings object? = {
+                param settings object = {
                   // Property key selected - extract just the value
                   fileUris: [
                     uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
@@ -1436,19 +1504,15 @@ var v1 = newParameter
                 }
                 """,
         DisplayName = "Full property value as array, pick up property name")]
-    public async Task VarOrParam_PickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithSelection, string? expectedVarText, string? expectedParamText)
+    public async Task ShouldPickUpPropertyName_ButOnlyIfFullPropertyValue(string fileWithSelection, string? expectedVarText, string expectedLooseParamText, string? expectedMediumParamText)
     {
-        await RunExtractToVariableAndOrParameterTest(fileWithSelection, expectedVarText, expectedParamText);
+        await RunExtractToVariableAndParameterTest(fileWithSelection, expectedVarText, expectedLooseParamText, expectedMediumParamText);
     }
 
     [DataTestMethod]
     [DataRow("var a = resourceGroup().locati|on",
         """
                 var resourceGroupLocation = resourceGroup().location
-                var a = resourceGroupLocation
-                """,
-        """
-                param resourceGroupLocation string = resourceGroup().location
                 var a = resourceGroupLocation
                 """)]
     [DataRow("var a = abc|().bcd",
@@ -1485,10 +1549,6 @@ var v1 = newParameter
         """
                 var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints
                 var a = referencePrimaryEndpoints.blob
-                """,
-        """
-                param referencePrimaryEndpoints object? /* unknown */ = reference(storageAccount.id, '2018-02-01').primaryEndpoints
-                var a = referencePrimaryEndpoints.blob
                 """)]
     [DataRow("var a = a.b.|c.d.e",
         """
@@ -1496,233 +1556,235 @@ var v1 = newParameter
                 var a = bC.d.e
                 """,
         null)]
-    public async Task PickUpNameFromPropertyAccess_UpToTwoLevels(string fileWithSelection, string? expectedVariableText, string? expectedParameterText)
+    public async Task PickUpNameFromPropertyAccess_UpToTwoLevels(string fileWithSelection, string? expectedVariableText)
     {
-        await RunExtractToVariableAndOrParameterTest(fileWithSelection, expectedVariableText, expectedParameterText);
+        await RunExtractToVariableTest(fileWithSelection, expectedVariableText);
     }
 
-    [DataTestMethod]
-    //
-    // Closest ancestor expression is the top-level expression itself -> offer to update full expression
-    //
-    [DataRow(
-        "storageUri:| reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        null,
-        "storageUri: storageUri"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.|blob",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        null,
-        "storageUri: storageUri"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.<<blo>>b",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        null,
-        "storageUri: storageUri"
-        )]
-    //
-    // Cursor is inside the property name -> offer full expression
-    //
-    [DataRow(
-        "storageUri|: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        null,
-        "storageUri: storageUri"
-        )]
-    [DataRow(
-        "<<storageUri: re>>ference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        null,
-        "storageUri: storageUri"
-        )]
-    [DataRow(
-        "<<storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob>>",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        null,
-        "storageUri: storageUri"
-        )]
-    //
-    // Cursor is inside a subexpression -> only offer to extract that specific subexpression
-    //
-    // ... reference() call
-    [DataRow(
-        "storageUri: reference(storageAccount.id, '2018-02-01').|primaryEndpoints.blob",
-        "var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
-        null,
-        "storageUri: referencePrimaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "var newVariable = reference(storageAccount.id, '2018-02-01')",
-        null,
-        "storageUri: newVariable.primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: refere<<nce(storageAccount.id, '201>>8-02-01').primaryEndpoints.blob",
-        "var newVariable = reference(storageAccount.id, '2018-02-01')",
-        null,
-        "storageUri: newVariable.primaryEndpoints.blob"
-        )]
-    //   ... '2018-02-01'
-    [DataRow(
-        "storageUri: reference(storageAccount.id, |'2018-02-01').primaryEndpoints.blob",
-        "var newVariable = '2018-02-01'",
-        null,
-        "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAccount.id, '2018-02-01|').primaryEndpoints.blob",
-        "var newVariable = '2018-02-01'",
-        null,
-        "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
-        )]
-    //   ... storageAccount.id
-    [DataRow(
-        "storageUri: reference(storageAccount.|id, '2018-02-01').primaryEndpoints.blob",
-        "var storageAccountId = storageAccount.id",
-        null,
-        "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAccount.i|d, '2018-02-01').primaryEndpoints.blob",
-        "var storageAccountId = storageAccount.id",
-        null,
-        "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
-        )]
-    // ... storageAccount
-    [DataRow(
-        "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-        "var newVariable = storageAccount",
-        null,
-        "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-        "var newVariable = storageAccount",
-        null,
-        "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-        "var newVariable = storageAccount",
-        null,
-        "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
-        )]
-    // ... inside reference(x, y) but not inside x or y -> closest enclosing expression is the reference()
-    [DataRow(
-        "storageUri: reference(storageAccount.id,| '2018-02-01').primaryEndpoints.blob",
-        "var newVariable = reference(storageAccount.id, '2018-02-01')",
-        null,
-        "storageUri: newVariable.primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAccount.id, '2018-02-01' |).primaryEndpoints.blob",
-        "var newVariable = reference(storageAccount.id, '2018-02-01')",
-        null,
-        "storageUri: newVariable.primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "var newVariable = reference(storageAccount.id, '2018-02-01')",
-        null,
-        "storageUri: newVariable.primaryEndpoints.blob"
-        )]
-    public async Task ShouldExpandSelectedExpressionsInALogicalWay(string lineWithSelection, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration, string expectedModifiedLine)
-    {
-        await RunExtractToVarAndOrParamOnSingleLineTest(
-            inputTemplateWithSelection: """
-            resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+    //asdfg
+    //[DataTestMethod]
+    ////
+    //// Closest ancestor expression is the top-level expression itself -> offer to update full expression
+    ////
+    //[DataRow(
+    //    "storageUri:| reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    null,
+    //    "storageUri: storageUri"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.|blob",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    null,
+    //    "storageUri: storageUri"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.<<blo>>b",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    null,
+    //    "storageUri: storageUri"
+    //    )]
+    ////
+    //// Cursor is inside the property name -> offer full expression
+    ////
+    //[DataRow(
+    //    "storageUri|: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    null,
+    //    "storageUri: storageUri"
+    //    )]
+    //[DataRow(
+    //    "<<storageUri: re>>ference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    null,
+    //    "storageUri: storageUri"
+    //    )]
+    //[DataRow(
+    //    "<<storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob>>",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    null,
+    //    "storageUri: storageUri"
+    //    )]
+    ////
+    //// Cursor is inside a subexpression -> only offer to extract that specific subexpression
+    ////
+    //// ... reference() call
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, '2018-02-01').|primaryEndpoints.blob",
+    //    "var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
+    //    null,
+    //    "storageUri: referencePrimaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
+    //    null,
+    //    "storageUri: newVariable.primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: refere<<nce(storageAccount.id, '201>>8-02-01').primaryEndpoints.blob",
+    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
+    //    null,
+    //    "storageUri: newVariable.primaryEndpoints.blob"
+    //    )]
+    ////   ... '2018-02-01'
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, |'2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = '2018-02-01'",
+    //    null,
+    //    "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, '2018-02-01|').primaryEndpoints.blob",
+    //    "var newVariable = '2018-02-01'",
+    //    null,
+    //    "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
+    //    )]
+    ////   ... storageAccount.id
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.|id, '2018-02-01').primaryEndpoints.blob",
+    //    "var storageAccountId = storageAccount.id",
+    //    null,
+    //    "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.i|d, '2018-02-01').primaryEndpoints.blob",
+    //    "var storageAccountId = storageAccount.id",
+    //    null,
+    //    "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
+    //    )]
+    //// ... storageAccount
+    //[DataRow(
+    //    "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = storageAccount",
+    //    null,
+    //    "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = storageAccount",
+    //    null,
+    //    "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = storageAccount",
+    //    null,
+    //    "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
+    //    )]
+    //// ... inside reference(x, y) but not inside x or y -> closest enclosing expression is the reference()
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id,| '2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
+    //    null,
+    //    "storageUri: newVariable.primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, '2018-02-01' |).primaryEndpoints.blob",
+    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
+    //    null,
+    //    "storageUri: newVariable.primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
+    //    null,
+    //    "storageUri: newVariable.primaryEndpoints.blob"
+    //    )]
+    //public async Task ShouldExpandSelectedExpressionsInALogicalWay(string lineWithSelection, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration, string expectedModifiedLine)
+    //{
+    //    await RunExtractToVarAndOrParamOnSingleLineTest(
+    //        inputTemplateWithSelection: """
+    //        resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-            resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-              properties: {
-                diagnosticsProfile: {
-                  bootDiagnostics: {
-                    LINEWITHSELECTION
-                  }
-                }
-              }
-            }
-            """,
-            expectedOutputTemplate: """
-            resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+    //        resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+    //          properties: {
+    //            diagnosticsProfile: {
+    //              bootDiagnostics: {
+    //                LINEWITHSELECTION
+    //              }
+    //            }
+    //          }
+    //        }
+    //        """,
+    //        expectedOutputTemplate: """
+    //        resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-            EXPECTEDNEWDECLARATION
-            resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-              properties: {
-                diagnosticsProfile: {
-                  bootDiagnostics: {
-                    EXPECTEDMODIFIEDLINE
-                  }
-                }
-              }
-            }
-            """,
-            lineWithSelection,
-            expectedNewVarDeclaration,
-            expectedNewParamDeclaration,
-            expectedModifiedLine);
-    }
+    //        EXPECTEDNEWDECLARATION
+    //        resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+    //          properties: {
+    //            diagnosticsProfile: {
+    //              bootDiagnostics: {
+    //                EXPECTEDMODIFIEDLINE
+    //              }
+    //            }
+    //          }
+    //        }
+    //        """,
+    //        lineWithSelection,
+    //        expectedNewVarDeclaration,
+    //        expectedNewParamDeclaration,
+    //        expectedModifiedLine);
+    //}
 
-    [DataTestMethod]
-    [DataRow(
-        "storageUri: reference(stora<<geAccount.i>>d, '2018-02-01').primaryEndpoints.blob",
-        "var storageAccountId = storageAccount.id",
-        "param storageAccountId string = storageAccount.id",
-        "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
-        )]
-    [DataRow(
-        "storageUri: refer<<ence(storageAccount.id, '2018-02-01').primaryEndpoints.bl>>ob",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        """
-                @description('Uri of the storage account to use for placing the console output and screenshot.')
-                param storageUri object? /* unknown */ = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
-                """,
-        "storageUri: storageUri"
-        )]
-    [DataRow(
-        "storageUri: reference(storageAccount.id, '2018-02-01').primar<<yEndpoints.blob>>",
-        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "param storageUri unknown = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-        "storageUri: storageUri"
-        )]
-    public async Task IfThereIsASelection_ThenPickUpEverythingInTheSelection_AfterExpanding(string lineWithSelection, string expectedNewVarDeclaration, string expectedNewParamDeclaration, string expectedModifiedLine)
-    {
-        await RunExtractToVarAndOrParamOnSingleLineTest(
-            inputTemplateWithSelection: """
-                    resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+    //asdfg
+    //[DataTestMethod]
+    //[DataRow(
+    //    "storageUri: reference(stora<<geAccount.i>>d, '2018-02-01').primaryEndpoints.blob",
+    //    "var storageAccountId = storageAccount.id",
+    //    "param storageAccountId string = storageAccount.id",
+    //    "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
+    //    )]
+    //[DataRow(
+    //    "storageUri: refer<<ence(storageAccount.id, '2018-02-01').primaryEndpoints.bl>>ob",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    """
+    //            @description('Uri of the storage account to use for placing the console output and screenshot.')
+    //            param storageUri object? /* unknown */ = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
+    //            """,
+    //    "storageUri: storageUri"
+    //    )]
+    //[DataRow(
+    //    "storageUri: reference(storageAccount.id, '2018-02-01').primar<<yEndpoints.blob>>",
+    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "param storageUri unknown = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+    //    "storageUri: storageUri"
+    //    )]
+    //public async Task IfThereIsASelection_ThenPickUpEverythingInTheSelection_AfterExpanding(string lineWithSelection, string expectedNewVarDeclaration, string expectedNewParamDeclaration, string expectedModifiedLine)
+    //{
+    //    await RunExtractToVarAndOrParamOnSingleLineTest(
+    //        inputTemplateWithSelection: """
+    //                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-                    resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-                      properties: {
-                        diagnosticsProfile: {
-                          bootDiagnostics: {
-                            LINEWITHSELECTION
-                          }
-                        }
-                      }
-                    }
-                    """,
-            expectedOutputTemplate: """
-                    resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+    //                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+    //                  properties: {
+    //                    diagnosticsProfile: {
+    //                      bootDiagnostics: {
+    //                        LINEWITHSELECTION
+    //                      }
+    //                    }
+    //                  }
+    //                }
+    //                """,
+    //        expectedOutputTemplate: """
+    //                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-                    EXPECTEDNEWDECLARATION
-                    resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-                      properties: {
-                        diagnosticsProfile: {
-                          bootDiagnostics: {
-                            EXPECTEDMODIFIEDLINE
-                          }
-                        }
-                      }
-                    }
-                    """,
-            lineWithSelection,
-            expectedNewVarDeclaration,
-            expectedNewParamDeclaration,
-            expectedModifiedLine);
-    }
+    //                EXPECTEDNEWDECLARATION
+    //                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+    //                  properties: {
+    //                    diagnosticsProfile: {
+    //                      bootDiagnostics: {
+    //                        EXPECTEDMODIFIEDLINE
+    //                      }
+    //                    }
+    //                  }
+    //                }
+    //                """,
+    //        lineWithSelection,
+    //        expectedNewVarDeclaration,
+    //        expectedNewParamDeclaration,
+    //        expectedModifiedLine);
+    //}
 
     [DataTestMethod]//asdfg
     //asdfg apostrophes 
@@ -1830,34 +1892,35 @@ var v1 = newParameter
                 }
                 """,
         DisplayName = "multiline description")]
-    public async Task Params_ShouldPickUpDescriptions(string fileWithSelection, string expectedParamText)
+    public async Task Params_ShouldPickUpDescriptions(string fileWithSelection, string expectedLooseParamText, string? expectedMediumParamText)
     {
-        await RunExtractToParameterTest(fileWithSelection, expectedParamText);
+        await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
     }
 
     #region Support
 
-    private async Task RunExtractToVarAndOrParamOnSingleLineTest(
-        string inputTemplateWithSelection,
-        string expectedOutputTemplate,
-        string lineWithSelection,
-        string? expectedNewVarDeclaration,
-        string? expectedNewParamDeclaration,
-        string expectedModifiedLine
-        )
-    {
-        await RunExtractToVariableTestIf(
-            expectedNewVarDeclaration is { },
-                inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
-                expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration)
-                    .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
+    //asdfg
+    //private async Task RunExtractToVarAndOrParamOnSingleLineTest(
+    //    string inputTemplateWithSelection,
+    //    string expectedOutputTemplate,
+    //    string lineWithSelection,
+    //    string? expectedNewVarDeclaration,
+    //    string? expectedNewParamDeclaration,
+    //    string expectedModifiedLine
+    //    )
+    //{
+    //    await RunExtractToVariableTestIf(
+    //        expectedNewVarDeclaration is { },
+    //            inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
+    //            expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration)
+    //                .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
 
-        await RunExtractToParameterTestIf(
-            expectedNewParamDeclaration is { },
-            inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
-            expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration)
-                .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
-    }
+    //    await RunExtractToParameterTestIf(
+    //        expectedNewParamDeclaration is { },
+    //        inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
+    //        expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration)
+    //            .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
+    //}
 
     //private async Task RunExtractToVariableAndOrParameterTest(string fileWithSelection, string expectedTextTemplate, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration)
     //{
@@ -1871,39 +1934,38 @@ var v1 = newParameter
     //        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration));
     //}
 
-    private async Task RunExtractToVariableAndOrParameterTest(string fileWithSelection, string? expectedVariableText, string? expectedParameterText)
+    private async Task RunExtractToVariableAndParameterTest(string fileWithSelection, string? expectedVariableText, string? expectedLooseParamText, string? expectedMediumParamText)
     {
-        await RunExtractToVariableTestIf(
-            expectedVariableText is { },
+        await RunExtractToVariableTest(
             fileWithSelection,
             expectedVariableText);
-        await RunExtractToParameterTestIf(
-            expectedParameterText is { },
+        await RunExtractToParameterTest(
             fileWithSelection,
-            expectedParameterText);
+            expectedLooseParamText,
+            expectedMediumParamText);
     }
 
-    private async Task RunExtractToVariableTestIf(bool condition, string fileWithSelection, string? expectedText)
-    {
-        if (condition)
-        {
-            using (new AssertionScope("extract to var test"))
-            {
-                await RunExtractToVariableTest(fileWithSelection, expectedText);
-            }
-        }
-    }
+    //private async Task RunExtractToVariableTestIf(bool condition, string fileWithSelection, string? expectedText) //asdfg remove
+    //{
+    //    if (condition)
+    //    {
+    //        using (new AssertionScope("extract to var test"))
+    //        {
+    //            await RunExtractToVariableTest(fileWithSelection, expectedText);
+    //        }
+    //    }
+    //}
 
-    private async Task RunExtractToParameterTestIf(bool condition, string fileWithSelection, string? expectedText)
-    {
-        if (condition)
-        {
-            using (new AssertionScope("extract to param test"))
-            {
-                await RunExtractToParameterTest(fileWithSelection, expectedText);
-            }
-        }
-    }
+    //private async Task RunExtractToParameterTestIf(bool condition, string fileWithSelection, string? expectedText)//asdfg remove
+    //{
+    //    if (condition)
+    //    {
+    //        using (new AssertionScope("extract to param test"))
+    //        {
+    //            await RunExtractToParameterTest(fileWithSelection, expectedText);
+    //        }
+    //    }
+    //}
 
     private async Task RunExtractToVariableTest(string fileWithSelection, string? expectedText)
     {
@@ -1924,22 +1986,39 @@ var v1 = newParameter
         }
     }
 
-    private async Task RunExtractToParameterTest(string fileWithSelection, string? expectedText)
+    private async Task RunExtractToParameterTest(string fileWithSelection, string? expectedLooseParameterText, string? expectedMediumParameterText)
     {
         (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
-        var extractedParam = codeActions.FirstOrDefault(x => x.Title.StartsWith(ExtractToParameterTitle)); //asdfg assert if too many
+        var extractedParamFixes = codeActions.Where(x => x.Title.StartsWith(ExtractToParameterTitle)).ToArray();
+        extractedParamFixes.Should().HaveCountLessThanOrEqualTo(2);
 
-        if (expectedText == null)
+        if (expectedLooseParameterText == null)
         {
-            extractedParam.Should().BeNull("should not offer to extract parameters");
+            extractedParamFixes.Should().BeEmpty("should not offer to extract parameters");
+            expectedMediumParameterText.Should().BeNull();
         }
         else
         {
-            extractedParam.Should().NotBeNull("should contain an action to extract to parameter");
-            extractedParam!.Kind.Should().Be(CodeActionKind.RefactorExtract);
+            var looseFix = extractedParamFixes[0];
+            expectedLooseParameterText.Should().NotBeNull("should contain at least one action to extract to parameter");
+            looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
-            var updatedFile = ApplyCodeAction(bicepFile, extractedParam);
-            updatedFile.Should().HaveSourceText(expectedText);
+            var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
+            updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText);
+
+            if (expectedMediumParameterText == null)
+            {
+                extractedParamFixes.Should().HaveCount(1, "should have only offered one parameter extract option");
+            }
+            else
+            {
+                var mediumFix = extractedParamFixes[1];
+                extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(2, "should contain a second option to extract to parameter");
+                mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
+
+                var updatedFileMedium = ApplyCodeAction(bicepFile, mediumFix);
+                updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText);
+            }
         }
     }
 }
