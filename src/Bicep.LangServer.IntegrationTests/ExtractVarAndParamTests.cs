@@ -794,17 +794,17 @@ var v1 = newParameter
                 name: 'cse-windows'
                 location: location
                 properties: <<{
-                // Entire properties object selected
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.8'
-                autoUpgradeMinorVersion: true
-                settings: {
-                    fileUris: [
-                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                    ]
-                    commandToExecute: commandToExecute
-                }
+                    // Entire properties object selected
+                    publisher: 'Microsoft.Compute'
+                    type: 'CustomScriptExtension'
+                    typeHandlerVersion: '1.8'
+                    autoUpgradeMinorVersion: true
+                    settings: {
+                      fileUris: [
+                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                      ]
+                      commandToExecute: commandToExecute
+                    }
                 }>>
             }
             """,
@@ -813,17 +813,17 @@ var v1 = newParameter
             param  _artifactsLocationSasToken string
 
             var properties = {
-                // Entire properties object selected
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.8'
-                autoUpgradeMinorVersion: true
-                settings: {
+              // Entire properties object selected
+              publisher: 'Microsoft.Compute'
+              type: 'CustomScriptExtension'
+              typeHandlerVersion: '1.8'
+              autoUpgradeMinorVersion: true
+              settings: {
                 fileUris: [
-                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                  uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
                 ]
                 commandToExecute: commandToExecute
-                }
+              }
             }
             resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
                 parent: vmName_resource
@@ -838,17 +838,17 @@ var v1 = newParameter
 
             @description('Describes the properties of a Virtual Machine Extension.')
             param properties object = {
-                // Entire properties object selected
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.8'
-                autoUpgradeMinorVersion: true
-                settings: {
+              // Entire properties object selected
+              publisher: 'Microsoft.Compute'
+              type: 'CustomScriptExtension'
+              typeHandlerVersion: '1.8'
+              autoUpgradeMinorVersion: true
+              settings: {
                 fileUris: [
-                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                  uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
                 ]
                 commandToExecute: commandToExecute
-                }
+              }
             }
             resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
                 parent: vmName_resource
@@ -857,417 +857,419 @@ var v1 = newParameter
                 properties: properties
             }
             """,
+        // asdfg TODO: provisioningState: string - should be nullable?
         """
             param _artifactsLocation string
             param  _artifactsLocationSasToken string
 
             @description('Describes the properties of a Virtual Machine Extension.')
-            param properties object?asdfg = {
-                // Entire properties object selected
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.8'
-                autoUpgradeMinorVersion: true
-                settings: {
+            param properties { autoUpgradeMinorVersion: bool?, forceUpdateTag: string?, instanceView: { name: string?, statuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, substatuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, type: string?, typeHandlerVersion: string? }?, protectedSettings: object? /* any */, provisioningState: string, publisher: string?, settings: object? /* any */, type: string?, typeHandlerVersion: string? } = { = {
+              // Entire properties object selected
+              publisher: 'Microsoft.Compute'
+              type: 'CustomScriptExtension'
+              typeHandlerVersion: '1.8'
+              autoUpgradeMinorVersion: true
+              settings: {
                 fileUris: [
-                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                  uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
                 ]
                 commandToExecute: commandToExecute
-                }
+              }
             }
             resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                parent: vmName_resource
-                name: 'cse-windows'
-                location: location
-                properties: properties
+              parent: vmName_resource
+              name: 'cse-windows'
+              location: location
+              properties: properties
             }
             """);
     }
 
-    [DataTestMethod]
-    [DataRow("""
-                var i = <<1>>
-                """,
-        """
-                param newParameter int = 1
-                var i = newParameter
-                """,
-        DisplayName = "Literal integer")]
-    [DataRow("""
-                param i int = 1
-                var j = <<i>> + 1
-                """,
-        """
-                param i int = 1
-                param newParameter int = i
-                var j = newParameter + 1
-                """,
-        DisplayName = "int parameter reference")]
-    [DataRow("""
-                param i int = 1
-                var j = <<i + 1>>
-                """,
-        """
-                param i int = 1
-                param newParameter int = i + 1
-                var j = newParameter
-                """,
-        DisplayName = "int expression with param")]
-    [DataRow("""
-                param i string
-                var j = <<concat(i, i)>>
-                """,
-        """
-                param i string
-                param newParameter string = concat(i, i)
-                var j = newParameter
-                """,
-        DisplayName = "strings concatenated")]
-    [DataRow("""
-                param i string = 'i'
-                var i2 = 'i2'
-                var j = <<'{i}{i2}'>>
-                """,
-        """
-                param i string = 'i'
-                var i2 = 'i2'
-                param newParameter string = '{i}{i2}'
-                var j = newParameter
-                """,
-        DisplayName = "strings concatenated")]
-    [DataRow("""
-                var p = <<[ 1, 2, 3 ]>>
-                """,
-        """
-                param newParameter array = [1, 2, 3]
-                var p = newParameter
-                """,
-        DisplayName = "array literal")]
-    [DataRow("""
-                var p = <<{ a: 1, b: 'b' }>>
-                """,
-        """
-                param newParameter { a: int, b: string } = { a: 1, b: 'b' }
-                var p = newParameter
-                """,
-        DisplayName = "object literal with literal types")]
-    [DataRow("""
-                var p = { a: <<1>>, b: 'b' }
-                """,
-        """
-                param a int = 1
-                var p = { a: a, b: 'b' }
-                """,
-        DisplayName = "property value from object literal")]
-    [DataRow("""
-                var o1 = { a: 1, b: 'b' }
-                var a = <<o1.a>>
-                """,
-        """
-                var o1 = { a: 1, b: 'b' }
-                param o1A int = o1.a
-                var a = o1A
-                """,
-        DisplayName = "referenced property value from object literal")]
-    [DataRow("""
-                param p 'a'||'b' = 'a'
-                var v = <<p>>
-                """,
-        """
-                param p 'a'|'b' = 'a'
-                param newParameter 'a' | 'b' = p
-                var v = newParameter
-                """,
-        DisplayName = "string literal type")] //asdfg correct behavior?
-    [DataRow("""
-                var a = {
-                    int: 1
-                }
-                var b = a.|int
-                """,
-        """
-                var a = {
-                    int: 1
-                }
-                param aInt int = a.int
-                var b = aInt
-                """,
-        DisplayName = "object properties 1")]
-    [DataRow("""
-                var a = {
-                    int: 1
-                }
-                var b = |a.int
-                """,
-        """
-                var a = {
-                    int: 1
-                }
-                param newParameter object = a
-                var b = newParameter.int
-                """,
-    DisplayName = "object properties 2")]
-    [DataRow("""
-                var a = {
-                    sku: {
-                        name: 'Standard_LRS'
-                    }
-                }
-                var b = a.|sku
-                """,
-        """
-                var a = {
-                    sku: {
-                        name: 'Standard_LRS'
-                    }
-                }
-                param aSku object = a.sku
-                var b = aSku
-                """,
-        DisplayName = "object properties 3")]
-    [DataRow("""
-                param p {
-                  i: int
-                  o: {
-                    i2: int
-                  }
-                } = { i:1, o: { i2: 2} }
-                var v = <<p>>.o.i2
-                """,
-        """
-                param p {
-                  i: int
-                  o: {
-                    i2: int
-                  }
-                } = { i:1, o: { i2: 2} }
-                param newParameter { i: int, o: { i2: int } } = p
-                var v = newParameter.o.i2
-                """,
-        DisplayName = "custom object type, whole object")]
-    [DataRow("""
-                param p {
-                  i: int
-                  o: {
-                    i2: int
-                  }
-                } = { i:1, o: { i2: 2} }
-                var v = p.|o.i2
-                """,
-        """
-                param p {
-                  i: int
-                  o: {
-                    i2: int
-                  }
-                } = { i:1, o: { i2: 2} }
-                param pO { i2: int } = p.o
-                var v = pO.i2
-                """,
-        DisplayName = "custom object type, partial")]
-    [DataRow("""
-                resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-                  unknownProperty: |123
-                }
-                """,
-        """
-                param unknownProperty int = 123
-                resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-                  unknownProperty: unknownProperty
-                }
-                """,
-        DisplayName = "resource types undefined 1")]
-    [DataRow("""
-                param p1 'abc'||'def'
-                resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-                  unknownProperty: |p1
-                }
-                """,
-        """
-                param p1 'abc'|'def'
-                param unknownProperty 'abc' | 'def' = p1
-                resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-                  unknownProperty: unknownProperty
-                }
-                """,
-        DisplayName = "resource properties unknown property, follows expression's inferred type")]
-    [DataRow("""
-                var foo = <<{ intVal: 2 }>>
-                """,
-        """
-                param { intVal: int } = { intVal: 2 }
-                """)]
-
-    //asdf TODO(??)
+    //[DataTestMethod]
+    ////asdfg
     //[DataRow("""
-    //        var a = <<aksCluster>>
-    //        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
-    //        """,
+    //            var i = <<1>>
+    //            """,
     //    """
-    //        param newParameter resource 'Microsoft.ContainerService/managedClusters@2021-03-01' = aksCluster
-    //        var a = newParameter
-    //        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
-    //        """,
-    //    DisplayName = "resource type")]
+    //            param newParameter int = 1
+    //            var i = newParameter
+    //            """,
+    //    DisplayName = "Literal integer")]
+    //[DataRow("""
+    //            param i int = 1
+    //            var j = <<i>> + 1
+    //            """,
+    //    """
+    //            param i int = 1
+    //            param newParameter int = i
+    //            var j = newParameter + 1
+    //            """,
+    //    DisplayName = "int parameter reference")]
+    //[DataRow("""
+    //            param i int = 1
+    //            var j = <<i + 1>>
+    //            """,
+    //    """
+    //            param i int = 1
+    //            param newParameter int = i + 1
+    //            var j = newParameter
+    //            """,
+    //    DisplayName = "int expression with param")]
+    //[DataRow("""
+    //            param i string
+    //            var j = <<concat(i, i)>>
+    //            """,
+    //    """
+    //            param i string
+    //            param newParameter string = concat(i, i)
+    //            var j = newParameter
+    //            """,
+    //    DisplayName = "strings concatenated")]
+    //[DataRow("""
+    //            param i string = 'i'
+    //            var i2 = 'i2'
+    //            var j = <<'{i}{i2}'>>
+    //            """,
+    //    """
+    //            param i string = 'i'
+    //            var i2 = 'i2'
+    //            param newParameter string = '{i}{i2}'
+    //            var j = newParameter
+    //            """,
+    //    DisplayName = "strings concatenated")]
+    //[DataRow("""
+    //            var p = <<[ 1, 2, 3 ]>>
+    //            """,
+    //    """
+    //            param newParameter array = [1, 2, 3]
+    //            var p = newParameter
+    //            """,
+    //    DisplayName = "array literal")]
+    //[DataRow("""
+    //            var p = <<{ a: 1, b: 'b' }>>
+    //            """,
+    //    """
+    //            param newParameter { a: int, b: string } = { a: 1, b: 'b' }
+    //            var p = newParameter
+    //            """,
+    //    DisplayName = "object literal with literal types")]
+    //[DataRow("""
+    //            var p = { a: <<1>>, b: 'b' }
+    //            """,
+    //    """
+    //            param a int = 1
+    //            var p = { a: a, b: 'b' }
+    //            """,
+    //    DisplayName = "property value from object literal")]
+    //[DataRow("""
+    //            var o1 = { a: 1, b: 'b' }
+    //            var a = <<o1.a>>
+    //            """,
+    //    """
+    //            var o1 = { a: 1, b: 'b' }
+    //            param o1A int = o1.a
+    //            var a = o1A
+    //            """,
+    //    DisplayName = "referenced property value from object literal")]
+    //[DataRow("""
+    //            param p 'a'||'b' = 'a'
+    //            var v = <<p>>
+    //            """,
+    //    """
+    //            param p 'a'|'b' = 'a'
+    //            param newParameter 'a' | 'b' = p
+    //            var v = newParameter
+    //            """,
+    //    DisplayName = "string literal type")] //asdfg correct behavior?
+    //[DataRow("""
+    //            var a = {
+    //                int: 1
+    //            }
+    //            var b = a.|int
+    //            """,
+    //    """
+    //            var a = {
+    //                int: 1
+    //            }
+    //            param aInt int = a.int
+    //            var b = aInt
+    //            """,
+    //    DisplayName = "object properties 1")]
+    //[DataRow("""
+    //            var a = {
+    //                int: 1
+    //            }
+    //            var b = |a.int
+    //            """,
+    //    """
+    //            var a = {
+    //                int: 1
+    //            }
+    //            param newParameter object = a
+    //            var b = newParameter.int
+    //            """,
+    //DisplayName = "object properties 2")]
+    //[DataRow("""
+    //            var a = {
+    //                sku: {
+    //                    name: 'Standard_LRS'
+    //                }
+    //            }
+    //            var b = a.|sku
+    //            """,
+    //    """
+    //            var a = {
+    //                sku: {
+    //                    name: 'Standard_LRS'
+    //                }
+    //            }
+    //            param aSku object = a.sku
+    //            var b = aSku
+    //            """,
+    //    DisplayName = "object properties 3")]
+    //[DataRow("""
+    //            param p {
+    //              i: int
+    //              o: {
+    //                i2: int
+    //              }
+    //            } = { i:1, o: { i2: 2} }
+    //            var v = <<p>>.o.i2
+    //            """,
+    //    """
+    //            param p {
+    //              i: int
+    //              o: {
+    //                i2: int
+    //              }
+    //            } = { i:1, o: { i2: 2} }
+    //            param newParameter { i: int, o: { i2: int } } = p
+    //            var v = newParameter.o.i2
+    //            """,
+    //    DisplayName = "custom object type, whole object")]
+    //[DataRow("""
+    //            param p {
+    //              i: int
+    //              o: {
+    //                i2: int
+    //              }
+    //            } = { i:1, o: { i2: 2} }
+    //            var v = p.|o.i2
+    //            """,
+    //    """
+    //            param p {
+    //              i: int
+    //              o: {
+    //                i2: int
+    //              }
+    //            } = { i:1, o: { i2: 2} }
+    //            param pO { i2: int } = p.o
+    //            var v = pO.i2
+    //            """,
+    //    DisplayName = "custom object type, partial")]
+    //[DataRow("""
+    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+    //              unknownProperty: |123
+    //            }
+    //            """,
+    //    """
+    //            param unknownProperty int = 123
+    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+    //              unknownProperty: unknownProperty
+    //            }
+    //            """,
+    //    DisplayName = "resource types undefined 1")]
+    //[DataRow("""
+    //            param p1 'abc'||'def'
+    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+    //              unknownProperty: |p1
+    //            }
+    //            """,
+    //    """
+    //            param p1 'abc'|'def'
+    //            param unknownProperty 'abc' | 'def' = p1
+    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+    //              unknownProperty: unknownProperty
+    //            }
+    //            """,
+    //    DisplayName = "resource properties unknown property, follows expression's inferred type")]
+    //[DataRow("""
+    //            var foo = <<{ intVal: 2 }>>
+    //            """,
+    //    """
+    //            param { intVal: int } = { intVal: 2 }
+    //            """)]
+
+    ////asdf TODO(??)
+    ////[DataRow("""
+    ////        var a = <<aksCluster>>
+    ////        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
+    ////        """,
+    ////    """
+    ////        param newParameter resource 'Microsoft.ContainerService/managedClusters@2021-03-01' = aksCluster
+    ////        var a = newParameter
+    ////        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
+    ////        """,
+    ////    DisplayName = "resource type")]
 
 
-    [DataRow(
-        """
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: 'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: true
-                        remoteVirtualNetwork: {
-                            id: |'virtualNetworksId'
-                        }
-                    }
-                }
-                """,
-        """
-                param id string = 'virtualNetworksId'
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: 'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: true
-                        remoteVirtualNetwork: {
-                            id: id
-                        }
-                    }
-                }
-                """,
-        DisplayName = "resource types 3 asdfg")]
-    [DataRow(
-        """
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: 'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: true
-                        remoteVirtualNetwork: |{
-                            id: virtualNetworksId
-                        }
-                    }
-                }
-                """,
-        """
-                param remoteVirtualNetwork object = {
-                  id: virtualNetworksId
-                }
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: 'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: true
-                        remoteVirtualNetwork: remoteVirtualNetwork
-                    }
-                }
-                """,
-        DisplayName = "resource types - SubResource")]
-    [DataRow(
-        """
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: 'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: |true
-                        remoteVirtualNetwork: {
-                            id: virtualNetworksId'
-                        }
-                    }
-                }
-                """,
-        """
-                param allowVirtualNetworkAccess bool = true
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: 'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: allowVirtualNetworkAccess
-                        remoteVirtualNetwork: {
-                            id: virtualNetworksId'
-                        }
-                    }
-                }
-                """,
-        DisplayName = "resource types 5 asdfg")]
-    //asdfg param ought to be named peeringName instead of name
-    [DataRow(
-        """
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: |'virtualNetwork/name'
-                    properties: {
-                        allowVirtualNetworkAccess: true
-                        remoteVirtualNetwork: {
-                            id: virtualNetworksId
-                        }
-                    }
-                }
-                """,
-        """
-                param name string = 'virtualNetwork/name'
-                resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-                    name: name
-                    properties: {
-                        allowVirtualNetworkAccess: true
-                        remoteVirtualNetwork: {
-                            id: virtualNetworksId
-                        }
-                    }
-                }
-                """,
-        DisplayName = "resource types - string property")]
-    [DataRow(
-        """
-                resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-                    name: 'name'
-                    location: 'location'
-                    kind: 'StorageV2'
-                    sku: {
-                        name: |'Premium_LRS'
-                    }
-                }
-                """,
-        """
-                param name 'Premium_LRS' | 'Premium_ZRS' | 'Standard_GRS' | 'Standard_GZRS' | 'Standard_LRS' | 'Standard_RAGRS' | 'Standard_RAGZRS' | 'Standard_ZRS' | string = 'Premium_LRS'
-                resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-                    name: 'name'
-                    location: 'location'
-                    kind: 'StorageV2'
-                    sku: {
-                        name: name
-                    }
-                }
-                """,
-        DisplayName = "resource properties - string union")]
-    [DataRow(
-        """
-                param p int?
-                var v = |p
-                """,
-        """
-                param p int?
-                param newParameter int? = p
-                var v = newParameter
-                """,
-        DisplayName = "nullable types")]
-    [DataRow(
-        """
-                param whoops int = 'not an int'
-                var v = <<p + 1>>
-                """,
-        """
-                param whoops int = 'not an int'
-                param newParameter unknown = p + 1
-                var v = newParameter
-                """,
-        DisplayName = "error types")]
-    [DataRow(
-        """
-                param p1 { a: { b: string } }
-                var v = p1
-                """,
-        """
-                param p1 { a: { b: string } }
-                param newParameter { a: { b: string } } = p1
-                var v = newParameter
-                """
-        )]
+    //[DataRow(
+    //    """
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: 'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: true
+    //                    remoteVirtualNetwork: {
+    //                        id: |'virtualNetworksId'
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    """
+    //            param id string = 'virtualNetworksId'
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: 'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: true
+    //                    remoteVirtualNetwork: {
+    //                        id: id
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    DisplayName = "resource types 3 asdfg")]
+    //[DataRow(
+    //    """
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: 'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: true
+    //                    remoteVirtualNetwork: |{
+    //                        id: virtualNetworksId
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    """
+    //            param remoteVirtualNetwork object = {
+    //              id: virtualNetworksId
+    //            }
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: 'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: true
+    //                    remoteVirtualNetwork: remoteVirtualNetwork
+    //                }
+    //            }
+    //            """,
+    //    DisplayName = "resource types - SubResource")]
+    //[DataRow(
+    //    """
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: 'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: |true
+    //                    remoteVirtualNetwork: {
+    //                        id: virtualNetworksId'
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    """
+    //            param allowVirtualNetworkAccess bool = true
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: 'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: allowVirtualNetworkAccess
+    //                    remoteVirtualNetwork: {
+    //                        id: virtualNetworksId'
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    DisplayName = "resource types 5 asdfg")]
+    ////asdfg param ought to be named peeringName instead of name
+    //[DataRow(
+    //    """
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: |'virtualNetwork/name'
+    //                properties: {
+    //                    allowVirtualNetworkAccess: true
+    //                    remoteVirtualNetwork: {
+    //                        id: virtualNetworksId
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    """
+    //            param name string = 'virtualNetwork/name'
+    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+    //                name: name
+    //                properties: {
+    //                    allowVirtualNetworkAccess: true
+    //                    remoteVirtualNetwork: {
+    //                        id: virtualNetworksId
+    //                    }
+    //                }
+    //            }
+    //            """,
+    //    DisplayName = "resource types - string property")]
+    //[DataRow(
+    //    """
+    //            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+    //                name: 'name'
+    //                location: 'location'
+    //                kind: 'StorageV2'
+    //                sku: {
+    //                    name: |'Premium_LRS'
+    //                }
+    //            }
+    //            """,
+    //    """
+    //            param name 'Premium_LRS' | 'Premium_ZRS' | 'Standard_GRS' | 'Standard_GZRS' | 'Standard_LRS' | 'Standard_RAGRS' | 'Standard_RAGZRS' | 'Standard_ZRS' | string = 'Premium_LRS'
+    //            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+    //                name: 'name'
+    //                location: 'location'
+    //                kind: 'StorageV2'
+    //                sku: {
+    //                    name: name
+    //                }
+    //            }
+    //            """,
+    //    DisplayName = "resource properties - string union")]
+    //[DataRow(
+    //    """
+    //            param p int?
+    //            var v = |p
+    //            """,
+    //    """
+    //            param p int?
+    //            param newParameter int? = p
+    //            var v = newParameter
+    //            """,
+    //    DisplayName = "nullable types")]
+    //[DataRow(
+    //    """
+    //            param whoops int = 'not an int'
+    //            var v = <<p + 1>>
+    //            """,
+    //    """
+    //            param whoops int = 'not an int'
+    //            param newParameter unknown = p + 1
+    //            var v = newParameter
+    //            """,
+    //    DisplayName = "error types")]
+    //[DataRow(
+    //    """
+    //            param p1 { a: { b: string } }
+    //            var v = p1
+    //            """,
+    //    """
+    //            param p1 { a: { b: string } }
+    //            param newParameter { a: { b: string } } = p1
+    //            var v = newParameter
+    //            """
+    //    )]
 
     //asdfg TODO: secure types
     //[DataRow(""" TODO: asdfg
@@ -1304,81 +1306,55 @@ var v1 = newParameter
     public async Task IfJustPropertyNameSelected_ThenExtractPropertyValue()
     {
         await RunExtractToParameterTest("""
-                var isWindowsOS = true
-                var provisionExtensions = true
-                param _artifactsLocation string
-                @secure()
-                param _artifactsLocationSasToken string
+            var isWindowsOS = true
+            var provisionExtensions = true
+            param _artifactsLocation string
+            @secure()
+            param _artifactsLocationSasToken string
 
-                resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                  name: 'cse-windows/extension'
-                  location: 'location'
-                  properties: {
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    setting|s: { // Property key selected - extract just the value
-                      fileUris: [
-                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                      ]
-                      commandToExecute: 'commandToExecute'
-                    }
-                  }
-                }
-                """,
-        """
-                var isWindowsOS = true
-                var provisionExtensions = true
-                param _artifactsLocation string
-                @secure()
-                param _artifactsLocationSasToken string
-
-                param settings object = {
-                  // Property key selected - extract just the value
-                  fileUris: [
+            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+                name: 'cse-windows/extension'
+                location: 'location'
+                properties: {
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.8'
+                autoUpgradeMinorVersion: true
+                setting|s: { // Property key selected - extract just the value
+                    fileUris: [
                     uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                  ]
-                  commandToExecute: 'commandToExecute'
-                resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                  name: 'cse-windows/extension'
-                  location: 'location'
-                  properties: {
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: settings
-                  }
+                    ]
+                    commandToExecute: 'commandToExecute'
                 }
-                """,
+                }
+            }
+            """,
         """
-                var isWindowsOS = true
-                var provisionExtensions = true
-                param _artifactsLocation string
-                @secure()
-                param _artifactsLocationSasToken string
+            var isWindowsOS = true
+            var provisionExtensions = true
+            param _artifactsLocation string
+            @secure()
+            param _artifactsLocationSasToken string
 
-                @description('Json formatted public settings for the extension.')
-                param settings object = {
-                  // Property key selected - extract just the value
-                  fileUris: [
-                    uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                  ]
-                  commandToExecute: 'commandToExecute'
+            param settings object = {
+                // Property key selected - extract just the value
+                fileUris: [
+                uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+                ]
+                commandToExecute: 'commandToExecute'
+            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+                name: 'cse-windows/extension'
+                location: 'location'
+                properties: {
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.8'
+                autoUpgradeMinorVersion: true
+                settings: settings
                 }
-                resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-                  name: 'cse-windows/extension'
-                  location: 'location'
-                  properties: {
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: settings
-                  }
-                }
-                """);
+            }
+            """,
+        "IGNORE");
     }
 
     [DataTestMethod]
@@ -1451,12 +1427,12 @@ var v1 = newParameter
             """,
         """
             var abc = [
-                {
+              {
                 def: [
-                    'ghi'
-                    'jkl'
+                  'ghi'
+                  'jkl'
                 ]
-                }
+              }
             ]
             resource vmName_resource 'Microsoft.Compute/virtualMachines@2019-12-01' = {
                 name: vmName
@@ -1754,111 +1730,126 @@ var v1 = newParameter
     //        expectedModifiedLine);
     //}
 
-    [DataTestMethod]//asdfg
-    //asdfg apostrophes 
+    [DataTestMethod]
     [DataRow(
         """
-                // My comment here
-                resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
-                  name: 'testResource/cassandraKeyspace'
-                  properties: {
-                    resource: {
-                      id: 'id'
-                    }
-                    <<options>>: {}
-                  }
+            // My comment here
+            resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
+                name: 'testResource/cassandraKeyspace'
+                properties: {
+                resource: {
+                    id: 'id'
                 }
-                """,
+                <<options>>: {}
+                }
+            }
+            """,
         """
-                // My comment here
-                @description('A key-value pair of options to be applied for the request. This corresponds to the headers sent with the request.')
-                param options object? = {}
-                resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
-                  name: 'testResource/cassandraKeyspace'
-                  properties: {
-                    resource: {
-                      id: 'id'
-                    }
-                    options: options
-                  }
+            // My comment here
+            @description('A key-value pair of options to be applied for the request. This corresponds to the headers sent with the request.')
+            param options object = {}
+            resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
+                name: 'testResource/cassandraKeyspace'
+                properties: {
+                resource: {
+                    id: 'id'
                 }
-                """,
+                options: options
+                }
+            }
+            """,
+        """
+            // My comment here
+            @description('A key-value pair of options to be applied for the request. This corresponds to the headers sent with the request.')
+            param options { autoscaleSettings: { maxThroughput: int? }?, throughput: int? } = {}
+            resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
+                name: 'testResource/cassandraKeyspace'
+                properties: {
+                resource: {
+                    id: 'id'
+                }
+                options: options
+                }
+            }
+            """,
         DisplayName = "Resource property description")]
     [DataRow(
         """
-                type t = {
-                  @description('My string\'s field')
-                  myString: string
-
-                  @description('''
-                My int's field
-                is very long
-                ''')
-                  myInt: int
-                }
-
-                param p t = {
-                  myString: |'hello'
-                  myInt: 42
-                }
-                """,
-        """
-                type t = {
-                  @description('My string\'s field')
-                  myString: string
-
-                  @description('''
-                My int's field
-                is very long
-                ''')
-                  myInt: int
-                }
-
+            type t = {
                 @description('My string\'s field')
-                param myString string = 'hello'
-                param p t = {
-                  myString: myString
-                  myInt: 42
-                }
-                """,
+                myString: string
+
+                @description('''
+            My int's field
+            is very long
+            ''')
+                myInt: int
+            }
+
+            param p t = {
+                myString: |'hello'
+                myInt: 42
+            }
+            """,
+        """
+            type t = {
+                @description('My string\'s field')
+                myString: string
+
+                @description('''
+            My int's field
+            is very long
+            ''')
+                myInt: int
+            }
+
+            @description('My string\'s field')
+            param myString string = 'hello'
+            param p t = {
+                myString: myString
+                myInt: 42
+            }
+            """,
+        "SAME",
         DisplayName = "Apostrophe in description")]
     [DataRow(
         """
-                type t = {
-                  @description('My string\'s field')
-                  myString: string
+            type t = {
+                @description('My string\'s field')
+                myString: string
 
-                  @description('''
-                My int's field
-                is very long
-                ''')
-                  myInt: int
-                }
+                @description('''
+            My int's field
+            is very long
+            ''')
+                myInt: int
+            }
 
-                param p t = {
-                  myString: 'hello'
-                  myInt: |42
-                }
-                """,
+            param p t = {
+                myString: 'hello'
+                myInt: |42
+            }
+            """,
         """
-                type t = {
-                  @description('My string\'s field')
-                  myString: string
+            type t = {
+                @description('My string\'s field')
+                myString: string
 
-                  @description('''
-                My int's field
-                is very long
-                ''')
-                  myInt: int
-                }
+                @description('''
+            My int's field
+            is very long
+            ''')
+                myInt: int
+            }
 
-                @description('My int\'s field\nis very long\n')
-                param myInt int = 42
-                param p t = {
-                  myString: 'hello'
-                  myInt: myInt
-                }
-                """,
+            @description('My int\'s field\nis very long\n')
+            param myInt int = 42
+            param p t = {
+                myString: 'hello'
+                myInt: myInt
+            }
+            """,
+        "SAME",
         DisplayName = "multiline description")]
     public async Task Params_ShouldPickUpDescriptions(string fileWithSelection, string expectedLooseParamText, string? expectedMediumParamText)
     {
@@ -1954,8 +1945,14 @@ var v1 = newParameter
         }
     }
 
+    // expectedMediumParameterText can be "SAME" or "IGNORE"
     private async Task RunExtractToParameterTest(string fileWithSelection, string? expectedLooseParameterText, string? expectedMediumParameterText)
     {
+        if (expectedMediumParameterText == "SAME")
+        {
+            expectedMediumParameterText = expectedLooseParameterText;
+        }
+
         (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
         var extractedParamFixes = codeActions.Where(x => x.Title.StartsWith(ExtractToParameterTitle)).ToArray();
         extractedParamFixes.Should().HaveCountLessThanOrEqualTo(2);
@@ -1967,8 +1964,8 @@ var v1 = newParameter
         }
         else
         {
+            extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(1).Should().NotBeNull("should contain at least one action to extract to parameter");
             var looseFix = extractedParamFixes[0];
-            expectedLooseParameterText.Should().NotBeNull("should contain at least one action to extract to parameter");
             looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
             var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
@@ -1980,12 +1977,16 @@ var v1 = newParameter
             }
             else
             {
-                var mediumFix = extractedParamFixes[1];
                 extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(2, "should contain a second option to extract to parameter");
-                mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
-                var updatedFileMedium = ApplyCodeAction(bicepFile, mediumFix);
-                updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText);
+                if (expectedMediumParameterText != "IGNORE")
+                {
+                    var mediumFix = extractedParamFixes[1];
+                    mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
+
+                    var updatedFileMedium = ApplyCodeAction(bicepFile, mediumFix);
+                    updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText);
+                }
             }
         }
     }
