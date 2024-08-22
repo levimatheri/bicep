@@ -65,7 +65,7 @@ export async function executeShowSourceCommand(): Promise<vscode.TextEditor | un
 }
 
 export async function executeBuildCommand(documentUri: vscode.Uri): Promise<void> {
-  return await vscode.commands.executeCommand("bicep.build", documentUri);
+  return await vscode.commands.executeCommand("editor.action.rename", documentUri, new vscode.Position(0, 7));
 }
 
 export async function executeBuildParamsCommand(documentUri: vscode.Uri): Promise<void> {

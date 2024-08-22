@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -11,7 +12,7 @@ using Bicep.Core.CodeAction;
 using Bicep.Core.CodeAction.Fixes;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
-using Bicep.Core.Navigation;    
+using Bicep.Core.Navigation;
 using Bicep.Core.Parsing;
 using Bicep.Core.PrettyPrintV2;
 using Bicep.Core.Semantics;
@@ -122,15 +123,201 @@ namespace Bicep.LanguageServer.Handlers
                 commandOrCodeActions.AddRange(editLinterRuleActions);
             }
 
-            var nodesInRange = SyntaxMatcher.FindNodesInRange(compilationContext.ProgramSyntax, requestStartOffset, requestEndOffset);
+            var nodesInRange = SyntaxMatcher.FindNodesSpanningRange(compilationContext.ProgramSyntax, requestStartOffset, requestEndOffset);
             var codeFixes = GetDecoratorCodeFixProviders(semanticModel)
                 .SelectMany(provider => provider.GetFixes(semanticModel, nodesInRange))
                 .Select(fix => CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
             commandOrCodeActions.AddRange(codeFixes);
 
             var refactoringFixes = ExtractVarAndParam.GetRefactoringFixes(compilationContext, compilation, semanticModel, nodesInRange)
-                .Select(fix => CreateCodeAction(documentUri, compilationContext, fix));
+                .Select(fix => CreateCodeAction(documentUri, compilationContext, fix.fix, fix.renamePosition));
             commandOrCodeActions.AddRange(refactoringFixes);
+
+            commandOrCodeActions.Add(
+                new CodeAction
+                {
+                    Kind = CodeActionKind.Refactor,
+                    Title = "rename",
+                    Command = new()
+                    {
+                        Name = "editor.action.rename",
+                        Title = "Rename me",
+                        Arguments = new JArray //asdfg refactor
+                        {
+                            "file:///Users/stephenweatherford/Downloads/main.bicep",
+                            JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 5,
+                            })
+                        }
+                    }
+                });
+            commandOrCodeActions.Add(
+                new CodeAction
+                {
+                    Kind = CodeActionKind.Refactor,
+                    Title = "rename2",
+                    Command = new()
+                    {
+                        Name = "editor.action.rename",
+                        Title = "Rename me",
+                        Arguments = new JArray //asdfg refactor
+                        {
+                            JToken.FromObject(new
+                            {
+                            uri = "file:///Users/stephenweatherford/Downloads/main.bicep",
+                            position = JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 5,
+                            })
+                            })
+                        }
+                    }
+                });
+
+            commandOrCodeActions.Add(
+                new CodeAction
+                {
+                    Kind = CodeActionKind.Refactor,
+                    Title = "rename3",
+                    Command = new()
+                    {
+                        Name = "editor.action.rename",
+                        Title = "Rename me",
+                        Arguments = new JArray //asdfg refactor
+                        {
+                            "file:///Users/stephenweatherford/Downloads/main.bicep",
+                            JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+                        }
+                    }
+                });
+
+            commandOrCodeActions.Add(
+
+            TelemetryHelper.CreateCommand //asdfgasdfg
+            (
+                title: "rename5",
+                name: "editor.action.rename",
+                args: JArray.FromObject(new List<object> { "file:///Users/stephenweatherford/Downloads/main.bicep",
+                    JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+                })
+            ));
+
+            commandOrCodeActions.Add(
+
+TelemetryHelper.CreateCommand //asdfgasdfg
+(
+    title: "rename6",
+    name: "editor.action.rename",
+    args: JArray.FromObject(new List<object?> { null,
+                    JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+    })
+));
+
+            commandOrCodeActions.Add(
+
+TelemetryHelper.CreateCommand //asdfgasdfg
+(
+title: "rename7",
+name: "editor.action.rename",
+args: JArray.FromObject(new List<object> {documentUri ,
+                    JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+})
+));
+
+
+            commandOrCodeActions.Add(
+
+            TelemetryHelper.CreateCommand //asdfgasdfg
+            (
+            title: "rename8",
+            name: "editor.action.rename",
+            args: JArray.FromObject(new List<object> {documentUri.ToString() ,
+                    JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+            })
+            ));
+
+            commandOrCodeActions.Add(
+
+            TelemetryHelper.CreateCommand //asdfgasdfg
+            (
+            title: "rename9",
+            name: "editor.action.rename",
+            args: JArray.FromObject(new List<object> {documentUri.ToUnencodedString() ,
+                    JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+            })
+            ));
+
+
+            commandOrCodeActions.Add(
+
+TelemetryHelper.CreateCommand //asdfgasdfg
+(
+title: "rename11",
+name: "editor.action.rename",
+args: JArray.FromObject(
+    new List<object> { 
+    new List<object> {documentUri.ToUnencodedString() ,
+                    JToken.FromObject(new
+                            {
+                                line = 0,
+                                character = 6,
+                            })
+    }
+})
+));
+
+
+            //works:
+            //const action = new vscode.CodeAction('Rename fooey...', vscode.CodeActionKind.RefactorRewrite);
+            //action.command = { command: command, title: '', arguments: [[document.uri, new vscode.Position(0, 7) ]] }; //works
+
+            commandOrCodeActions.Add(
+    new CodeAction
+    {
+        Kind = CodeActionKind.Refactor,
+        Title = "rename10",
+        Command = new Command
+        {
+            Name = "editor.action.rename",
+            Title = "Rename me",
+            Arguments = new JArray
+            {
+                "file:///Users/stephenweatherford/Downloads/main.bicep",
+                JToken.FromObject(new Dictionary<string, int>
+                {
+                    { "line", 0 },
+                    { "character", 6 }
+                })
+            }
+        }
+    });
 
             return new(commandOrCodeActions);
         }
@@ -138,6 +325,7 @@ namespace Bicep.LanguageServer.Handlers
         private IEnumerable<DecoratorCodeFixProvider> GetDecoratorCodeFixProviders(SemanticModel semanticModel)
         {
             var nsResolver = semanticModel.Binder.NamespaceResolver;
+            //asdfg restore
             var a = nsResolver.GetNamespaceNames().Select(nsResolver.TryGetNamespace).WhereNotNull().ToArray();
             var b = a.SelectMany(ns => ns.DecoratorResolver.GetKnownDecoratorFunctions().Select(kvp => (ns, kvp.Key, kvp.Value))).ToArray();
             var c = b.ToLookup(t => t.Key);
@@ -232,7 +420,7 @@ namespace Bicep.LanguageServer.Handlers
             return Task.FromResult(request);
         }
 
-        private static CommandOrCodeAction CreateCodeAction(DocumentUri uri, CompilationContext context, CodeFix fix)
+        private static CommandOrCodeAction CreateCodeAction(DocumentUri uri, CompilationContext context, CodeFix fix, (int line, int character)? renamePosition = null)
         {
             var codeActionKind = fix.Kind switch
             {
@@ -257,7 +445,24 @@ namespace Bicep.LanguageServer.Handlers
                             NewText = replacement.Text
                         })
                     }
-                }
+                },
+                Command = !renamePosition.HasValue ? null :
+                    new()
+                    {
+                        Name = "editor.action.rename",
+                        Title = "Rename new identifier",
+                        Arguments = new JArray //asdfg refactor
+                        {
+                            new JArray{
+                                uri.ToString(),
+                                JToken.FromObject(new
+                                {
+                                    line = renamePosition.Value.line,
+                                    character = renamePosition.Value.character,
+                                })
+                            }
+                        }
+                    }
             };
         }
 

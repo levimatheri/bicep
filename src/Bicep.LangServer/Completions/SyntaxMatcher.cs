@@ -174,15 +174,16 @@ namespace Bicep.LanguageServer.Completions //asdfg rename?
             return nodes;
         }
 
-        public static List<SyntaxBase> FindNodesInRange(ProgramSyntax syntax, int startOffset, int endOffset)
+        // Finds syntax nodes that encompass the entire range (i.e. are found at both the start and end of
+        //   the range)
+        public static List<SyntaxBase> FindNodesSpanningRange(ProgramSyntax syntax, int startOffset, int endOffset)
         {
-            var startNodes = FindNodesMatchingOffset(syntax, startOffset);
+            var startNodes = FindNodesMatchingOffset(syntax, startOffset); // in order of least specific (ProgramSyntax) to most specific
             var endNodes = FindNodesMatchingOffset(syntax, endOffset);
 
             return startNodes
                 .Zip(endNodes, (x, y) => object.ReferenceEquals(x, y) ? x : null)
-                .TakeWhile(x => x is not null)
-                .WhereNotNull()
+                .TakeWhileNotNull()
                 .ToList();
         }
 

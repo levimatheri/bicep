@@ -6,9 +6,11 @@ using System.Diagnostics;
 using System.Drawing.Text;
 using System.Text;
 using System.Text.RegularExpressions;
+using Azure.Core.GeoJson;
 using Bicep.Core;
 using Bicep.Core.CodeAction;
 using Bicep.Core.Extensions;
+using Bicep.Core.Navigation;
 using Bicep.Core.Parsing;
 using Bicep.Core.PrettyPrintV2;
 using Bicep.Core.Semantics;
@@ -34,6 +36,9 @@ namespace Bicep.LanguageServer.Refactor;
 	 * executed and then the command.
 	 *
 	command?: Command;
+
+
+asdfg DecoratorCodeFixProvider
 */
 
 // asdfg Convert var to param
@@ -92,7 +97,7 @@ public static class ExtractVarAndParam
 
     static string NewLine(SemanticModel semanticModel) => semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence();
 
-    public static IEnumerable<CodeFix> GetRefactoringFixes(
+    public static IEnumerable<(CodeFix fix, (int line, int character) renamePosition)> GetRefactoringFixes(
         CompilationContext compilationContext,
         Compilation compilation,
         SemanticModel semanticModel,
@@ -171,20 +176,23 @@ public static class ExtractVarAndParam
         var newVarDeclarationSyntax = SyntaxFactory.CreateVariableDeclaration(newVarName, expressionSyntax);
         var newVarDeclarationText = PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel); //asdfg
 
-        var (newVarInsertionPosition, insertBlankLineBeforeNewVar) = FindPositionToInsertNewStatementOfType<VariableDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
-        var (newParamInsertionPosition, insertBlankLineBeforeNewParam) = FindPositionToInsertNewStatementOfType<ParameterDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
+        var (newVarInsertionPosition, insertBlankLineBeforeNewVar) = FindPositionToInsertNewDeclarationOfType<VariableDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
+        var (newParamInsertionPosition, insertBlankLineBeforeNewParam) = FindPositionToInsertNewDeclarationOfType<ParameterDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
 
         if (insertBlankLineBeforeNewVar)
         {
             newVarDeclarationText = NewLine(semanticModel) + newVarDeclarationText;
         }
 
-        yield return new CodeFix(
-           $"Extract variable",
-           isPreferred: false,
-           CodeFixKind.RefactorExtract,
-           new CodeReplacement(expressionSyntax.Span, newVarName),
-           new CodeReplacement(new TextSpan(newVarInsertionPosition, 0), newVarDeclarationText));
+        var newVarOffset = newVarInsertionPosition + "var ".Length; //asdfg
+        yield return (
+            fix: new CodeFix( //asdfg extract common with params
+                $"Extract variable",
+                isPreferred: false,
+                CodeFixKind.RefactorExtract,
+                new CodeReplacement(new TextSpan(newVarInsertionPosition, 0), newVarDeclarationText),
+                new CodeReplacement(expressionSyntax.Span, newVarName)),
+            renamePosition: TextCoordinateConverter.GetPosition(compilationContext.LineStarts, newVarOffset));
 
         // For the new param's type, try to use the declared type if there is one (i.e. the type of
         //   what we're assigning to), otherwise use the actual calculated type of the expression
@@ -195,19 +203,28 @@ public static class ExtractVarAndParam
         // Don't create nullable params - they're not allowed to have default values asdfg test
         var ignoreTopLevelNullability = true;
 
+        // Strict typing for the param doesn't appear useful, providing only loose and medium at the moment
         var stringifiedNewParamTypeLoose = Stringify(newParamType, typeProperty, Strictness.Loose, ignoreTopLevelNullability);
         var stringifiedNewParamTypeMedium = Stringify(newParamType, typeProperty, Strictness.Medium, ignoreTopLevelNullability);
 
-        yield return CreateExtractParameterCodeFix(
-            $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}",
-            semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, newParamInsertionPosition, expressionSyntax, Strictness.Loose, insertBlankLineBeforeNewParam);
+        var multipleParameterTypesAvailable = !string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal);
 
-        if (!string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal))
+        var paramRenamePosition = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, 4);//asdfg
+
+        yield return (
+            CreateExtractParameterCodeFix(
+                multipleParameterTypesAvailable
+                    ? $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}"
+                    : "Extract parameter",
+                semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, newParamInsertionPosition, expressionSyntax, Strictness.Loose, insertBlankLineBeforeNewParam),
+            paramRenamePosition);
+
+        if (multipleParameterTypesAvailable)
         {
             var customTypedParamExtraction = CreateExtractParameterCodeFix(
                 $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
                 semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, newParamInsertionPosition, expressionSyntax, Strictness.Medium, insertBlankLineBeforeNewParam);
-            yield return customTypedParamExtraction;
+            yield return (customTypedParamExtraction, paramRenamePosition);
         }
 
     }
@@ -233,8 +250,8 @@ public static class ExtractVarAndParam
             title,
             isPreferred: false,
             CodeFixKind.RefactorExtract,
-            new CodeReplacement(expressionSyntax.Span, newParamName),
-            new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), declarationText));
+            new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), declarationText),
+            new CodeReplacement(expressionSyntax.Span, newParamName));
     }
 
     private static string CreateNewParameterDeclaration(
@@ -293,55 +310,73 @@ public static class ExtractVarAndParam
             + "\"";
     }
 
-    private static (int offset, bool insertBlankLineBefore) FindPositionToInsertNewStatementOfType<T>(CompilationContext compilationContext, int extractionOffset) where T : StatementSyntax
+    private static (int offset, bool insertBlankLineBefore) FindPositionToInsertNewDeclarationOfType<T>(CompilationContext compilationContext, int extractionOffset)
+        where T : StatementSyntax, ITopLevelNamedDeclarationSyntax
     {
-        var extractionLine = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, extractionOffset).line;
+        //asdfg more testing?  Make sure can't crash
+        ImmutableArray<int> lineStarts = compilationContext.LineStarts;
+
+        var extractionLine = GetPosition(extractionOffset).line;
         var startSearchingAtLine = extractionLine - 1;
 
         for (int line = startSearchingAtLine; line >= 0; --line)
         {
-            var statementAtLine = StatementAtLine(line);
-            if (statementAtLine != null)
+            var existingDeclarationStatement = StatementOfTypeAtLine(line);
+            if (existingDeclarationStatement != null)
             {
-                // Insert on the line right after
+                // Insert on the line right after the existing declaration
                 var insertionLine = line + 1;
 
-                // Is there a blank line above this existing statement that we found?  If so, assume user probably wants one
-                //   after as well.
-                var insertBlankLineBefore = false; //asdfg
+                // Is there a blank line above this existing statement that we found (excluding its leading nodes)?
+                //   If so, assume user probably wants one after as well.
+                var beginningOffsetOfExistingDeclaration = existingDeclarationStatement.Span.Position;
+                var beginningLineOfExistingDeclaration =
+                    GetPosition(beginningOffsetOfExistingDeclaration)
+                    .line;
+                var insertBlankLineBeforeNewDeclaration = IsLineBeforeEmpty(beginningLineOfExistingDeclaration);
 
-                return (TextCoordinateConverter.GetOffset(compilationContext.LineStarts, insertionLine, 0), insertBlankLineBefore);
+                return (GetOffset(insertionLine, 0), insertBlankLineBeforeNewDeclaration);
             }
         }
 
-        // If no existing statements of the desired type, insert right before the line containing the extraction expression
-        return TextCoordinateConverter.GetOffset(compilationContext.LineStarts, extractionLine, 0);
+        // If no existing declarations of the desired type, insert right before the statement/asdfg containing the extraction expression
+        return (GetOffset(extractionLine, 0), false);
 
-        StatementSyntax? StatementAtLine(int line)
+        StatementSyntax? StatementOfTypeAtLine(int line) //asdfg does this work if there's whitespace at the beginning of the line?
         {
-            var lineOffset = TextCoordinateConverter.GetOffset(compilationContext.LineStarts, line, 0);
-            var statementAtLine = SyntaxMatcher.FindNodesInRange(compilationContext.ProgramSyntax, lineOffset, lineOffset).OfType<T>().FirstOrDefault();
+            var lineOffset = GetOffset(line, 0);
+            var statementAtLine = SyntaxMatcher.FindNodesSpanningRange(compilationContext.ProgramSyntax, lineOffset, lineOffset).OfType<T>().FirstOrDefault();
             return statementAtLine;
         }
 
-        bool IsLineBeforeBlank(int line)
+        bool IsLineBeforeEmpty(int line)
         {
-            // Ignoring leading trivia, find the line above this
-            var statementAtLine = StatementAtLine(line);
-            if (statementAtLine is { })
+            if (line == 0)
             {
-                statementAtLine.LeadingNodes.
+                return false;
             }
-            var lineStartIgnoringLeadingNodes = 
-            int lineBefore = -1;
-            for (int l = line; l >= 0; --l)
-            {
 
-            }
+            return IsLineEmpty(line - 1);
         }
 
-        bool IsLineBlank(int line)
+        bool IsLineEmpty(int line) //asdfg rewrite properly
         {
+            var lineSpan = TextCoordinateConverter.GetLineSpan(lineStarts, compilationContext.ProgramSyntax.GetEndPosition(), line);
+            for (int i = lineSpan.Position; i <= lineSpan.Position + lineSpan.Length - 1; ++i)
+            {
+                // asdfg handle inside other scopes e.g. user functions
+                if (SyntaxMatcher.FindNodesMatchingOffset(compilationContext.ProgramSyntax, i)
+                    .Where(x => x is not ProgramSyntax)
+                    .Where(x => x is not Token t || !string.IsNullOrWhiteSpace(t.Text))
+                    .Any())
+                {
+                    return false;
+                }
+            }
+            return true;
         }
+
+        (int line, int character) GetPosition(int offset) => TextCoordinateConverter.GetPosition(lineStarts, offset);
+        int GetOffset(int line, int character) => TextCoordinateConverter.GetOffset(lineStarts, line, character);
     }
 }

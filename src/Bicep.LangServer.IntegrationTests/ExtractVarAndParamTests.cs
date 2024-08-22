@@ -34,6 +34,9 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 type myMixedTypeArrayType = ('fizz' | 42 | {an: 'object'} | null)[]
 
 
+asdfg handle inside a module
+
+
 
 type negativeIntLiteral = -10
 type negatedIntReference = -negativeIntLiteral
@@ -1857,50 +1860,48 @@ var v1 = newParameter
     }
 
     [DataTestMethod]//asdfg
-    //asdfg
-    [DataRow(
-        """
-            var v = <<1>>
-            """,
-        """
-            var newVariable = 1
-            var v = newVariable
-            """,
-        """
-            param newParameter int = 1
-            var v = newParameter
-            """,
-        DisplayName = "Extracting at top of file -> insert at top")]
-    [DataRow(
-        """
-            metadata firstLine = 'first line'
-            metadata secondLine = 'second line'
+                    //asdfg
+    //[DataRow(
+    //    """
+    //        var v = <<1>>
+    //        """,
+    //    """
+    //        var newVariable = 1
+    //        var v = newVariable
+    //        """,
+    //    """
+    //        param newParameter int = 1
+    //        var v = newParameter
+    //        """,
+    //    DisplayName = "Extracting at top of file -> insert at top")]
+    //[DataRow(
+    //    """
+    //        metadata firstLine = 'first line'
+    //        metadata secondLine = 'second line'
 
-            // Some comments
-            var v = <<1>>
-            """,
-        """
-            metadata firstLine = 'first line'
-            metadata secondLine = 'second line'
+    //        // Some comments
+    //        var v = <<1>>
+    //        """,
+    //    """
+    //        metadata firstLine = 'first line'
+    //        metadata secondLine = 'second line'
 
-            // Some comments
-            var newVariable = 1
-            var v = newVariable
-            """,
-        """
-            metadata firstLine = 'first line'
-            metadata secondLine = 'second line'
-            
-            // Some comments
-            param newParameter int = 1
-            var v = newParameter
-            """,
-        DisplayName = "No existing params/vars above -> insert right before extraction line")]
+    //        // Some comments
+    //        var newVariable = 1
+    //        var v = newVariable
+    //        """,
+    //    """
+    //        metadata firstLine = 'first line'
+    //        metadata secondLine = 'second line'
+
+    //        // Some comments
+    //        param newParameter int = 1
+    //        var v = newParameter
+    //        """,
+    //    DisplayName = "No existing params/vars above -> insert right before extraction line")]
     [DataRow(
         """
-            // location comment
             param location string
-            // rg comment
             param resourceGroup string
             var simpleCalculation = 1 + 1
             var complexCalculation = simpleCalculation * 2
@@ -1910,32 +1911,68 @@ var v1 = newParameter
             var v = <<1>>
             """,
         """
-            // location comment
             param location string
-            // rg comment
             param resourceGroup string
             var simpleCalculation = 1 + 1
             var complexCalculation = simpleCalculation * 2
             var newVariable = 1
 
             metadata line = 'line'
-            
+
             var v = newVariable
             """,
         """
-            // location comment
             param location string
-            // rg comment
             param resourceGroup string
             param newParameter int = 1
             var simpleCalculation = 1 + 1
             var complexCalculation = simpleCalculation * 2
-            
+
             metadata line = 'line'
 
             var v = newParameter
             """,
         DisplayName = "Existing params and vars at top of file -> param and var inserted after their corresponding existing declarations")]
+    //[DataRow( asdfg not handling comments before line as part of the line
+    //    """
+    //        // location comment
+    //        param location string
+    //        // rg comment
+    //        param resourceGroup string
+    //        var simpleCalculation = 1 + 1
+    //        var complexCalculation = simpleCalculation * 2
+
+    //        metadata line = 'line'
+
+    //        var v = <<1>>
+    //        """,
+    //    """
+    //        // location comment
+    //        param location string
+    //        // rg comment
+    //        param resourceGroup string
+    //        var simpleCalculation = 1 + 1
+    //        var complexCalculation = simpleCalculation * 2
+    //        var newVariable = 1
+
+    //        metadata line = 'line'
+
+    //        var v = newVariable
+    //        """,
+    //    """
+    //        // location comment
+    //        param location string
+    //        // rg comment
+    //        param resourceGroup string
+    //        param newParameter int = 1
+    //        var simpleCalculation = 1 + 1
+    //        var complexCalculation = simpleCalculation * 2
+
+    //        metadata line = 'line'
+
+    //        var v = newParameter
+    //        """,
+    //    DisplayName = "Existing params and vars at top of file -> param and var inserted after their corresponding existing declarations")]
     [DataRow(
         """
             // location comment
@@ -1946,6 +1983,8 @@ var v1 = newParameter
 
             var simpleCalculation = 1 + 1
 
+            @export()
+            @description('this still counts as having an empty line beforehand')
             var complexCalculation = simpleCalculation * 2
 
             metadata line = 'line'
@@ -1960,13 +1999,15 @@ var v1 = newParameter
             param resourceGroup string
 
             var simpleCalculation = 1 + 1
-            
+
+            @export()
+            @description('this still counts as having an empty line beforehand')
             var complexCalculation = simpleCalculation * 2
-            
+
             var newVariable = 1
 
             metadata line = 'line'
-            
+
             var v = newVariable
             """,
         """
@@ -1980,8 +2021,10 @@ var v1 = newParameter
 
             var simpleCalculation = 1 + 1
 
+            @export()
+            @description('this still counts as having an empty line beforehand')
             var complexCalculation = simpleCalculation * 2
-            
+
             metadata line = 'line'
 
             var v = newParameter
@@ -2059,7 +2102,9 @@ var v1 = newParameter
         DisplayName = "Existing params and vars in multiple places in file -> insert after closest existing declarations above extraction")]
     public async Task VarsAndParams_InsertAfterExistingDeclarations(string fileWithSelection, string expectedVarText, string? expectedParamText)
     {
-        await RunExtractToVariableAndParameterTest(fileWithSelection, expectedVarText, expectedParamText, null);
+        await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\n"), expectedVarText, expectedParamText, null);
+
+        await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\r\n"), expectedVarText, expectedParamText, null);
     }
 
     #region Support

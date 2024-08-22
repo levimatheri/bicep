@@ -172,7 +172,7 @@ namespace Bicep.LanguageServer.Completions
                         {
                             string prefix = resourceSnippet.Prefix;
                             BicepTelemetryEvent telemetryEvent = BicepTelemetryEvent.CreateTopLevelDeclarationSnippetInsertion(prefix);
-                            var command = TelemetryHelper.CreateCommand
+                            var command = TelemetryHelper.CreateCommand //asdfgasdfg
                             (
                                 title: "top level snippet completion",
                                 name: TelemetryConstants.CommandName,
@@ -1595,20 +1595,7 @@ namespace Bicep.LanguageServer.Completions
             var nextLine = line + 1;
             if (lineStarts.Length > nextLine)
             {
-                var nextLineStart = lineStarts[nextLine];
-
-                int nextLineEnd;
-
-                if (lineStarts.Length > nextLine + 1)
-                {
-                    nextLineEnd = lineStarts[nextLine + 1] - 1;
-                }
-                else
-                {
-                    nextLineEnd = programSyntax.GetEndPosition();
-                }
-
-                return new TextSpan(nextLineStart, nextLineEnd - nextLineStart);
+                return TextCoordinateConverter.GetLineSpan(lineStarts, programSyntax.GetEndPosition(), nextLine);
             }
 
             return TextSpan.Nil;
