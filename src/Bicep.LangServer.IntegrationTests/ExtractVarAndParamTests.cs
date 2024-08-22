@@ -472,7 +472,7 @@ var v1 = newParameter
              """)]
     public async Task BicepDiscussion(string fileWithSelection, string expectedLooseParamText, string expectedMediumParamText)
     {
-        await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText );
+        await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
     }
 
     [DataTestMethod]
@@ -1854,6 +1854,212 @@ var v1 = newParameter
     public async Task Params_ShouldPickUpDescriptions(string fileWithSelection, string expectedLooseParamText, string? expectedMediumParamText)
     {
         await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
+    }
+
+    [DataTestMethod]//asdfg
+    //asdfg
+    [DataRow(
+        """
+            var v = <<1>>
+            """,
+        """
+            var newVariable = 1
+            var v = newVariable
+            """,
+        """
+            param newParameter int = 1
+            var v = newParameter
+            """,
+        DisplayName = "Extracting at top of file -> insert at top")]
+    [DataRow(
+        """
+            metadata firstLine = 'first line'
+            metadata secondLine = 'second line'
+
+            // Some comments
+            var v = <<1>>
+            """,
+        """
+            metadata firstLine = 'first line'
+            metadata secondLine = 'second line'
+
+            // Some comments
+            var newVariable = 1
+            var v = newVariable
+            """,
+        """
+            metadata firstLine = 'first line'
+            metadata secondLine = 'second line'
+            
+            // Some comments
+            param newParameter int = 1
+            var v = newParameter
+            """,
+        DisplayName = "No existing params/vars above -> insert right before extraction line")]
+    [DataRow(
+        """
+            // location comment
+            param location string
+            // rg comment
+            param resourceGroup string
+            var simpleCalculation = 1 + 1
+            var complexCalculation = simpleCalculation * 2
+
+            metadata line = 'line'
+
+            var v = <<1>>
+            """,
+        """
+            // location comment
+            param location string
+            // rg comment
+            param resourceGroup string
+            var simpleCalculation = 1 + 1
+            var complexCalculation = simpleCalculation * 2
+            var newVariable = 1
+
+            metadata line = 'line'
+            
+            var v = newVariable
+            """,
+        """
+            // location comment
+            param location string
+            // rg comment
+            param resourceGroup string
+            param newParameter int = 1
+            var simpleCalculation = 1 + 1
+            var complexCalculation = simpleCalculation * 2
+            
+            metadata line = 'line'
+
+            var v = newParameter
+            """,
+        DisplayName = "Existing params and vars at top of file -> param and var inserted after their corresponding existing declarations")]
+    [DataRow(
+        """
+            // location comment
+            param location string
+
+            // rg comment
+            param resourceGroup string
+
+            var simpleCalculation = 1 + 1
+
+            var complexCalculation = simpleCalculation * 2
+
+            metadata line = 'line'
+
+            var v = <<1>>
+            """,
+        """
+            // location comment
+            param location string
+
+            // rg comment
+            param resourceGroup string
+
+            var simpleCalculation = 1 + 1
+            
+            var complexCalculation = simpleCalculation * 2
+            
+            var newVariable = 1
+
+            metadata line = 'line'
+            
+            var v = newVariable
+            """,
+        """
+            // location comment
+            param location string
+
+            // rg comment
+            param resourceGroup string
+
+            param newParameter int = 1
+
+            var simpleCalculation = 1 + 1
+
+            var complexCalculation = simpleCalculation * 2
+            
+            metadata line = 'line'
+
+            var v = newParameter
+            """,
+        DisplayName = "If closest existing declaration has a blank line before it, insert a blank line above the new declaration")]
+    [DataRow(
+        """
+            param location string
+            param resourceGroup string
+            var simpleCalculation = 1 + 1
+            var complexCalculation = simpleCalculation * 2
+
+            metadata line = 'line'
+
+            param location2 string
+            param resourceGroup2 string
+            var simpleCalculation2 = 1 + 1
+            var complexCalculation2 = simpleCalculation * 2
+
+            metadata line2 = 'line2'
+
+            var v = <<1>>
+
+            param location3 string
+            param resourceGroup3 string
+            var simpleCalculation3 = 1 + 1
+            var complexCalculation3 = simpleCalculation * 2            
+            """,
+        """
+            param location string
+            param resourceGroup string
+            var simpleCalculation = 1 + 1
+            var complexCalculation = simpleCalculation * 2
+            
+            metadata line = 'line'
+            
+            param location2 string
+            param resourceGroup2 string
+            var simpleCalculation2 = 1 + 1
+            var complexCalculation2 = simpleCalculation * 2
+            var newVariable = 1
+            
+            metadata line2 = 'line2'
+            
+            var v = newVariable
+
+            param location3 string
+            param resourceGroup3 string
+            var simpleCalculation3 = 1 + 1
+            var complexCalculation3 = simpleCalculation * 2            
+            """,
+        """
+            param location string
+            param resourceGroup string
+            var simpleCalculation = 1 + 1
+            var complexCalculation = simpleCalculation * 2
+            
+            metadata line = 'line'
+            
+            param location2 string
+            param resourceGroup2 string
+            param newParameter int = 1
+            var simpleCalculation2 = 1 + 1
+            var complexCalculation2 = simpleCalculation * 2
+            
+            metadata line2 = 'line2'
+            
+            var v = newParameter
+
+            param location3 string
+            param resourceGroup3 string
+            var simpleCalculation3 = 1 + 1
+            var complexCalculation3 = simpleCalculation * 2            
+            """,
+        DisplayName = "Existing params and vars in multiple places in file -> insert after closest existing declarations above extraction")]
+    public async Task VarsAndParams_InsertAfterExistingDeclarations(string fileWithSelection, string expectedVarText, string? expectedParamText)
+    {
+        await RunExtractToVariableAndParameterTest(fileWithSelection, expectedVarText, expectedParamText, null);
     }
 
     #region Support
