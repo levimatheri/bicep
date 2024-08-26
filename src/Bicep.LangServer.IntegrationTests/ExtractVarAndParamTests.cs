@@ -29,6 +29,9 @@ using static Google.Protobuf.Reflection.SourceCodeInfo.Types;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 
+//asdfg test rename position
+
+
 /* asdfg
 
 type myMixedTypeArrayType = ('fizz' | 42 | {an: 'object'} | null)[]
@@ -2103,7 +2106,6 @@ var v1 = newParameter
     public async Task VarsAndParams_InsertAfterExistingDeclarations(string fileWithSelection, string expectedVarText, string? expectedParamText)
     {
         await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\n"), expectedVarText, expectedParamText, null);
-
         await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\r\n"), expectedVarText, expectedParamText, null);
     }
 

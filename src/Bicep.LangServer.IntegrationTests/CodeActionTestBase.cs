@@ -22,6 +22,7 @@ using Bicep.LanguageServer.Utils;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -118,7 +119,7 @@ namespace Bicep.LangServer.IntegrationTests
             return result!.Select(x => x.CodeAction).WhereNotNull();
         }
 
-        protected static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction, params string[] tabStops) //asdfg extract
+        protected static BicepFile ApplyCodeAction(BicepFile bicepFile, CodeAction codeAction) //asdfg extract
         {
             // only support a small subset of possible edits for now - can always expand this later on
             codeAction.Edit!.Changes.Should().NotBeNull();
@@ -136,14 +137,14 @@ namespace Bicep.LangServer.IntegrationTests
                 }
             }
 
-            // Convert to our coordinates
+            // Convert to Bicep coordinates
             var lineStarts = TextCoordinateConverter.GetLineStarts(bicepText);
             var convertedChanges = changes.Select(c =>
                 (NewText: c.NewText, Span: c.Range.ToTextSpan(lineStarts)))
                 .ToArray();
 
             for (var i = 0; i < changes.Length; ++i)
-            { //asdfg test?
+            {
                 var replacement = convertedChanges[i];
 
                 var start = replacement.Span.Position;
@@ -165,6 +166,22 @@ namespace Bicep.LangServer.IntegrationTests
                     }
                 }
             }
+
+            var command = codeAction.Command;
+            command.Should().NotBeNull();
+            command!.Name.Should().Be("bicep.internal.startRename");
+            command.Arguments.Should().NotBeNull();
+            command.Arguments!.Should().BeOfType<JArray>();
+            var argsArray = ((JArray)command.Arguments!);
+            var args = (argsArray[0].ToString(), argsArray[1]);
+            args.Item1.Should().StartWith("file://");
+            var positionObject = (JObject)args.Item2;
+            var (line, character) = (positionObject.GetValue("line")!.Value<int>(), positionObject.GetValue("character")!.Value<int>());
+            var renameOffset = TextCoordinateConverter.GetOffset(lineStarts, line, character);
+            var possibleVarKeyword = renameOffset >= "var ".Length ? bicepText.Substring(renameOffset - "var ".Length, "var ".Length) : null;
+            var possibleParamKeyword = renameOffset >= "param ".Length ? bicepText.Substring(renameOffset - "param ".Length, "param ".Length) : null;
+            (possibleVarKeyword == "var " || possibleParamKeyword == "param ").Should().BeTrue(
+                "Rename should be positioned on the new identifier right after 'var ' or 'param '");
 
             return SourceFileFactory.CreateBicepFile(bicepFile.FileUri, bicepText);
         }
