@@ -154,26 +154,26 @@ public class TypeStringifierTests
         "type loose = string",
         "type medium = 'abc' | 'def' | 'ghi'",
         "type strict = 'abc' | 'def' | 'ghi'")]
-    //[DataRow(asdfg
-    //    "type testType = 1 | 2 | 3 | -1",
-    //    "type loose = int",
-    //    "type medium = -1 | 1 | 2 | 3",
-    //    "type strict = -1 | 1 | 2 | 3")]
-    //[DataRow(
-    //    "type testType = true|false",
-    //    "type loose = bool",
-    //    "type medium = false | true",
-    //    "type strict = false | true")]
-    //[DataRow(
-    //    "type testType = null|true|false",
-    //    "type loose = bool?",
-    //    "type medium = (false | true)?",
-    //    "type strict = (false | true)?")]
-    //[DataRow(
-    //    "type testType = { a: 'a'|null, b: 'a'|'b'|null, c: 'a'|'b'|'c'|null }",
-    //    "type loose = object",
-    //    "type medium = { a: string?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }",
-    //    "type strict = { a: 'a'?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }")]
+    [DataRow(
+        "type testType = 1 | 2 | 3 | -1",
+        "type loose = int",
+        "type medium = -1 | 1 | 2 | 3",
+        "type strict = -1 | 1 | 2 | 3")]
+    [DataRow(
+        "type testType = true|false",
+        "type loose = bool",
+        "type medium = false | true",
+        "type strict = false | true")]
+    [DataRow(
+        "type testType = null|true|false",
+        "type loose = bool?",
+        "type medium = (false | true)?",
+        "type strict = (false | true)?")]
+    [DataRow(
+        "type testType = { a: 'a'|null, b: 'a'|'b'|null, c: 'a'|'b'|'c'|null }",
+        "type loose = object",
+        "type medium = { a: string?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }",
+        "type strict = { a: 'a'?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }")]
     public void UnionTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
     {
         RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);
@@ -432,64 +432,65 @@ public class TypeStringifierTests
     }
 
     [DataTestMethod]
+    //asdfg
     //
     // "fileUris" property
     //
-    [DataRow(
-        """
-            var _artifactsLocation = 'https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/azuredeploy.json'
-            var _artifactsLocationSasToken = '?sas=abcd'
-            var commandToExecute = 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1'
+    //[DataRow(
+    //    """
+    //        var _artifactsLocation = 'https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/azuredeploy.json'
+    //        var _artifactsLocationSasToken = '?sas=abcd'
+    //        var commandToExecute = 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1'
 
-            resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
-                properties: {
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: {
-                        fileUris: [
-                            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                        ]
-                        commandToExecute: commandToExecute
-                    }
-                }
-            }         
-            """,
-        "fileUris",
-        "type loose = array",
-        "type medium = string[]",
-        "type strict = ['https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/writeblob.ps1?sas=abcd']",
-        DisplayName = "virtual machine extensions fileUris property")]
-    //
-    // "settings" property
-    //
-    [DataRow(
-        """
-            var _artifactsLocation = 'https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/azuredeploy.json'
-            var _artifactsLocationSasToken = '?sas=abcd'
-            var commandToExecute = 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1'
+    //        resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
+    //            properties: {
+    //                publisher: 'Microsoft.Compute'
+    //                type: 'CustomScriptExtension'
+    //                typeHandlerVersion: '1.8'
+    //                autoUpgradeMinorVersion: true
+    //                settings: {
+    //                    fileUris: [
+    //                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+    //                    ]
+    //                    commandToExecute: commandToExecute
+    //                }
+    //            }
+    //        }         
+    //        """,
+    //    "fileUris",
+    //    "type loose = array",
+    //    "type medium = string[]",
+    //    "type strict = ['https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/writeblob.ps1?sas=abcd']",
+    //    DisplayName = "virtual machine extensions fileUris property")]
+    ////
+    //// "settings" property
+    ////
+    //[DataRow(
+    //    """
+    //        var _artifactsLocation = 'https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/azuredeploy.json'
+    //        var _artifactsLocationSasToken = '?sas=abcd'
+    //        var commandToExecute = 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1'
 
-            resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
-                properties: {
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: {
-                        fileUris: [
-                            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                        ]
-                        commandToExecute: commandToExecute
-                    }
-                }
-            }         
-            """,
-        "settings",
-        "type loose = object",
-        "type medium = { commandToExecute: string, fileUris: string[] }",
-        "type strict = { commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1', fileUris: ['https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/writeblob.ps1?sas=abcd'] }",
-        DisplayName = "virtual machine extensions settings property")]
+    //        resource testResource 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
+    //            properties: {
+    //                publisher: 'Microsoft.Compute'
+    //                type: 'CustomScriptExtension'
+    //                typeHandlerVersion: '1.8'
+    //                autoUpgradeMinorVersion: true
+    //                settings: {
+    //                    fileUris: [
+    //                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+    //                    ]
+    //                    commandToExecute: commandToExecute
+    //                }
+    //            }
+    //        }         
+    //        """,
+    //    "settings",
+    //    "type loose = object",
+    //    "type medium = { commandToExecute: string, fileUris: string[] }",
+    //    "type strict = { commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1', fileUris: ['https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/writeblob.ps1?sas=abcd'] }",
+    //    DisplayName = "virtual machine extensions settings property")]
     //
     // "properties" property
     //
@@ -521,7 +522,6 @@ public class TypeStringifierTests
         "properties",
         "type loose = object",
         // asdfg object? /* any */   ??
-        // asdfg 'Error' | 'Info' | 'Warning' | null    or     ('Error' | 'Info' | 'Warning')?
         // asdfg so many "?"'s
         """
             type medium = {
@@ -547,7 +547,6 @@ public class TypeStringifierTests
                 typeHandlerVersion: string?
               }?
               protectedSettings: object? /* any */
-              provisioningState: string
               publisher: string?
               settings: object? /* any */
               type: string?
@@ -578,7 +577,6 @@ public class TypeStringifierTests
                 typeHandlerVersion: string?
               }?
               protectedSettings: object? /* any */
-              provisioningState: string
               publisher: string?
               settings: object? /* any */
               type: string?

@@ -178,7 +178,11 @@ public static class TypeStringifier
                     return "object";
                 }
 
-                return $"{{ {string.Join(", ", objectType.Properties.Select(p => GetFormattedTypeProperty(p.Value, strictness, visitedTypes)))} }}";
+                return $"{{ {
+                    string.Join(", ", objectType.Properties
+                        .Where(p => !p.Value.Flags.HasFlag(TypePropertyFlags.ReadOnly))
+                        .Select(p => GetFormattedTypeProperty(p.Value, strictness, visitedTypes)))
+                    } }}";
 
             case AnyType:
                 return AnyTypeName;
