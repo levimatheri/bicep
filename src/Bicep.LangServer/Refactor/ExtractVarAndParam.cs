@@ -110,7 +110,7 @@ public static class ExtractVarAndParam
 
         TypeProperty? typeProperty = null; // asdfg better name
         string? defaultNewName = null;
-        string newLine = NewLine(semanticModel);
+        string newLine = NewLine(semanticModel); //asdfg still useful?
 
         // Pick a semi-intelligent default name for the new param and variable.
         // Also, adjust the expression we're replacing if a property itself has been selected.
@@ -173,27 +173,27 @@ public static class ExtractVarAndParam
         var newVarName = FindUnusedName(compilation, expressionSyntax.Span.Position, defaultNewName ?? "newVariable");
         var newParamName = FindUnusedName(compilation, expressionSyntax.Span.Position, defaultNewName ?? "newParameter");
 
+        var (newVarInsertionOffset, insertBlankLineBeforeNewVar) = FindOffsetToInsertNewDeclarationOfType<VariableDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
+
         //asdfg create CreateExtractParameterCodeFix for var?
         var newVarDeclarationSyntax = SyntaxFactory.CreateVariableDeclaration(newVarName, expressionSyntax);
-        var newVarDeclarationText = PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel); //asdfg
 
-        var (newVarInsertionOffset, insertBlankLineBeforeNewVar) = FindOffsetToInsertNewDeclarationOfType<VariableDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
-        var renameVarOffset = newVarInsertionOffset + "var ".Length;
+        var newVarDeclaration = new DeclarationASdfg(
+            PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel),
+            newVarInsertionOffset + "var ".Length);
         if (insertBlankLineBeforeNewVar)
         {
-            newVarDeclarationText = newLine + newVarDeclarationText;
-            renameVarOffset += newLine.Length;
+            newVarDeclaration.Prepend(newLine);
         }
-        var renameVarPosition = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, renameVarOffset);
 
         var varFix = new CodeFix( //asdfg extract common with params
             $"Extract variable",
             isPreferred: false,
             CodeFixKind.RefactorExtract,
-            new CodeReplacement(new TextSpan(newVarInsertionOffset, 0), newVarDeclarationText),
+            new CodeReplacement(new TextSpan(newVarInsertionOffset, 0), newVarDeclaration.Text),
             new CodeReplacement(expressionSyntax.Span, newVarName));
-        Debug.Assert(varFix.Replacements.First().Text.Substring(renameVarOffset - newVarInsertionOffset - "var ".Length, "var ".Length) == "var ", "Rename is set at the wrong position");
-        yield return (varFix, renameVarPosition);
+        Debug.Assert(varFix.Replacements.First().Text.Substring(newVarDeclaration.RenameOffset - newVarInsertionOffset - "var ".Length, "var ".Length) == "var ", "Rename is set at the wrong position"); //asdfg remove these
+        yield return (varFix, TextCoordinateConverter.GetPosition(compilationContext.LineStarts, newVarDeclaration.RenameOffset));
 
         // For the new param's type, try to use the declared type if there is one (i.e. the type of
         //   what we're assigning to), otherwise use the actual calculated type of the expression
@@ -211,33 +211,45 @@ public static class ExtractVarAndParam
         var multipleParameterTypesAvailable = !string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal);
 
         var (newParamInsertionOffset, insertBlankLineBeforeNewParam) = FindOffsetToInsertNewDeclarationOfType<ParameterDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
-        var renameParamOffset = newParamInsertionOffset + "param ".Length; //asdfg
-        if (insertBlankLineBeforeNewParam)
-        {
-            renameParamOffset += newLine.Length;
-        }
-        var renameParamPosition = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, renameParamOffset);
 
-        var looseFix = CreateExtractParameterCodeFix(
+        var (looseFix, looseRenameOffset) = CreateExtractParameterCodeFix(
                 multipleParameterTypesAvailable
                     ? $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}"
                     : "Extract parameter",
                 semanticModel, typeProperty, stringifiedNewParamTypeLoose, newParamName, newParamInsertionOffset, expressionSyntax, Strictness.Loose, insertBlankLineBeforeNewParam);
-        Debug.Assert(looseFix.Replacements.First().Text.Substring(renameParamOffset - newParamInsertionOffset - "param ".Length, "param ".Length) == "param ", "Rename is set at the wrong position");
-        yield return (looseFix, renameParamPosition);
+        Debug.Assert(looseFix.Replacements.First().Text.Substring(looseRenameOffset - newParamInsertionOffset - "param ".Length, "param ".Length) == "param ", "Rename is set at the wrong position"); //asdfg remove these
+        yield return (looseFix, TextCoordinateConverter.GetPosition(compilationContext.LineStarts, looseRenameOffset));
 
         if (multipleParameterTypesAvailable)
         {
-            var mediumFix = CreateExtractParameterCodeFix(
+            var (mediumFix, mediumRenameOffset) = CreateExtractParameterCodeFix(
                 $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
                 semanticModel, typeProperty, stringifiedNewParamTypeMedium, newParamName, newParamInsertionOffset, expressionSyntax, Strictness.Medium, insertBlankLineBeforeNewParam);
-            Debug.Assert(mediumFix.Replacements.First().Text.Substring(renameParamOffset - newParamInsertionOffset - "param ".Length, "param ".Length) == "param ", "Rename is set at the wrong position");
-            yield return (mediumFix, renameParamPosition);
+            Debug.Assert(mediumFix.Replacements.First().Text.Substring(mediumRenameOffset - newParamInsertionOffset - "param ".Length, "param ".Length) == "param ", "Rename is set at the wrong position"); //asdfg remove these
+            yield return (mediumFix, TextCoordinateConverter.GetPosition(compilationContext.LineStarts, mediumRenameOffset));
         }
-
     }
 
-    private static CodeFix CreateExtractParameterCodeFix(
+    private class DeclarationASdfg //asdfg can I do this by creating a syntax tree instead?
+    {
+        public string Text { get; private set; }
+        public int RenameOffset { get; private set; } //asdfg private?
+        //asdfg public (int line, int character) RenamePosition => TextCoordinateConverter.GetPosition(_lineStarts, RenameOffset);
+
+        public DeclarationASdfg(string declarationText, int renameOffset)
+        {
+            Text = declarationText;
+            RenameOffset = renameOffset;
+        }
+
+        public void Prepend(string s)
+        {
+            Text = s + Text;
+            RenameOffset += s.Length;
+        }
+    }
+
+    private static (CodeFix, int renameOffset)/*asdfg type?*/ CreateExtractParameterCodeFix(
         string title,
         SemanticModel semanticModel,
         TypeProperty? typeProperty,
@@ -248,21 +260,24 @@ public static class ExtractVarAndParam
         Strictness strictness,
         bool blankLineBefore)
     {
-        var declarationText = CreateNewParameterDeclaration(semanticModel, typeProperty, stringifiedNewParamType, newParamName, expressionSyntax, strictness);
+        var declaration = CreateNewParameterDeclaration(semanticModel, typeProperty, stringifiedNewParamType, newParamName, expressionSyntax, strictness);
+
         if (blankLineBefore)
         {
-            declarationText = NewLine(semanticModel) + declarationText;
+            //asdfg move to CreateNewParameterDeclaration?
+            declaration.Prepend(NewLine(semanticModel));
         }
 
-        return new CodeFix(
+        var fix = new CodeFix(
             title,
             isPreferred: false,
             CodeFixKind.RefactorExtract,
-            new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), declarationText),
+            new CodeReplacement(new TextSpan(definitionInsertionPosition, 0), declaration.Text),
             new CodeReplacement(expressionSyntax.Span, newParamName));
+        return (fix, declaration.RenameOffset + definitionInsertionPosition);
     }
 
-    private static string CreateNewParameterDeclaration(
+    private static DeclarationASdfg CreateNewParameterDeclaration(
         SemanticModel semanticModel,
         TypeProperty? typeProperty,
         string stringifiedNewParamType,
@@ -288,7 +303,9 @@ public static class ExtractVarAndParam
             defaultValueSyntax,
             leadingNodes);
         var paramDeclaration = PrettyPrinterV2.PrintValid(paramDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
-        return paramDeclaration;
+        //asdfg better way to do this?  what if param name contains weird characters, requires '@'?
+        var identifierOffset = paramDeclaration.IndexOf("param " + newParamName) + "param ".Length; // asdfg what if -1?
+        return new DeclarationASdfg(paramDeclaration, identifierOffset);
     }
 
     private static TypeSymbol? NullIfErrorOrAny(TypeSymbol? type) => type is ErrorType || type is AnyType ? null : type;

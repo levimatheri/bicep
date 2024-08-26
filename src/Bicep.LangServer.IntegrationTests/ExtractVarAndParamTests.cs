@@ -20,6 +20,7 @@ using Bicep.LanguageServer.Extensions;
 using Bicep.LanguageServer.Utils;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Humanizer;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client;
@@ -366,7 +367,7 @@ var v1 = newParameter
                 """,
         """
                 asdfg TODO: getting some unknowns and readonly types
-                param properties { autoUpgradeMinorVersion: bool, forceUpdateTag: string, instanceView: { name: string, statuses: array, substatuses: array, type: string, typeHandlerVersion: string }, protectedSettings: unknown, provisioningState: string, publisher: string, settings: unknown, type: string, typeHandlerVersion: string } = {
+                param properties { autoUpgradeMinorVersion: bool, forceUpdateTag: string, instanceView: { name: string, statuses: array, substatuses: array, type: string, typeHandlerVersion: string }, protectedSettings: unknown, publisher: string, settings: unknown, type: string, typeHandlerVersion: string } = {
                   // Entire properties object selected
                   publisher: 'Microsoft.Compute'
                   type: 'CustomScriptExtension'
@@ -841,7 +842,6 @@ var v1 = newParameter
         """
             param _artifactsLocation string
             param  _artifactsLocationSasToken string
-
             @description('Describes the properties of a Virtual Machine Extension.')
             param properties object = {
               // Entire properties object selected
@@ -856,6 +856,7 @@ var v1 = newParameter
                 commandToExecute: commandToExecute
               }
             }
+
             resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
                 parent: vmName_resource
                 name: 'cse-windows'
@@ -863,13 +864,11 @@ var v1 = newParameter
                 properties: properties
             }
             """,
-        // asdfg TODO: provisioningState: string - should be nullable?
         """
             param _artifactsLocation string
             param  _artifactsLocationSasToken string
-
             @description('Describes the properties of a Virtual Machine Extension.')
-            param properties { autoUpgradeMinorVersion: bool?, forceUpdateTag: string?, instanceView: { name: string?, statuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, substatuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, type: string?, typeHandlerVersion: string? }?, protectedSettings: object? /* any */, provisioningState: string, publisher: string?, settings: object? /* any */, type: string?, typeHandlerVersion: string? } = { = {
+            param properties { autoUpgradeMinorVersion: bool?, forceUpdateTag: string?, instanceView: { name: string?, statuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, substatuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, type: string?, typeHandlerVersion: string? }?, protectedSettings: object? /* any */, publisher: string?, settings: object? /* any */, type: string?, typeHandlerVersion: string? } = {
               // Entire properties object selected
               publisher: 'Microsoft.Compute'
               type: 'CustomScriptExtension'
@@ -882,16 +881,17 @@ var v1 = newParameter
                 commandToExecute: commandToExecute
               }
             }
+
             resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-              parent: vmName_resource
-              name: 'cse-windows'
-              location: location
-              properties: properties
+                parent: vmName_resource
+                name: 'cse-windows'
+                location: location
+                properties: properties
             }
             """);
     }
 
-    //[DataTestMethod]
+    [DataTestMethod]
     ////asdfg
     //[DataRow("""
     //            var i = <<1>>
@@ -2194,7 +2194,7 @@ var v1 = newParameter
             extractedVar!.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
             var updatedFile = ApplyCodeAction(bicepFile, extractedVar);
-            updatedFile.Should().HaveSourceText(expectedText);
+            updatedFile.Should().HaveSourceText(expectedText, "extract to variable should match expected outcome");
         }
     }
 
@@ -2222,7 +2222,7 @@ var v1 = newParameter
             looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
             var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
-            updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText);
+            updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText, "extract to param with loose typing should match expected outcome");
 
             if (expectedMediumParameterText == null)
             {
@@ -2238,7 +2238,7 @@ var v1 = newParameter
                     mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
                     var updatedFileMedium = ApplyCodeAction(bicepFile, mediumFix);
-                    updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText);
+                    updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText, "extract to param with medium-strict typing should match expected outcome");
                 }
             }
         }

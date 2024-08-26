@@ -31,7 +31,7 @@ namespace Bicep.Core.UnitTests.Assertions
             var actual = Subject.ProgramSyntax.ToString().NormalizeNewlines();
             expected = expected.NormalizeNewlines();
 
-            actual.Should().EqualWithLineByLineDiff(expected);
+            actual.Should().EqualWithLineByLineDiff(expected, because, becauseArgs);
 
             return new AndConstraint<BicepFileAssertions>(this);
         }
