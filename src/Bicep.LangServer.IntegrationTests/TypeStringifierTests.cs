@@ -421,19 +421,20 @@ public class TypeStringifierTests
         "type strict = {}?")]
     [DataRow(
         """
-            type t = { a: 'a' | null, b: 'a' | 'b' | null, c: 'a' | 'b' | 'c' | null }?
-            type testType = { a: testType }
+            type testType = { a: 'a' | null, b: 'a' | 'b' | null, c: 'a' | 'b' | 'c' | null }?
             """,
-        "type loose = object",
-        "type medium = { a: { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }? }",
-        "type strict = { a: { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }? }")]
+        "type loose = object?",
+        "type medium = { a: string?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }?",
+        "type strict = { a: 'a'?, b: ('a' | 'b')?, c: ('a' | 'b' | 'c')? }?")]
     public void NullableTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
     {
         RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);
     }
 
     [DataTestMethod]
+    //
     // "fileUris" property
+    //
     [DataRow(
         """
             var _artifactsLocation = 'https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/101-vm-simple-windows/azuredeploy.json'
