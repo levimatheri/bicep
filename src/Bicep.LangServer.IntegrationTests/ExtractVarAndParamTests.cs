@@ -193,9 +193,9 @@ public class ExtractVarAndParamTests : CodeActionTestBase
     // asdfg nullable
 
 
+    ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
-
     [DataRow(
         """
                 type superComplexType = {
@@ -482,6 +482,8 @@ var v1 = newParameter
         await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
     }
 
+    ////////////////////////////////////////////////////////////////////
+
     [DataTestMethod]
     [DataRow(
         """
@@ -532,6 +534,10 @@ var v1 = newParameter
         """
             var newVariable = 1 + 2
             var a = newVariable
+            """,
+        """
+            param newParameter int = 1 + 2
+            var a = newParameter
             """)]
     [DataRow(
         """
@@ -540,7 +546,8 @@ var v1 = newParameter
         """
             var newVariable = 1 + 2
             var a = newVariable
-            """)]
+            """,
+        "IGNORE")]
     [DataRow(
         """
             var a = 1 |+ 2
@@ -548,7 +555,8 @@ var v1 = newParameter
         """
             var newVariable = 1 + 2
             var a = newVariable
-            """)]
+            """,
+        "IGNORE")]
     [DataRow(
         """
             var a = 1 <<+ 2 + 3 >>+ 4
@@ -556,7 +564,8 @@ var v1 = newParameter
         """
             var newVariable = 1 + 2 + 3 + 4
             var a = newVariable
-            """)]
+            """,
+        "IGNORE")]
     [DataRow(
         """
             param p1 int = 1 + |2
@@ -564,7 +573,8 @@ var v1 = newParameter
         """
             var newVariable = 2
             param p1 int = 1 + newVariable
-            """)]
+            """,
+        "IGNORE")]
     [DataRow(
         """
             var a = 1 + 2
@@ -574,6 +584,11 @@ var v1 = newParameter
             var a = 1 + 2
             var newVariable = '${a}{a}'
             var b = newVariable
+            """,
+        """
+            var a = 1 + 2
+            var newParameter string = '${a}{a}'
+            var b = newParameter
             """,
         DisplayName = "Full interpolated string")]
     [DataRow(
@@ -589,6 +604,13 @@ var v1 = newParameter
             @secure
             // comment 2
             param a = newVariable
+            """,
+        """
+            // comment 1
+            var newParameter string = 'a'
+            @secure
+            // comment 2
+            param a = newParameter
             """,
         DisplayName = "Preceding lines")]
     [DataRow(
@@ -661,6 +683,8 @@ var v1 = newParameter
         await RunExtractToVariableAndParameterTest(fileWithSelection, expectedVarText, expectedLooseParamText, expectedMediumParamText);
     }
 
+    ////////////////////////////////////////////////////////////////////
+
     [DataTestMethod]
     [DataRow(
         """
@@ -688,6 +712,8 @@ var v1 = newParameter
     {
         await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
     }
+
+    ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
     [DataRow("""
@@ -740,6 +766,8 @@ var v1 = newParameter
         await RunExtractToVariableTest(fileWithSelection, expectedText);
     }
 
+    ////////////////////////////////////////////////////////////////////
+
     [TestMethod]
     public async Task ShouldHandleArrays()
     {
@@ -788,6 +816,8 @@ var v1 = newParameter
                 ]
                 """);
     }
+
+    ////////////////////////////////////////////////////////////////////
 
     [TestMethod]
     public async Task ShouldHandleObjects()
@@ -890,6 +920,8 @@ var v1 = newParameter
             }
             """);
     }
+
+    ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
     ////asdfg
@@ -1308,6 +1340,8 @@ var v1 = newParameter
     //    //asdfg await RunExtractToParameterTest(fileWithSelection, expectedText);
     //}
 
+    ////////////////////////////////////////////////////////////////////
+
     [TestMethod]
     public async Task IfJustPropertyNameSelected_ThenExtractPropertyValue()
     {
@@ -1362,6 +1396,8 @@ var v1 = newParameter
             """,
         "IGNORE");
     }
+
+    ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
     [DataRow(
@@ -1459,6 +1495,8 @@ var v1 = newParameter
         await RunExtractToVariableTest(fileWithSelection, expectedVarText);
     }
 
+    ////////////////////////////////////////////////////////////////////
+
     [DataTestMethod]
     [DataRow("var a = resourceGroup().locati|on",
         """
@@ -1510,6 +1548,8 @@ var v1 = newParameter
     {
         await RunExtractToVariableTest(fileWithSelection, expectedVariableText);
     }
+
+    ////////////////////////////////////////////////////////////////////
 
     //asdfg
     //[DataTestMethod]
@@ -1677,6 +1717,8 @@ var v1 = newParameter
     //        expectedModifiedLine);
     //}
 
+    ////////////////////////////////////////////////////////////////////
+
     //asdfg
     //[DataTestMethod]
     //[DataRow(
@@ -1735,6 +1777,8 @@ var v1 = newParameter
     //        expectedNewParamDeclaration,
     //        expectedModifiedLine);
     //}
+
+    ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
     [DataRow(
@@ -1862,46 +1906,47 @@ var v1 = newParameter
         await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
     }
 
-    [DataTestMethod]//asdfg
-                    //asdfg
-    //[DataRow(
-    //    """
-    //        var v = <<1>>
-    //        """,
-    //    """
-    //        var newVariable = 1
-    //        var v = newVariable
-    //        """,
-    //    """
-    //        param newParameter int = 1
-    //        var v = newParameter
-    //        """,
-    //    DisplayName = "Extracting at top of file -> insert at top")]
-    //[DataRow(
-    //    """
-    //        metadata firstLine = 'first line'
-    //        metadata secondLine = 'second line'
+    ////////////////////////////////////////////////////////////////////
 
-    //        // Some comments
-    //        var v = <<1>>
-    //        """,
-    //    """
-    //        metadata firstLine = 'first line'
-    //        metadata secondLine = 'second line'
+    [DataTestMethod]
+    [DataRow(
+        """
+            var v = <<1>>
+            """,
+        """
+            var newVariable = 1
+            var v = newVariable
+            """,
+        """
+            param newParameter int = 1
+            var v = newParameter
+            """,
+        DisplayName = "Extracting at top of file -> insert at top")]
+    [DataRow(
+        """
+            metadata firstLine = 'first line'
+            metadata secondLine = 'second line'
 
-    //        // Some comments
-    //        var newVariable = 1
-    //        var v = newVariable
-    //        """,
-    //    """
-    //        metadata firstLine = 'first line'
-    //        metadata secondLine = 'second line'
+            // Some comments
+            var v = <<1>>
+            """,
+        """
+            metadata firstLine = 'first line'
+            metadata secondLine = 'second line'
 
-    //        // Some comments
-    //        param newParameter int = 1
-    //        var v = newParameter
-    //        """,
-    //    DisplayName = "No existing params/vars above -> insert right before extraction line")]
+            // Some comments
+            var newVariable = 1
+            var v = newVariable
+            """,
+        """
+            metadata firstLine = 'first line'
+            metadata secondLine = 'second line'
+
+            // Some comments
+            param newParameter int = 1
+            var v = newParameter
+            """,
+        DisplayName = "No existing params/vars above -> insert right before extraction line")]
     [DataRow(
         """
             param location string
@@ -1936,7 +1981,7 @@ var v1 = newParameter
             var v = newParameter
             """,
         DisplayName = "Existing params and vars at top of file -> param and var inserted after their corresponding existing declarations")]
-    //[DataRow( asdfg not handling comments before line as part of the line
+    //[DataRow(//asdfg not handling comments before line as part of the line
     //    """
     //        // location comment
     //        param location string
@@ -2103,10 +2148,71 @@ var v1 = newParameter
             var complexCalculation3 = simpleCalculation * 2            
             """,
         DisplayName = "Existing params and vars in multiple places in file -> insert after closest existing declarations above extraction")]
+    [DataRow(
+        """
+            param location string
+
+            resource virtualMachine 'Microsoft.Compute/virtualMachines@2020-12-01' = {
+              name: 'name'
+              location: location
+            }
+
+            resource windowsVMExtensions 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
+              parent: virtualMachine
+              name: 'name'
+              location: location
+              properties: {
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.10'
+                autoUpgradeMinorVersion: true
+                settings: {
+                  fileUris: [
+                    'fileUris'
+                  ]
+                }
+                <<protectedSettings>>: {
+                  commandToExecute: 'loadTextContent(\'files/my script.ps1\')'
+                }
+              }
+            }
+            """,
+        "IGNORE",
+        """
+            param location string
+            @description('The extension can contain either protectedSettings or protectedSettingsFromKeyVault or no protected settings at all.')
+            param protectedSettings object = {
+              commandToExecute: 'loadTextContent(\'files/my script.ps1\')'
+            }
+
+            resource virtualMachine 'Microsoft.Compute/virtualMachines@2020-12-01' = {
+              name: 'name'
+              location: location
+            }
+
+            resource windowsVMExtensions 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
+              parent: virtualMachine
+              name: 'name'
+              location: location
+              properties: {
+                publisher: 'Microsoft.Compute'
+                type: 'CustomScriptExtension'
+                typeHandlerVersion: '1.10'
+                autoUpgradeMinorVersion: true
+                settings: {
+                  fileUris: [
+                    'fileUris'
+                  ]
+                }
+                protectedSettings: protectedSettings
+              }
+            }
+            """,
+        DisplayName = "get the rename position correct")]
     public async Task VarsAndParams_InsertAfterExistingDeclarations(string fileWithSelection, string expectedVarText, string? expectedParamText)
     {
-        await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\n"), expectedVarText, expectedParamText, null);
-        await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\r\n"), expectedVarText, expectedParamText, null);
+        await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\n"), expectedVarText, expectedParamText, "IGNORE");
+        await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\r\n"), expectedVarText, expectedParamText, "IGNORE");
     }
 
     #region Support
@@ -2186,11 +2292,11 @@ var v1 = newParameter
 
         if (expectedText == null)
         {
-            extractedVar.Should().BeNull("should not offer to extract variables");
+            extractedVar.Should().BeNull("expected no code action for extract var");
         }
-        else
+        else if (expectedText != "IGNORE")
         {
-            extractedVar.Should().NotBeNull("should contain an action to extract to variable");
+            extractedVar.Should().NotBeNull("expected an action to extract to variable");
             extractedVar!.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
             var updatedFile = ApplyCodeAction(bicepFile, extractedVar);
@@ -2212,28 +2318,31 @@ var v1 = newParameter
 
         if (expectedLooseParameterText == null)
         {
-            extractedParamFixes.Should().BeEmpty("should not offer to extract parameters");
+            extractedParamFixes.Should().BeEmpty("expected no code actions to extract parameter");
             expectedMediumParameterText.Should().BeNull();
         }
         else
         {
-            extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(1).Should().NotBeNull("should contain at least one action to extract to parameter");
-            var looseFix = extractedParamFixes[0];
-            looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
+            if (expectedLooseParameterText != "IGNORE")
+            {
+                extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(1).Should().NotBeNull("expected at least one code action to extract to parameter");
+                var looseFix = extractedParamFixes[0];
+                looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
-            var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
-            updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText, "extract to param with loose typing should match expected outcome");
+                var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
+                updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText, "extract to param with loose typing should match expected outcome");
+            }
 
             if (expectedMediumParameterText == null)
             {
-                extractedParamFixes.Should().HaveCount(1, "should have only offered one parameter extract option");
+                extractedParamFixes.Length.Should().Be(1, "expected only one code action to extract parameter (as loosely typed - which means the medium-strict version was the same as the loose version)");
             }
             else
             {
-                extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(2, "should contain a second option to extract to parameter");
-
                 if (expectedMediumParameterText != "IGNORE")
                 {
+                    extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(2, "expected a second option to extract to parameter");
+
                     var mediumFix = extractedParamFixes[1];
                     mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 

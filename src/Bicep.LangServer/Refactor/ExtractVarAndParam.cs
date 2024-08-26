@@ -123,7 +123,7 @@ public static class ExtractVarAndParam
             defaultNewName = propertyName;
             typeProperty = propertySyntax.TryGetTypeProperty(semanticModel); //asdfg testpoint
         }
-        else if (expressionSyntax is ObjectPropertySyntax propertySyntax2
+        else if (expressionSyntax is ObjectPropertySyntax propertySyntax2 //asdfg rename
             && propertySyntax2.TryGetKeyText() is string propertyName2)
         {
             // `{ <<objectPropertyName>>: expression }` // property itself is selected
