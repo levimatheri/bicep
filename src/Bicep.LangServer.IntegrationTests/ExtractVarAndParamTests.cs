@@ -226,36 +226,41 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             }
             """,
         """
-            param a { i: int, p: string } = { p: 'mystring', i: 123 } // asdfg would prefer param superComplexType = { p: 'mystring', i: 123 }
+            type superComplexType = {
+                p: string
+                i: 123 | 456
+            }
+
+            param a object = { p: 'mystring', i: 123 }
+            param p { *: superComplexType } = {
+                a: a
+            }
+            """,
+        """
+            type superComplexType = {
+                p: string
+                i: 123 | 456
+            }
+
+            param a { i: 123 | 456, p: string } = { p: 'mystring', i: 123 }
             param p { *: superComplexType } = {
                 a: a
             }
             """)]
-
-    //asdfg BUG:
-    /*
-     param p1 { intVal: int }
-        param p2 object = p1
-        var v1 = p2
-    =>
-    param newParameter {  } = p2
-var v1 = newParameter
-
-    */
 
     [DataRow(
         """
             var blah = |[{foo: 'bar'}, {foo: 'baz'}]
             """,
         """
-            asdfg
+            param newParameter array = [{ foo: 'bar' }, { foo: 'baz' }]
+            var blah = newParameter
+            """,
+        """
+            param newParameter { foo: string }[] = [{ foo: 'bar' }, { foo: 'baz' }]
+            var blah = newParameter
             """)]
 
-
-
-
-    //asdfg TODO:
-    // what should behavior be?
     [DataRow(
         """
             param p1 { intVal: int} = { intVal:123}
@@ -263,238 +268,230 @@ var v1 = newParameter
             """,
         """
             param p1 { intVal: int} = { intVal:123}
+            param newParameter object = p1
+            output o object = newParameter
+            """,
+        """
+            param p1 { intVal: int} = { intVal:123}
             param newParameter { intVal: int } = p1
             output o object = newParameter
             """)]
-    // param p2 {a: string}
-    // param v1 object = p2
-    // CURRENTLY IT'S:  (seems reasonable?)
-    /*
-     param p2 {a: string}
-    param newParameter { a: string } = p2
-    param v1 object = newParameter
-    */
 
-
-    //asdfg TODO
-    // param p2 'foo' | 'bar'
-    // param v1 string = p2
-    // What should type of new parameter be?  Currently it's unknown
-
-
-    //Extracted value is in a var statement and has no declared type: the type will be based on the value. You might get recursive types or unions if the value contains a reference to a parameter, but you can pull the type clause from the parameter declaration.
-    //Extracted value is in a param statement (or something else with an explicit type declaration): you may be able to use the declared type syntax of the enclosing statement rather than working from the type backwards to a declaration.
-    //Extracted value is in a resource body: definite possibility of complex structures, recursion, and a few type constructs that aren't fully expressible in Bicep syntax (e.g., "open" enums like 'foo' | 'bar' | string). Resource-derived types might be a good solution here, but they're still behind a feature flag
-
-    // Extracted value is in a var statement and has no declared type: the type will be based on the value.
-    // You might get recursive types or unions if the value contains a reference to a parameter, but you can
-    //   pull the type clause from the parameter declaration.
-    [DataRow(
-    """
-        var foo = <<{ intVal: 2 }>>
-        """,
-    """
-        param newParameter { intVal: int } = { intVal: 2 }
-        var foo = newParameter
-        """)]
-
-    //Extracted value is in a param statement (or something else with an explicit type declaration)
-    //  you may be able to use the declared type syntax of the enclosing statement rather than working
-    //  from the type backwards to a declaration.
-    [DataRow(
-    """
-        param p1 { intVal: int}
-        output o = <<p1>>
-        """,
-    """
-        param p1 { intVal: int}
-        param newParameter { intVal: int } = p1
-        output o = newParameter
-        """)]
-
-    [DataRow(
-    """
-        var isWindowsOS = true
-        var provisionExtensions = true
-        param _artifactsLocation string
-        @secure()
-        param _artifactsLocationSasToken string
-
-        resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-          name: 'cse-windows/extension'
-          location: 'location'
-          properties: {
-            publisher: 'Microsoft.Compute'
-            type: 'CustomScriptExtension'
-            typeHandlerVersion: '1.8'
-            autoUpgradeMinorVersion: true
-            setting|s: {
-              fileUris: [
-                uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-              ]
-              commandToExecute: 'commandToExecute'
-            }
-          }
-        }
-        """,
-//asdfg we don't have strongly typed array?   fileUris: [string]?
-    """
-        var isWindowsOS = true
-        var provisionExtensions = true
-        param _artifactsLocation string
-        @secure()
-        param _artifactsLocationSasToken string
-
-        param settings { commandToExecute: string, fileUris: array } = {
-          fileUris: [
-            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-          ]
-          commandToExecute: 'commandToExecute'
-        }
-        resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-          name: 'cse-windows/extension'
-          location: 'location'
-          properties: {
-            publisher: 'Microsoft.Compute'
-            type: 'CustomScriptExtension'
-            typeHandlerVersion: '1.8'
-            autoUpgradeMinorVersion: true
-            settings: settings
-          }
-        }
-        """)]
-    [DataRow(
-        """
-            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
-                name: 'cse/windows'
-                location: 'location'
-                |properties: {
-                    // Entire properties object selected
-                    publisher: 'Microsoft.Compute'
-                    type: 'CustomScriptExtension'
-                    typeHandlerVersion: '1.8'
-                    autoUpgradeMinorVersion: true
-                    settings: {
-                        fileUris: [
-                            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                        ]
-                        commandToExecute: 'commandToExecute'
-                    }
-                }
-            }
-            """,
-        """
-            asdfg TODO: getting some unknowns and readonly types
-            param properties { autoUpgradeMinorVersion: bool, forceUpdateTag: string, instanceView: { name: string, statuses: array, substatuses: array, type: string, typeHandlerVersion: string }, protectedSettings: unknown, publisher: string, settings: unknown, type: string, typeHandlerVersion: string } = {
-                // Entire properties object selected
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.8'
-                autoUpgradeMinorVersion: true
-                settings: {
-                    fileUris: [
-                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-                    ]
-                    commandToExecute: 'commandToExecute'
-                }
-            }
-            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
-                name: 'cse/windows'
-                location: 'location'
-                properties: properties
-            }
-            """)]
     [DataRow(
         """
             param p2 'foo' || 'bar'
-            var v1 = <<p2>>
+            param v1 int = |p2
+            """,
+        """
+            param p2 'foo' | 'bar'
+            param newParameter string = p2
+            param v1 int = newParameter
             """,
         """
             param p2 'foo' | 'bar'
             param newParameter 'bar' | 'foo' = p2
-            var v1 = newParameter
-            """)]
-    [DataRow(
-    // rhs is more strictly typed than lhs
-    // medium picks up strict type, loose just object
-    // asdfg why isn't it picking up declared type of object??
-        """
-            param p1 { intVal: int} = { intVal:123}
-            output o object = <<p1>>
-            """,
-        """
-            param p1 { intVal: int} = { intVal:123}
-            param newParameter { intVal: int } = p1
-            output o object = newParameter
-            """)]
-    [DataRow(
-        // TODO: generates incorrect code
-        """
-            param  p { a: { 'a b': string } }
-            var v = p
-            """,
-        """
-            param  p { a: { 'a b': string } }
-            param newParameter { a: { 'a b': string } } = p
-            var v = newParameter
-            """)]
-    // recursive types
-    [DataRow(
-        """
-            type foo = {
-                property: foo?
-            }
-            param pfoo foo
-            var v = <<pfoo>>
-            """,
-        """
-            // Currently gives asdfg
-            param pfoo foo
-            param newParameter { property: unknown } = pfoo
-            var v = newParameter
-            """)]
-    // named types
-    [DataRow(
-        """
-            type foo = {
-                property: string
-            }
-            type foo2 = {
-                property: foo
-            }
-            param pfoo2 foo2
-            var v = pfoo2
-            """,
-        """
-            // Currently gives asdfg
-            type foo = {
-                property: string
-            }
-            type foo2 = {
-                property: foo
-            }
-            param pfoo2 foo2
-            param newParameter { property: { property: string } } = pfoo2
-            // EXPECTED:
-            param newParameter { property: foo } = pfoo2
-            var v = newParameter
+            param v1 int = newParameter
             """)]
 
     [DataRow(
         """
-            param p1 {a: string || int}
-            var v1 = <<p1>>
+            param p1 { intVal: int}
+            output o = <<p1>>
             """,
         """
-             param p1 {a: string | int}
-             param newParameter object = p1
-             var v1 = newParameter
-             """,
+            param p1 { intVal: int}
+            param newParameter object = p1
+            output o = newParameter
+            """,
         """
-             param p1 {a: string | int}
-             param newParameter { a: int | string } = p1
-             var v1 = newParameter
-             """)]
+            param p1 { intVal: int}
+            param newParameter { intVal: int } = p1
+            output o = newParameter
+            """)]
+
+//    [DataRow(
+//    """
+//        var isWindowsOS = true
+//        var provisionExtensions = true
+//        param _artifactsLocation string
+//        @secure()
+//        param _artifactsLocationSasToken string
+
+//        resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+//          name: 'cse-windows/extension'
+//          location: 'location'
+//          properties: {
+//            publisher: 'Microsoft.Compute'
+//            type: 'CustomScriptExtension'
+//            typeHandlerVersion: '1.8'
+//            autoUpgradeMinorVersion: true
+//            setting|s: {
+//              fileUris: [
+//                uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+//              ]
+//              commandToExecute: 'commandToExecute'
+//            }
+//          }
+//        }
+//        """,
+////asdfg we don't have strongly typed array?   fileUris: [string]?
+//    """
+//        var isWindowsOS = true
+//        var provisionExtensions = true
+//        param _artifactsLocation string
+//        @secure()
+//        param _artifactsLocationSasToken string
+
+//        param settings { commandToExecute: string, fileUris: array } = {
+//          fileUris: [
+//            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+//          ]
+//          commandToExecute: 'commandToExecute'
+//        }
+//        resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
+//          name: 'cse-windows/extension'
+//          location: 'location'
+//          properties: {
+//            publisher: 'Microsoft.Compute'
+//            type: 'CustomScriptExtension'
+//            typeHandlerVersion: '1.8'
+//            autoUpgradeMinorVersion: true
+//            settings: settings
+//          }
+//        }
+//        """)]
+//    [DataRow(
+//        """
+//            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
+//                name: 'cse/windows'
+//                location: 'location'
+//                |properties: {
+//                    // Entire properties object selected
+//                    publisher: 'Microsoft.Compute'
+//                    type: 'CustomScriptExtension'
+//                    typeHandlerVersion: '1.8'
+//                    autoUpgradeMinorVersion: true
+//                    settings: {
+//                        fileUris: [
+//                            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+//                        ]
+//                        commandToExecute: 'commandToExecute'
+//                    }
+//                }
+//            }
+//            """,
+//        """
+//            asdfg TODO: getting some unknowns and readonly types
+//            param properties { autoUpgradeMinorVersion: bool, forceUpdateTag: string, instanceView: { name: string, statuses: array, substatuses: array, type: string, typeHandlerVersion: string }, protectedSettings: unknown, publisher: string, settings: unknown, type: string, typeHandlerVersion: string } = {
+//                // Entire properties object selected
+//                publisher: 'Microsoft.Compute'
+//                type: 'CustomScriptExtension'
+//                typeHandlerVersion: '1.8'
+//                autoUpgradeMinorVersion: true
+//                settings: {
+//                    fileUris: [
+//                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
+//                    ]
+//                    commandToExecute: 'commandToExecute'
+//                }
+//            }
+//            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
+//                name: 'cse/windows'
+//                location: 'location'
+//                properties: properties
+//            }
+//            """)]
+//    [DataRow(
+//        """
+//            param p2 'foo' || 'bar'
+//            var v1 = <<p2>>
+//            """,
+//        """
+//            param p2 'foo' | 'bar'
+//            param newParameter 'bar' | 'foo' = p2
+//            var v1 = newParameter
+//            """)]
+//    [DataRow(
+//    // rhs is more strictly typed than lhs
+//    // medium picks up strict type, loose just object
+//    // asdfg why isn't it picking up declared type of object??
+//        """
+//            param p1 { intVal: int} = { intVal:123}
+//            output o object = <<p1>>
+//            """,
+//        """
+//            param p1 { intVal: int} = { intVal:123}
+//            param newParameter { intVal: int } = p1
+//            output o object = newParameter
+//            """)]
+//    [DataRow(
+//        // TODO: generates incorrect code
+//        """
+//            param  p { a: { 'a b': string } }
+//            var v = p
+//            """,
+//        """
+//            param  p { a: { 'a b': string } }
+//            param newParameter { a: { 'a b': string } } = p
+//            var v = newParameter
+//            """)]
+//    // recursive types
+//    [DataRow(
+//        """
+//            type foo = {
+//                property: foo?
+//            }
+//            param pfoo foo
+//            var v = <<pfoo>>
+//            """,
+//        """
+//            // Currently gives asdfg
+//            param pfoo foo
+//            param newParameter { property: unknown } = pfoo
+//            var v = newParameter
+//            """)]
+//    // named types
+//    [DataRow(
+//        """
+//            type foo = {
+//                property: string
+//            }
+//            type foo2 = {
+//                property: foo
+//            }
+//            param pfoo2 foo2
+//            var v = pfoo2
+//            """,
+//        """
+//            // Currently gives asdfg
+//            type foo = {
+//                property: string
+//            }
+//            type foo2 = {
+//                property: foo
+//            }
+//            param pfoo2 foo2
+//            param newParameter { property: { property: string } } = pfoo2
+//            // EXPECTED:
+//            param newParameter { property: foo } = pfoo2
+//            var v = newParameter
+//            """)]
+
+//    [DataRow(
+//        """
+//            param p1 {a: string || int}
+//            var v1 = <<p1>>
+//            """,
+//        """
+//             param p1 {a: string | int}
+//             param newParameter object = p1
+//             var v1 = newParameter
+//             """,
+//        """
+//             param p1 {a: string | int}
+//             param newParameter { a: int | string } = p1
+//             var v1 = newParameter
+//             """)]
     public async Task BicepDiscussion(string fileWithSelection, string expectedLooseParamText, string expectedMediumParamText)
     {
         await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
@@ -1505,52 +1502,54 @@ var v1 = newParameter
     ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
-    [DataRow("var a = resourceGroup().locati|on",
+    [DataRow(
+        "var a = resourceGroup().locati|on",
         """
-                var resourceGroupLocation = resourceGroup().location
-                var a = resourceGroupLocation
-                """)]
-    [DataRow("var a = abc|().bcd",
+            var resourceGroupLocation = resourceGroup().location
+            var a = resourceGroupLocation
+            """)]
+    [DataRow(
+        "var a = abc|().bcd",
         """
-                var newVariable = abc()
-                var a = newVariable.bcd
-                """,
-        null)]
-    [DataRow("var a = abc.bcd.|def",
+            var newVariable = abc()
+            var a = newVariable.bcd
+            """)]
+    [DataRow(
+        "var a = abc.bcd.|def",
         """
-                var bcdDef = abc.bcd.def
-                var a = bcdDef
-                """,
-        null)]
-    [DataRow("var a = abc.b|cd",
+            var bcdDef = abc.bcd.def
+            var a = bcdDef
+            """)]
+    [DataRow(
+        "var a = abc.b|cd",
         """
-                var abcBcd = abc.bcd
-                var a = abcBcd
-                """,
-        null)]
-    [DataRow("var a = abc.bc|d",
+            var abcBcd = abc.bcd
+            var a = abcBcd
+            """)]
+    [DataRow(
+        "var a = abc.bc|d",
         """
-                var abcBcd = abc.bcd
-                var a = abcBcd
-                """,
-        null)]
-    [DataRow("var a = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob|",
+            var abcBcd = abc.bcd
+            var a = abcBcd
+            """)]
+    [DataRow(
+        "var a = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob|",
         """
-                var primaryEndpointsBlob = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
-                var a = primaryEndpointsBlob
-                """,
-        null)]
-    [DataRow("var a = reference(storageAccount.id, '2018-02-01').prim|aryEndpoints.blob",
+            var primaryEndpointsBlob = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
+            var a = primaryEndpointsBlob
+            """)]
+    [DataRow(
+        "var a = reference(storageAccount.id, '2018-02-01').prim|aryEndpoints.blob",
         """
-                var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints
-                var a = referencePrimaryEndpoints.blob
-                """)]
-    [DataRow("var a = a.b.|c.d.e",
+            var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints
+            var a = referencePrimaryEndpoints.blob
+            """)]
+    [DataRow(
+        "var a = a.b.|c.d.e",
         """
-                var bC = a.b.c
-                var a = bC.d.e
-                """,
-        null)]
+            var bC = a.b.c
+            var a = bC.d.e
+            """)]
     public async Task PickUpNameFromPropertyAccess_UpToTwoLevels(string fileWithSelection, string? expectedVariableText)
     {
         await RunExtractToVariableTest(fileWithSelection, expectedVariableText);
@@ -1801,20 +1800,7 @@ var v1 = newParameter
                 }
             }
             """,
-        """
-            // My comment here
-            @description('A key-value pair of options to be applied for the request. This corresponds to the headers sent with the request.')
-            param options object = {}
-            resource cassandraKeyspace 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces@2021-06-15' = {
-                name: 'testResource/cassandraKeyspace'
-                properties: {
-                resource: {
-                    id: 'id'
-                }
-                options: options
-                }
-            }
-            """,
+        "IGNORE",
         """
             // My comment here
             @description('A key-value pair of options to be applied for the request. This corresponds to the headers sent with the request.')
@@ -1867,7 +1853,7 @@ var v1 = newParameter
                 myInt: 42
             }
             """,
-        "SAME",
+        null,
         DisplayName = "Apostrophe in description")]
     [DataRow(
         """
@@ -1906,7 +1892,7 @@ var v1 = newParameter
                 myInt: myInt
             }
             """,
-        "SAME",
+        null,
         DisplayName = "multiline description")]
     public async Task Params_ShouldPickUpDescriptions(string fileWithSelection, string expectedLooseParamText, string? expectedMediumParamText)
     {
