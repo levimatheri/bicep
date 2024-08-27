@@ -12,13 +12,18 @@ var ninjaCat = '🐱‍👤'
 var variousAlphabets = {
 //@[04:20) [no-unused-vars (Warning)] Variable "variousAlphabets" is declared but never used. (bicep core linter https://aka.ms/bicep/linter/no-unused-vars) |variousAlphabets|
   'α': 'α'
+//@[02:05) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'α'|
   'Ωω': [
+//@[02:06) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'Ωω'|
     'Θμ'
   ]
   'ążźćłóę': 'Cześć!'
+//@[02:11) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'ążźćłóę'|
   'áéóúñü': '¡Hola!'
+//@[02:10) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'áéóúñü'|
 
   '二头肌': '二头肌'
+//@[02:07) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'二头肌'|
 }
 
 output concatUnicodeStrings string = concat('Θμ', '二头肌', 'α')

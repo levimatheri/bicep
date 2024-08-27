@@ -24,6 +24,7 @@ resource appInsightsAutoScaleSettings 'Microsoft.Insights/autoscalesettings@2015
   tags: {
     Application_Type: 'web'
     'hidden-link:appServiceId': 'Resource'
+//@[4:30) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'hidden-link:appServiceId'|
   }
   properties: {
     name: 'name'

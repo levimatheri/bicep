@@ -12,7 +12,9 @@ var escaped = '[]'
 var keyescaping = {
 //@[4:15) [no-unused-vars (Warning)] Variable "keyescaping" is declared but never used. (bicep core linter https://aka.ms/bicep/linter/no-unused-vars) |keyescaping|
   '[]': 'shouldbeescaped'
+//@[2:06) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'[]'|
   '>>abc<<>>---abc.def---<<': 'shouldbeescaped'
+//@[2:28) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'>>abc<<>>---abc.def---<<'|
   'abcdef${test}ghi/jkl.${test}': 'shouldbeescaped'
 }
 

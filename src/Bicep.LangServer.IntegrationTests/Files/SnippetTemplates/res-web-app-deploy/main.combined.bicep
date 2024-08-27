@@ -21,6 +21,7 @@ resource webApplicationExtension 'Microsoft.Web/sites/extensions@2020-12-01' = {
     connectionString: 'connectionString'
     setParameters: {
       'IIS Web Application Name': 'name'
+//@[6:32) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'IIS Web Application Name'|
     }
   }
 }

@@ -145,6 +145,7 @@ resource nested 'Microsoft.Resources/deployments@2019-10-01' = {
     template: {
       // string key value
       '$schema': 'https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#'
+//@[06:15) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'$schema'|
       contentVersion: '1.0.0.0'
       resources: [
       ]
@@ -234,6 +235,7 @@ resource resourceWithEscaping 'My.Rp/mockResource@2020-01-01' = {
   properties: {
     // both key and value should be escaped in template output
     '[resourceGroup().location]': '[resourceGroup().location]'
+//@[04:32) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |'[resourceGroup().location]'|
   }
 }
 
