@@ -29,6 +29,22 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using static Google.Protobuf.Reflection.SourceCodeInfo.Types;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
+/* bug: getting linter errors:
+ resource nestedDiscriminatorMissingKey 'Microsoft.DocumentDB/databaseAccounts@2020-06-01-preview' = {
+  name: 'test'
+  location: 'l'
+  properties: {
+  }
+}
+
+var nestedDiscriminatorMissingKeyCompletions = nestedDiscriminatorMissingKey.properties.cr
+var nestedDiscriminatorMissingKeyCompletions2 = nestedDiscriminatorMissingKey['properties'].
+
+var nestedDiscriminatorMissingKeyIndexCompletions = nestedDiscriminatorMissingKey.properties['']
+//@[004:049) [no-unused-vars (Warning)] Variable "nestedDiscriminatorMissingKeyIndexCompletions" is declared but never used. (bicep core linter https://aka.ms/bicep/linter/no-unused-vars) |nestedDiscriminatorMissingKeyIndexCompletions|
+//@[092:096) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |['']|
+
+*/
 
 /*asdfg
 
@@ -55,11 +71,6 @@ var nestedDiscriminatorMissingKeyIndexCompletions = nestedDiscriminatorMissingKe
 
 
 /* asdfg
-
-type myMixedTypeArrayType = ('fizz' | 42 | {an: 'object'} | null)[]
-
-
-asdfg handle inside a module
 
 
 
