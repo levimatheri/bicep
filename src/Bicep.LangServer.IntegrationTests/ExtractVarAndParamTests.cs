@@ -419,7 +419,7 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             """,
         """
             var a = 1 + 2
-            var newParameter string = '${a}{a}'
+            param newParameter string = '${a}{a}'
             var b = newParameter
             """,
         DisplayName = "Full interpolated string")]
@@ -439,7 +439,7 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             """,
         """
             // comment 1
-            var newParameter string = 'a'
+            param newParameter string = 'a'
             @secure
             // comment 2
             param a = newParameter
@@ -811,8 +811,8 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             """,
         """
             param i string = 'i'
-            var i2 = 'i2'
             param newParameter string = '{i}{i2}'
+            var i2 = 'i2'
             var j = newParameter
             """,
         null,
@@ -1350,7 +1350,6 @@ public class ExtractVarAndParamTests : CodeActionTestBase
 
     ////////////////////////////////////////////////////////////////////
 
-    //asdfg
     [DataTestMethod]
     //
     // Closest ancestor expression is the top-level expression itself -> offer to update full expression
@@ -1498,64 +1497,70 @@ public class ExtractVarAndParamTests : CodeActionTestBase
 
     ////////////////////////////////////////////////////////////////////
 
-    //asdfg
-    //[DataTestMethod]
-    //[DataRow(
-    //    "storageUri: reference(stora<<geAccount.i>>d, '2018-02-01').primaryEndpoints.blob",
-    //    "var storageAccountId = storageAccount.id",
-    //    "param storageAccountId string = storageAccount.id",
-    //    "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: refer<<ence(storageAccount.id, '2018-02-01').primaryEndpoints.bl>>ob",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    """
-    //            @description('Uri of the storage account to use for placing the console output and screenshot.')
-    //            param storageUri object? /* unknown */ = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
-    //            """,
-    //    "storageUri: storageUri"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, '2018-02-01').primar<<yEndpoints.blob>>",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "param storageUri unknown = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "storageUri: storageUri"
-    //    )]
-    //public async Task IfThereIsASelection_ThenPickUpEverythingInTheSelection_AfterExpanding(string lineWithSelection, string expectedNewVarDeclaration, string expectedNewParamDeclaration, string expectedModifiedLine)
-    //{
-    //    await RunExtractToVarAndOrParamOnSingleLineTest(
-    //        inputTemplateWithSelection: """
-    //                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+    [DataTestMethod]
+    [DataRow(
+        "storageUri: reference(stora<<geAccount.i>>d, '2018-02-01').primaryEndpoints.blob",
+        "var storageAccountId = storageAccount.id",
+        "param storageAccountId string = storageAccount.id",
+        null,
+        "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: refer<<ence(storageAccount.id, '2018-02-01').primaryEndpoints.bl>>ob",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        """
+            @description('Uri of the storage account to use for placing the console output and screenshot.')
+            param storageUri object? /* unknown */ = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
+            """,
+        null,
+        "storageUri: storageUri"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAccount.id, '2018-02-01').primar<<yEndpoints.blob>>",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        """
+            @description('Uri of the storage account to use for placing the console output and screenshot.')
+            param storageUri object? /* unknown */ = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob
+            """,
+        null,
+        "storageUri: storageUri"
+        )]
+    public async Task IfThereIsASelection_ThenPickUpEverythingInTheSelection_AfterExpanding(string lineWithSelection, string expectedNewVarDeclaration, string expectedNewParamLooseDeclaration, string expectedNewParamMediumDeclaration, string expectedModifiedLine)
+    {
+        await RunExtractToVarAndParamOnSingleLineTest(
+            inputTemplateWithSelection: """
+                    resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-    //                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-    //                  properties: {
-    //                    diagnosticsProfile: {
-    //                      bootDiagnostics: {
-    //                        LINEWITHSELECTION
-    //                      }
-    //                    }
-    //                  }
-    //                }
-    //                """,
-    //        expectedOutputTemplate: """
-    //                resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+                    resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+                      properties: {
+                        diagnosticsProfile: {
+                          bootDiagnostics: {
+                            LINEWITHSELECTION
+                          }
+                        }
+                      }
+                    }
+                    """,
+            expectedOutputTemplate: """
+                    resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-    //                EXPECTEDNEWDECLARATION
-    //                resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-    //                  properties: {
-    //                    diagnosticsProfile: {
-    //                      bootDiagnostics: {
-    //                        EXPECTEDMODIFIEDLINE
-    //                      }
-    //                    }
-    //                  }
-    //                }
-    //                """,
-    //        lineWithSelection,
-    //        expectedNewVarDeclaration,
-    //        expectedNewParamDeclaration,
-    //        expectedModifiedLine);
-    //}
+                    EXPECTEDNEWDECLARATION
+                    resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+                      properties: {
+                        diagnosticsProfile: {
+                          bootDiagnostics: {
+                            EXPECTEDMODIFIEDLINE
+                          }
+                        }
+                      }
+                    }
+                    """,
+            lineWithSelection,
+            expectedNewVarDeclaration,
+            expectedNewParamLooseDeclaration,
+            expectedNewParamMediumDeclaration,
+            expectedModifiedLine);
+    }
 
     ////////////////////////////////////////////////////////////////////
 
@@ -2005,141 +2010,163 @@ public class ExtractVarAndParamTests : CodeActionTestBase
                 .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
     }
 
-    //asdfg
-    //private async Task RunExtractToVarAndOrParamOnSingleLineTest(
-    //    string inputTemplateWithSelection,
-    //    string expectedOutputTemplate,
-    //    string lineWithSelection,
-    //    string? expectedNewVarDeclaration,
-    //    string? expectedNewParamDeclaration,
-    //    string expectedModifiedLine
-    //    )
-    //{
-    //    await RunExtractToVariableTestIf(
-    //        expectedNewVarDeclaration is { },
-    //            inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
-    //            expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration)
-    //                .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
-
-    //    await RunExtractToParameterTestIf(
-    //        expectedNewParamDeclaration is { },
-    //        inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
-    //        expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration)
-    //            .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
-    //}
-
-    //private async Task RunExtractToVariableAndOrParameterTest(string fileWithSelection, string expectedTextTemplate, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration)
-    //{
-    //    await RunExtractToVariableTestIf(
-    //        expectedNewVarDeclaration is { },
-    //        fileWithSelection,
-    //        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration));
-    //    await RunExtractToParameterTestIf(
-    //        expectedNewParamDeclaration is { },
-    //        fileWithSelection,
-    //        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration));
-    //}
-
-    private async Task RunExtractToVariableAndParameterTest(string fileWithSelection, string? expectedVariableText, string? expectedLooseParamText, string? expectedMediumParamText)
+    private async Task RunExtractToParamSingleLineTest(
+        string inputTemplateWithSelection,
+        string expectedOutputTemplate,
+        string lineWithSelection,
+        string expectedNewParamLooseDeclaration,
+        string? expectedNewParamMediumDeclaration,
+        string expectedModifiedLine)
     {
-        await RunExtractToVariableTest(
-            fileWithSelection,
-            expectedVariableText);
         await RunExtractToParameterTest(
-            fileWithSelection,
-            expectedLooseParamText,
-            expectedMediumParamText);
+            inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
+            expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamLooseDeclaration)
+                .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine),
+            expectedNewParamMediumDeclaration == null ? null :
+                expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamMediumDeclaration)
+                    .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine)
+        );
     }
 
-    //private async Task RunExtractToVariableTestIf(bool condition, string fileWithSelection, string? expectedText) //asdfg remove
-    //{
-    //    if (condition)
-    //    {
-    //        using (new AssertionScope("extract to var test"))
-    //        {
-    //            await RunExtractToVariableTest(fileWithSelection, expectedText);
-    //        }
-    //    }
-    //}
-
-    //private async Task RunExtractToParameterTestIf(bool condition, string fileWithSelection, string? expectedText)//asdfg remove
-    //{
-    //    if (condition)
-    //    {
-    //        using (new AssertionScope("extract to param test"))
-    //        {
-    //            await RunExtractToParameterTest(fileWithSelection, expectedText);
-    //        }
-    //    }
-    //}
-
-    private async Task RunExtractToVariableTest(string fileWithSelection, string? expectedText)
+    private async Task RunExtractToVarAndParamOnSingleLineTest(
+        string inputTemplateWithSelection,
+        string expectedOutputTemplate,
+        string lineWithSelection,
+        string expectedNewVarDeclaration,
+        string expectedNewParamLooseDeclaration,
+        string? expectedNewParamMediumDeclaration,
+        string expectedModifiedLine
+        )
     {
-        (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
-        var extractedVar = codeActions.FirstOrDefault(x => x.Title.StartsWith(ExtractToVariableTitle));
+        await RunExtractToVarSingleLineTest(
+            inputTemplateWithSelection,
+            expectedOutputTemplate,
+            lineWithSelection,
+            expectedNewVarDeclaration,
+            expectedModifiedLine);
 
-        if (expectedText == null)
-        {
-            extractedVar.Should().BeNull("expected no code action for extract var");
-        }
-        else if (expectedText != "IGNORE")
-        {
-            extractedVar.Should().NotBeNull("expected an action to extract to variable");
-            extractedVar!.Kind.Should().Be(CodeActionKind.RefactorExtract);
-
-            var updatedFile = ApplyCodeAction(bicepFile, extractedVar);
-            updatedFile.Should().HaveSourceText(expectedText, "extract to variable should match expected outcome");
-        }
+        await RunExtractToParamSingleLineTest(
+            inputTemplateWithSelection,
+            expectedOutputTemplate,
+            lineWithSelection,
+            expectedNewParamLooseDeclaration,
+            expectedNewParamMediumDeclaration,
+            expectedModifiedLine);
     }
 
-    // expectedMediumParameterText can be "SAME" or "IGNORE"
-    private async Task RunExtractToParameterTest(string fileWithSelection, string? expectedLooseParameterText, string? expectedMediumParameterText)
+//asdfg
+//private async Task RunExtractToVariableAndOrParameterTest(string fileWithSelection, string expectedTextTemplate, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration)
+//{
+//    await RunExtractToVariableTestIf(
+//        expectedNewVarDeclaration is { },
+//        fileWithSelection,
+//        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration));
+//    await RunExtractToParameterTestIf(
+//        expectedNewParamDeclaration is { },
+//        fileWithSelection,
+//        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration));
+//}
+
+private async Task RunExtractToVariableAndParameterTest(string fileWithSelection, string? expectedVariableText, string? expectedLooseParamText, string? expectedMediumParamText)
+{
+    await RunExtractToVariableTest(
+        fileWithSelection,
+        expectedVariableText);
+    await RunExtractToParameterTest(
+        fileWithSelection,
+        expectedLooseParamText,
+        expectedMediumParamText);
+}
+
+//private async Task RunExtractToVariableTestIf(bool condition, string fileWithSelection, string? expectedText) //asdfg remove
+//{
+//    if (condition)
+//    {
+//        using (new AssertionScope("extract to var test"))
+//        {
+//            await RunExtractToVariableTest(fileWithSelection, expectedText);
+//        }
+//    }
+//}
+
+//private async Task RunExtractToParameterTestIf(bool condition, string fileWithSelection, string? expectedText)//asdfg remove
+//{
+//    if (condition)
+//    {
+//        using (new AssertionScope("extract to param test"))
+//        {
+//            await RunExtractToParameterTest(fileWithSelection, expectedText);
+//        }
+//    }
+//}
+
+private async Task RunExtractToVariableTest(string fileWithSelection, string? expectedText)
+{
+    (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
+    var extractedVar = codeActions.FirstOrDefault(x => x.Title.StartsWith(ExtractToVariableTitle));
+
+    if (expectedText == null)
     {
-        if (expectedMediumParameterText == "SAME")
+        extractedVar.Should().BeNull("expected no code action for extract var");
+    }
+    else if (expectedText != "IGNORE")
+    {
+        extractedVar.Should().NotBeNull("expected an action to extract to variable");
+        extractedVar!.Kind.Should().Be(CodeActionKind.RefactorExtract);
+
+        var updatedFile = ApplyCodeAction(bicepFile, extractedVar);
+        updatedFile.Should().HaveSourceText(expectedText, "extract to variable should match expected outcome");
+    }
+}
+
+// expectedMediumParameterText can be "SAME" or "IGNORE"
+private async Task RunExtractToParameterTest(string fileWithSelection, string? expectedLooseParameterText, string? expectedMediumParameterText)
+{
+    if (expectedMediumParameterText == "SAME")
+    {
+        expectedMediumParameterText = expectedLooseParameterText;
+    }
+
+    (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
+    var extractedParamFixes = codeActions.Where(x => x.Title.StartsWith(ExtractToParameterTitle)).ToArray();
+    extractedParamFixes.Length.Should().BeLessThanOrEqualTo(2);
+
+    if (expectedLooseParameterText == null)
+    {
+        extractedParamFixes.Should().BeEmpty("expected no code actions to extract parameter");
+        expectedMediumParameterText.Should().BeNull();
+    }
+    else
+    {
+        if (expectedLooseParameterText != "IGNORE")
         {
-            expectedMediumParameterText = expectedLooseParameterText;
+            extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(1).Should().NotBeNull("expected at least one code action to extract to parameter");
+            var looseFix = extractedParamFixes[0];
+            looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
+
+            var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
+            updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText, "extract to param with loose typing should match expected outcome");
         }
 
-        (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
-        var extractedParamFixes = codeActions.Where(x => x.Title.StartsWith(ExtractToParameterTitle)).ToArray();
-        extractedParamFixes.Length.Should().BeLessThanOrEqualTo(2);
-
-        if (expectedLooseParameterText == null)
+        if (expectedMediumParameterText == null)
         {
-            extractedParamFixes.Should().BeEmpty("expected no code actions to extract parameter");
-            expectedMediumParameterText.Should().BeNull();
+            extractedParamFixes.Length.Should().Be(1, "expected only one code action to extract parameter (as loosely typed - which means the medium-strict version was the same as the loose version)");
         }
         else
         {
-            if (expectedLooseParameterText != "IGNORE")
+            if (expectedMediumParameterText != "IGNORE")
             {
-                extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(1).Should().NotBeNull("expected at least one code action to extract to parameter");
-                var looseFix = extractedParamFixes[0];
-                looseFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
+                extractedParamFixes.Length.Should().Be(2, "expected a second option to extract to parameter");
 
-                var updatedFileLoose = ApplyCodeAction(bicepFile, looseFix);
-                updatedFileLoose.Should().HaveSourceText(expectedLooseParameterText, "extract to param with loose typing should match expected outcome");
-            }
+                var mediumFix = extractedParamFixes[1];
+                mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
 
-            if (expectedMediumParameterText == null)
-            {
-                extractedParamFixes.Length.Should().Be(1, "expected only one code action to extract parameter (as loosely typed - which means the medium-strict version was the same as the loose version)");
-            }
-            else
-            {
-                if (expectedMediumParameterText != "IGNORE")
-                {
-                    extractedParamFixes.Length.Should().Be(2, "expected a second option to extract to parameter");
-
-                    var mediumFix = extractedParamFixes[1];
-                    mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
-
-                    var updatedFileMedium = ApplyCodeAction(bicepFile, mediumFix);
-                    updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText, "extract to param with medium-strict typing should match expected outcome");
-                }
+                var updatedFileMedium = ApplyCodeAction(bicepFile, mediumFix);
+                updatedFileMedium.Should().HaveSourceText(expectedMediumParameterText, "extract to param with medium-strict typing should match expected outcome");
             }
         }
     }
+}
 }
 
 #endregion
