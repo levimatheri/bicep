@@ -177,7 +177,8 @@ namespace Bicep.LangServer.IntegrationTests
             args.Item1.Should().StartWith("file://");
             var positionObject = (JObject)args.Item2;
             var (line, character) = (positionObject.GetValue("line")!.Value<int>(), positionObject.GetValue("character")!.Value<int>());
-            var renameOffset = TextCoordinateConverter.GetOffset(lineStarts, line, character);
+            var modifiedLineStarts = TextCoordinateConverter.GetLineStarts(bicepText);
+            var renameOffset = TextCoordinateConverter.GetOffset(modifiedLineStarts, line, character);
             var possibleVarKeyword = renameOffset >= "var ".Length ? bicepText.Substring(renameOffset - "var ".Length, "var ".Length) : null;
             var possibleParamKeyword = renameOffset >= "param ".Length ? bicepText.Substring(renameOffset - "param ".Length, "param ".Length) : null;
             (possibleVarKeyword == "var " || possibleParamKeyword == "param ").Should().BeTrue(

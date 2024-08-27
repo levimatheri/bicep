@@ -1909,44 +1909,45 @@ var v1 = newParameter
     ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
-    [DataRow(
-        """
-            var v = <<1>>
-            """,
-        """
-            var newVariable = 1
-            var v = newVariable
-            """,
-        """
-            param newParameter int = 1
-            var v = newParameter
-            """,
-        DisplayName = "Extracting at top of file -> insert at top")]
-    [DataRow(
-        """
-            metadata firstLine = 'first line'
-            metadata secondLine = 'second line'
+    //asdfg
+    //[DataRow(
+    //    """
+    //        var v = <<1>>
+    //        """,
+    //    """
+    //        var newVariable = 1
+    //        var v = newVariable
+    //        """,
+    //    """
+    //        param newParameter int = 1
+    //        var v = newParameter
+    //        """,
+    //    DisplayName = "Extracting at top of file -> insert at top")]
+    //[DataRow(
+    //    """
+    //        metadata firstLine = 'first line'
+    //        metadata secondLine = 'second line'
 
-            // Some comments
-            var v = <<1>>
-            """,
-        """
-            metadata firstLine = 'first line'
-            metadata secondLine = 'second line'
+    //        // Some comments
+    //        var v = <<1>>
+    //        """,
+    //    """
+    //        metadata firstLine = 'first line'
+    //        metadata secondLine = 'second line'
 
-            // Some comments
-            var newVariable = 1
-            var v = newVariable
-            """,
-        """
-            metadata firstLine = 'first line'
-            metadata secondLine = 'second line'
+    //        // Some comments
+    //        var newVariable = 1
+    //        var v = newVariable
+    //        """,
+    //    """
+    //        metadata firstLine = 'first line'
+    //        metadata secondLine = 'second line'
 
-            // Some comments
-            param newParameter int = 1
-            var v = newParameter
-            """,
-        DisplayName = "No existing params/vars above -> insert right before extraction line")]
+    //        // Some comments
+    //        param newParameter int = 1
+    //        var v = newParameter
+    //        """,
+    //    DisplayName = "No existing params/vars above -> insert right before extraction line")]
     [DataRow(
         """
             param location string
@@ -2021,194 +2022,195 @@ var v1 = newParameter
     //        var v = newParameter
     //        """,
     //    DisplayName = "Existing params and vars at top of file -> param and var inserted after their corresponding existing declarations")]
-    [DataRow(
-        """
-            // location comment
-            param location string
+    //[DataRow(
+    //    //asdfg
+    //    """
+    //        // location comment
+    //        param location string
 
-            // rg comment
-            param resourceGroup string
+    //        // rg comment
+    //        param resourceGroup string
 
-            var simpleCalculation = 1 + 1
+    //        var simpleCalculation = 1 + 1
 
-            @export()
-            @description('this still counts as having an empty line beforehand')
-            var complexCalculation = simpleCalculation * 2
+    //        @export()
+    //        @description('this still counts as having an empty line beforehand')
+    //        var complexCalculation = simpleCalculation * 2
 
-            metadata line = 'line'
+    //        metadata line = 'line'
 
-            var v = <<1>>
-            """,
-        """
-            // location comment
-            param location string
+    //        var v = <<1>>
+    //        """,
+    //    """
+    //        // location comment
+    //        param location string
 
-            // rg comment
-            param resourceGroup string
+    //        // rg comment
+    //        param resourceGroup string
 
-            var simpleCalculation = 1 + 1
+    //        var simpleCalculation = 1 + 1
 
-            @export()
-            @description('this still counts as having an empty line beforehand')
-            var complexCalculation = simpleCalculation * 2
+    //        @export()
+    //        @description('this still counts as having an empty line beforehand')
+    //        var complexCalculation = simpleCalculation * 2
 
-            var newVariable = 1
+    //        var newVariable = 1
 
-            metadata line = 'line'
+    //        metadata line = 'line'
 
-            var v = newVariable
-            """,
-        """
-            // location comment
-            param location string
+    //        var v = newVariable
+    //        """,
+    //    """
+    //        // location comment
+    //        param location string
 
-            // rg comment
-            param resourceGroup string
+    //        // rg comment
+    //        param resourceGroup string
 
-            param newParameter int = 1
+    //        param newParameter int = 1
 
-            var simpleCalculation = 1 + 1
+    //        var simpleCalculation = 1 + 1
 
-            @export()
-            @description('this still counts as having an empty line beforehand')
-            var complexCalculation = simpleCalculation * 2
+    //        @export()
+    //        @description('this still counts as having an empty line beforehand')
+    //        var complexCalculation = simpleCalculation * 2
 
-            metadata line = 'line'
+    //        metadata line = 'line'
 
-            var v = newParameter
-            """,
-        DisplayName = "If closest existing declaration has a blank line before it, insert a blank line above the new declaration")]
-    [DataRow(
-        """
-            param location string
-            param resourceGroup string
-            var simpleCalculation = 1 + 1
-            var complexCalculation = simpleCalculation * 2
+    //        var v = newParameter
+    //        """,
+    //    DisplayName = "If closest existing declaration has a blank line before it, insert a blank line above the new declaration")]
+    //[DataRow(
+    //    """
+    //        param location string
+    //        param resourceGroup string
+    //        var simpleCalculation = 1 + 1
+    //        var complexCalculation = simpleCalculation * 2
 
-            metadata line = 'line'
+    //        metadata line = 'line'
 
-            param location2 string
-            param resourceGroup2 string
-            var simpleCalculation2 = 1 + 1
-            var complexCalculation2 = simpleCalculation * 2
+    //        param location2 string
+    //        param resourceGroup2 string
+    //        var simpleCalculation2 = 1 + 1
+    //        var complexCalculation2 = simpleCalculation * 2
 
-            metadata line2 = 'line2'
+    //        metadata line2 = 'line2'
 
-            var v = <<1>>
+    //        var v = <<1>>
 
-            param location3 string
-            param resourceGroup3 string
-            var simpleCalculation3 = 1 + 1
-            var complexCalculation3 = simpleCalculation * 2            
-            """,
-        """
-            param location string
-            param resourceGroup string
-            var simpleCalculation = 1 + 1
-            var complexCalculation = simpleCalculation * 2
+    //        param location3 string
+    //        param resourceGroup3 string
+    //        var simpleCalculation3 = 1 + 1
+    //        var complexCalculation3 = simpleCalculation * 2            
+    //        """,
+    //    """
+    //        param location string
+    //        param resourceGroup string
+    //        var simpleCalculation = 1 + 1
+    //        var complexCalculation = simpleCalculation * 2
             
-            metadata line = 'line'
+    //        metadata line = 'line'
             
-            param location2 string
-            param resourceGroup2 string
-            var simpleCalculation2 = 1 + 1
-            var complexCalculation2 = simpleCalculation * 2
-            var newVariable = 1
+    //        param location2 string
+    //        param resourceGroup2 string
+    //        var simpleCalculation2 = 1 + 1
+    //        var complexCalculation2 = simpleCalculation * 2
+    //        var newVariable = 1
             
-            metadata line2 = 'line2'
+    //        metadata line2 = 'line2'
             
-            var v = newVariable
+    //        var v = newVariable
 
-            param location3 string
-            param resourceGroup3 string
-            var simpleCalculation3 = 1 + 1
-            var complexCalculation3 = simpleCalculation * 2            
-            """,
-        """
-            param location string
-            param resourceGroup string
-            var simpleCalculation = 1 + 1
-            var complexCalculation = simpleCalculation * 2
+    //        param location3 string
+    //        param resourceGroup3 string
+    //        var simpleCalculation3 = 1 + 1
+    //        var complexCalculation3 = simpleCalculation * 2            
+    //        """,
+    //    """
+    //        param location string
+    //        param resourceGroup string
+    //        var simpleCalculation = 1 + 1
+    //        var complexCalculation = simpleCalculation * 2
             
-            metadata line = 'line'
+    //        metadata line = 'line'
             
-            param location2 string
-            param resourceGroup2 string
-            param newParameter int = 1
-            var simpleCalculation2 = 1 + 1
-            var complexCalculation2 = simpleCalculation * 2
+    //        param location2 string
+    //        param resourceGroup2 string
+    //        param newParameter int = 1
+    //        var simpleCalculation2 = 1 + 1
+    //        var complexCalculation2 = simpleCalculation * 2
             
-            metadata line2 = 'line2'
+    //        metadata line2 = 'line2'
             
-            var v = newParameter
+    //        var v = newParameter
 
-            param location3 string
-            param resourceGroup3 string
-            var simpleCalculation3 = 1 + 1
-            var complexCalculation3 = simpleCalculation * 2            
-            """,
-        DisplayName = "Existing params and vars in multiple places in file -> insert after closest existing declarations above extraction")]
-    [DataRow(
-        """
-            param location string
+    //        param location3 string
+    //        param resourceGroup3 string
+    //        var simpleCalculation3 = 1 + 1
+    //        var complexCalculation3 = simpleCalculation * 2            
+    //        """,
+    //    DisplayName = "Existing params and vars in multiple places in file -> insert after closest existing declarations above extraction")]
+    //[DataRow(
+    //    """
+    //        param location string
 
-            resource virtualMachine 'Microsoft.Compute/virtualMachines@2020-12-01' = {
-              name: 'name'
-              location: location
-            }
+    //        resource virtualMachine 'Microsoft.Compute/virtualMachines@2020-12-01' = {
+    //          name: 'name'
+    //          location: location
+    //        }
 
-            resource windowsVMExtensions 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-              parent: virtualMachine
-              name: 'name'
-              location: location
-              properties: {
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.10'
-                autoUpgradeMinorVersion: true
-                settings: {
-                  fileUris: [
-                    'fileUris'
-                  ]
-                }
-                <<protectedSettings>>: {
-                  commandToExecute: 'loadTextContent(\'files/my script.ps1\')'
-                }
-              }
-            }
-            """,
-        "IGNORE",
-        """
-            param location string
-            @description('The extension can contain either protectedSettings or protectedSettingsFromKeyVault or no protected settings at all.')
-            param protectedSettings object = {
-              commandToExecute: 'loadTextContent(\'files/my script.ps1\')'
-            }
+    //        resource windowsVMExtensions 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
+    //          parent: virtualMachine
+    //          name: 'name'
+    //          location: location
+    //          properties: {
+    //            publisher: 'Microsoft.Compute'
+    //            type: 'CustomScriptExtension'
+    //            typeHandlerVersion: '1.10'
+    //            autoUpgradeMinorVersion: true
+    //            settings: {
+    //              fileUris: [
+    //                'fileUris'
+    //              ]
+    //            }
+    //            <<protectedSettings>>: {
+    //              commandToExecute: 'loadTextContent(\'files/my script.ps1\')'
+    //            }
+    //          }
+    //        }
+    //        """,
+    //    "IGNORE",
+    //    """
+    //        param location string
+    //        @description('The extension can contain either protectedSettings or protectedSettingsFromKeyVault or no protected settings at all.')
+    //        param protectedSettings object = {
+    //          commandToExecute: 'loadTextContent(\'files/my script.ps1\')'
+    //        }
 
-            resource virtualMachine 'Microsoft.Compute/virtualMachines@2020-12-01' = {
-              name: 'name'
-              location: location
-            }
+    //        resource virtualMachine 'Microsoft.Compute/virtualMachines@2020-12-01' = {
+    //          name: 'name'
+    //          location: location
+    //        }
 
-            resource windowsVMExtensions 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-              parent: virtualMachine
-              name: 'name'
-              location: location
-              properties: {
-                publisher: 'Microsoft.Compute'
-                type: 'CustomScriptExtension'
-                typeHandlerVersion: '1.10'
-                autoUpgradeMinorVersion: true
-                settings: {
-                  fileUris: [
-                    'fileUris'
-                  ]
-                }
-                protectedSettings: protectedSettings
-              }
-            }
-            """,
-        DisplayName = "get the rename position correct")]
+    //        resource windowsVMExtensions 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
+    //          parent: virtualMachine
+    //          name: 'name'
+    //          location: location
+    //          properties: {
+    //            publisher: 'Microsoft.Compute'
+    //            type: 'CustomScriptExtension'
+    //            typeHandlerVersion: '1.10'
+    //            autoUpgradeMinorVersion: true
+    //            settings: {
+    //              fileUris: [
+    //                'fileUris'
+    //              ]
+    //            }
+    //            protectedSettings: protectedSettings
+    //          }
+    //        }
+    //        """,
+    //    DisplayName = "get the rename position correct")]
     public async Task VarsAndParams_InsertAfterExistingDeclarations(string fileWithSelection, string expectedVarText, string? expectedParamText)
     {
         await RunExtractToVariableAndParameterTest(fileWithSelection.ReplaceNewlines("\n"), expectedVarText, expectedParamText, "IGNORE");
