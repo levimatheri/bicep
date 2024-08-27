@@ -309,189 +309,6 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             output o = newParameter
             """)]
 
-//    [DataRow(
-//    """
-//        var isWindowsOS = true
-//        var provisionExtensions = true
-//        param _artifactsLocation string
-//        @secure()
-//        param _artifactsLocationSasToken string
-
-//        resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-//          name: 'cse-windows/extension'
-//          location: 'location'
-//          properties: {
-//            publisher: 'Microsoft.Compute'
-//            type: 'CustomScriptExtension'
-//            typeHandlerVersion: '1.8'
-//            autoUpgradeMinorVersion: true
-//            setting|s: {
-//              fileUris: [
-//                uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-//              ]
-//              commandToExecute: 'commandToExecute'
-//            }
-//          }
-//        }
-//        """,
-////asdfg we don't have strongly typed array?   fileUris: [string]?
-//    """
-//        var isWindowsOS = true
-//        var provisionExtensions = true
-//        param _artifactsLocation string
-//        @secure()
-//        param _artifactsLocationSasToken string
-
-//        param settings { commandToExecute: string, fileUris: array } = {
-//          fileUris: [
-//            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-//          ]
-//          commandToExecute: 'commandToExecute'
-//        }
-//        resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = if (isWindowsOS && provisionExtensions) {
-//          name: 'cse-windows/extension'
-//          location: 'location'
-//          properties: {
-//            publisher: 'Microsoft.Compute'
-//            type: 'CustomScriptExtension'
-//            typeHandlerVersion: '1.8'
-//            autoUpgradeMinorVersion: true
-//            settings: settings
-//          }
-//        }
-//        """)]
-//    [DataRow(
-//        """
-//            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
-//                name: 'cse/windows'
-//                location: 'location'
-//                |properties: {
-//                    // Entire properties object selected
-//                    publisher: 'Microsoft.Compute'
-//                    type: 'CustomScriptExtension'
-//                    typeHandlerVersion: '1.8'
-//                    autoUpgradeMinorVersion: true
-//                    settings: {
-//                        fileUris: [
-//                            uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-//                        ]
-//                        commandToExecute: 'commandToExecute'
-//                    }
-//                }
-//            }
-//            """,
-//        """
-//            asdfg TODO: getting some unknowns and readonly types
-//            param properties { autoUpgradeMinorVersion: bool, forceUpdateTag: string, instanceView: { name: string, statuses: array, substatuses: array, type: string, typeHandlerVersion: string }, protectedSettings: unknown, publisher: string, settings: unknown, type: string, typeHandlerVersion: string } = {
-//                // Entire properties object selected
-//                publisher: 'Microsoft.Compute'
-//                type: 'CustomScriptExtension'
-//                typeHandlerVersion: '1.8'
-//                autoUpgradeMinorVersion: true
-//                settings: {
-//                    fileUris: [
-//                        uri(_artifactsLocation, 'writeblob.ps1${_artifactsLocationSasToken}')
-//                    ]
-//                    commandToExecute: 'commandToExecute'
-//                }
-//            }
-//            resource resourceWithProperties 'Microsoft.Compute/virtualMachines/extensions@2019-12-01' = {
-//                name: 'cse/windows'
-//                location: 'location'
-//                properties: properties
-//            }
-//            """)]
-//    [DataRow(
-//        """
-//            param p2 'foo' || 'bar'
-//            var v1 = <<p2>>
-//            """,
-//        """
-//            param p2 'foo' | 'bar'
-//            param newParameter 'bar' | 'foo' = p2
-//            var v1 = newParameter
-//            """)]
-//    [DataRow(
-//    // rhs is more strictly typed than lhs
-//    // medium picks up strict type, loose just object
-//    // asdfg why isn't it picking up declared type of object??
-//        """
-//            param p1 { intVal: int} = { intVal:123}
-//            output o object = <<p1>>
-//            """,
-//        """
-//            param p1 { intVal: int} = { intVal:123}
-//            param newParameter { intVal: int } = p1
-//            output o object = newParameter
-//            """)]
-//    [DataRow(
-//        // TODO: generates incorrect code
-//        """
-//            param  p { a: { 'a b': string } }
-//            var v = p
-//            """,
-//        """
-//            param  p { a: { 'a b': string } }
-//            param newParameter { a: { 'a b': string } } = p
-//            var v = newParameter
-//            """)]
-//    // recursive types
-//    [DataRow(
-//        """
-//            type foo = {
-//                property: foo?
-//            }
-//            param pfoo foo
-//            var v = <<pfoo>>
-//            """,
-//        """
-//            // Currently gives asdfg
-//            param pfoo foo
-//            param newParameter { property: unknown } = pfoo
-//            var v = newParameter
-//            """)]
-//    // named types
-//    [DataRow(
-//        """
-//            type foo = {
-//                property: string
-//            }
-//            type foo2 = {
-//                property: foo
-//            }
-//            param pfoo2 foo2
-//            var v = pfoo2
-//            """,
-//        """
-//            // Currently gives asdfg
-//            type foo = {
-//                property: string
-//            }
-//            type foo2 = {
-//                property: foo
-//            }
-//            param pfoo2 foo2
-//            param newParameter { property: { property: string } } = pfoo2
-//            // EXPECTED:
-//            param newParameter { property: foo } = pfoo2
-//            var v = newParameter
-//            """)]
-
-//    [DataRow(
-//        """
-//            param p1 {a: string || int}
-//            var v1 = <<p1>>
-//            """,
-//        """
-//             param p1 {a: string | int}
-//             param newParameter object = p1
-//             var v1 = newParameter
-//             """,
-//        """
-//             param p1 {a: string | int}
-//             param newParameter { a: int | string } = p1
-//             var v1 = newParameter
-//             """)]
     public async Task BicepDiscussion(string fileWithSelection, string expectedLooseParamText, string expectedMediumParamText)
     {
         await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
@@ -940,7 +757,6 @@ public class ExtractVarAndParamTests : CodeActionTestBase
 
     ////////////////////////////////////////////////////////////////////
 
-    [DataTestMethod]
     [DataRow(
         """
             var i = <<1>>
@@ -1195,20 +1011,22 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             param newParameter { intVal: int } = { intVal: 2 }
             var foo = newParameter
             """)]
-
-    ////asdf TODO(??)
-    ////[DataRow("""
-    ////        var a = <<aksCluster>>
-    ////        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
-    ////        """,
-    ////    """
-    ////        param newParameter resource 'Microsoft.ContainerService/managedClusters@2021-03-01' = aksCluster
-    ////        var a = newParameter
-    ////        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
-    ////        """,
-    ////    DisplayName = "resource type")]
-
-
+    //asdfg gives this: param newParameter { asserts: object, dependsOn: (module[] | (resource | module) | resource[])[], eTag: string, extendedLocation: { name: string?, type: ('EdgeZone' | string)? }?, identity: { type: ('None' | 'SystemAssigned' | 'UserAssigned')?, userAssignedIdentities: object? }?, kind: string, location: string, managedBy: string, managedByExtended: string[], name: string, plan: object, properties: { aadProfile: { adminGroupObjectIDs: string[]?, clientAppID: string?, enableAzureRBAC: bool?, managed: bool?, serverAppID: string?, serverAppSecret: string?, tenantID: string? }?, addonProfiles: object?, agentPoolProfiles: { availabilityZones: string[]?, count: int?, enableAutoScaling: bool?, enableEncryptionAtHost: bool?, enableFIPS: bool?, enableNodePublicIP: bool?, gpuInstanceProfile: ('MIG1g' | 'MIG2g' | 'MIG3g' | 'MIG4g' | 'MIG7g' | string)?, kubeletConfig: { allowedUnsafeSysctls: string[]?, containerLogMaxFiles: int?, containerLogMaxSizeMB: int?, cpuCfsQuota: bool?, cpuCfsQuotaPeriod: string?, cpuManagerPolicy: string?, failSwapOn: bool?, imageGcHighThreshold: int?, imageGcLowThreshold: int?, podMaxPids: int?, topologyManagerPolicy: string? }?, kubeletDiskType: ('OS' | 'Temporary' | string)?, linuxOSConfig: { swapFileSizeMB: int?, sysctls: { fsAioMaxNr: int?, fsFileMax: int?, fsInotifyMaxUserWatches: int?, fsNrOpen: int?, kernelThreadsMax: int?, netCoreNetdevMaxBacklog: int?, netCoreOptmemMax: int?, netCoreRmemDefault: int?, netCoreRmemMax: int?, netCoreSomaxconn: int?, netCoreWmemDefault: int?, netCoreWmemMax: int?, netIpv4IpLocalPortRange: string?, netIpv4NeighDefaultGcThresh1: int?, netIpv4NeighDefaultGcThresh2: int?, netIpv4NeighDefaultGcThresh3: int?, netIpv4TcpFinTimeout: int?, netIpv4TcpKeepaliveProbes: int?, netIpv4TcpKeepaliveTime: int?, netIpv4TcpMaxSynBacklog: int?, netIpv4TcpMaxTwBuckets: int?, netIpv4TcpTwReuse: bool?, netIpv4TcpkeepaliveIntvl: int?, netNetfilterNfConntrackBuckets: int?, netNetfilterNfConntrackMax: int?, vmMaxMapCount: int?, vmSwappiness: int?, vmVfsCachePressure: int? }?, transparentHugePageDefrag: string?, transparentHugePageEnabled: string? }?, maxCount: int?, maxPods: int?, minCount: int?, mode: ('System' | 'User' | string)?, name: string, nodeLabels: object?, nodePublicIPPrefixID: string?, nodeTaints: string[]?, orchestratorVersion: string?, osDiskSizeGB: int?, osDiskType: ('Ephemeral' | 'Managed' | string)?, osSKU: ('CBLMariner' | 'Ubuntu' | string)?, osType: ('Linux' | 'Windows' | string)?, podSubnetID: string?, proximityPlacementGroupID: string?, scaleSetEvictionPolicy: ('Deallocate' | 'Delete' | string)?, scaleSetPriority: ('Regular' | 'Spot' | string)?, spotMaxPrice: int?, tags: object?, type: ('AvailabilitySet' | 'VirtualMachineScaleSets' | string)?, upgradeSettings: { maxSurge: string? }?, vmSize: string?, vnetSubnetID: string? }[]?, apiServerAccessProfile: { authorizedIPRanges: string[]?, enablePrivateCluster: bool?, privateDNSZone: string? }?, autoScalerProfile: { 'balance-similar-node-groups': string?, expander: ('least-waste' | 'most-pods' | 'priority' | 'random' | string)?, 'max-empty-bulk-delete': string?, 'max-graceful-termination-sec': string?, 'max-node-provision-time': string?, 'max-total-unready-percentage': string?, 'new-pod-scale-up-delay': string?, 'ok-total-unready-count': string?, 'scale-down-delay-after-add': string?, 'scale-down-delay-after-delete': string?, 'scale-down-delay-after-failure': string?, 'scale-down-unneeded-time': string?, 'scale-down-unready-time': string?, 'scale-down-utilization-threshold': string?, 'scan-interval': string?, 'skip-nodes-with-local-storage': string?, 'skip-nodes-with-system-pods': string? }?, autoUpgradeProfile: { upgradeChannel: ('node-image' | 'none' | 'patch' | 'rapid' | 'stable' | string)? }?, disableLocalAccounts: bool?, diskEncryptionSetID: string?, dnsPrefix: string?, enablePodSecurityPolicy: bool?, enableRBAC: bool?, fqdnSubdomain: string?, httpProxyConfig: { httpProxy: string?, httpsProxy: string?, noProxy: string[]?, trustedCa: string? }?, identityProfile: object?, kubernetesVersion: string?, linuxProfile: { adminUsername: string, ssh: { publicKeys: { keyData: string }[] } }?, networkProfile: { dnsServiceIP: string?, dockerBridgeCidr: string?, loadBalancerProfile: { allocatedOutboundPorts: int?, effectiveOutboundIPs: { id: string? }[]?, idleTimeoutInMinutes: int?, managedOutboundIPs: { count: int? }?, outboundIPPrefixes: { publicIPPrefixes: { id: string? }[]? }?, outboundIPs: { publicIPs: { id: string? }[]? }? }?, loadBalancerSku: ('basic' | 'standard' | string)?, networkMode: ('bridge' | 'transparent' | string)?, networkPlugin: ('azure' | 'kubenet' | string)?, networkPolicy: ('azure' | 'calico' | string)?, outboundType: ('loadBalancer' | 'userDefinedRouting' | string)?, podCidr: string?, serviceCidr: string? }?, nodeResourceGroup: string?, podIdentityProfile: { allowNetworkPluginKubenet: bool?, enabled: bool?, userAssignedIdentities: { bindingSelector: string?, identity: { clientId: string?, objectId: string?, resourceId: string? }, name: string, namespace: string }[]?, userAssignedIdentityExceptions: { name: string, namespace: string, podLabels: object }[]? }?, privateLinkResources: { groupId: string?, id: string?, name: string?, requiredMembers: string[]?, type: string? }[]?, servicePrincipalProfile: { clientId: string, secret: string? }?, windowsProfile: { adminPassword: string?, adminUsername: string, enableCSIProxy: bool?, licenseType: ('None' | 'Windows_Server' | string)? }? }?, scale: { capacity: int, maximum: int, minimum: int }, sku: { name: ('Basic' | string)?, tier: ('Free' | 'Paid' | string)? }?, tags: object?, zones: string[] } = aksCluster
+    //[DataRow("""
+    //        var a = <<aksCluster>>
+    //        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
+    //        """,
+    //    """
+    //        param newParameter resource 'Microsoft.ContainerService/managedClusters@2021-03-01' = aksCluster
+    //        var a = newParameter
+    //        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
+    //        """,
+    //      """
+    //        param newParameter resource 'Microsoft.ContainerService/managedClusters@2021-03-01' = aksCluster
+    //        var a = newParameter
+    //        resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = { }
+    //        """,
+    //    DisplayName = "resource type")]
     [DataRow(
         """
             resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
@@ -1311,32 +1129,7 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             param newParameter { a: { b: string } } = p1
             var v = newParameter
             """)]
-    //asdfg TODO: secure types
-    //[DataRow(""" TODO: asdfg
-    //    @secure()
-    //    param i string = "secure"
-    //    var j = <<i>>
-    //    """,
-    //    """
-    //    param i string = "secure"
-    //    @secure()
-    //    param newParameter string = i
-    //    var j = newParameter
-    //    """,
-    //    DisplayName = "secure string param reference")]
-    //asdfg TODO: secure types
-    //[DataRow("""
-    //    @secure()
-    //    param i string = "secure"
-    //    var j = <<i>>
-    //    """,
-    //    """
-    //    param i string = "secure"
-    //    @secure()
-    //    param newParameter string = i
-    //    var j = newParameter
-    //    """,
-    //    DisplayName = "expression with secure string param reference")]
+    [DataTestMethod]
     public async Task Params_InferType(string fileWithSelection, string expectedMediumParameterText, string expectedStrictParameterText)
     {
         await RunExtractToParameterTest(fileWithSelection, expectedMediumParameterText, expectedStrictParameterText);
@@ -1558,170 +1351,150 @@ public class ExtractVarAndParamTests : CodeActionTestBase
     ////////////////////////////////////////////////////////////////////
 
     //asdfg
-    //[DataTestMethod]
-    ////
-    //// Closest ancestor expression is the top-level expression itself -> offer to update full expression
-    ////
-    //[DataRow(
-    //    "storageUri:| reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    null,
-    //    "storageUri: storageUri"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.|blob",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    null,
-    //    "storageUri: storageUri"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.<<blo>>b",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    null,
-    //    "storageUri: storageUri"
-    //    )]
-    ////
-    //// Cursor is inside the property name -> offer full expression
-    ////
-    //[DataRow(
-    //    "storageUri|: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    null,
-    //    "storageUri: storageUri"
-    //    )]
-    //[DataRow(
-    //    "<<storageUri: re>>ference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    null,
-    //    "storageUri: storageUri"
-    //    )]
-    //[DataRow(
-    //    "<<storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob>>",
-    //    "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    null,
-    //    "storageUri: storageUri"
-    //    )]
-    ////
-    //// Cursor is inside a subexpression -> only offer to extract that specific subexpression
-    ////
-    //// ... reference() call
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, '2018-02-01').|primaryEndpoints.blob",
-    //    "var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
-    //    null,
-    //    "storageUri: referencePrimaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
-    //    null,
-    //    "storageUri: newVariable.primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: refere<<nce(storageAccount.id, '201>>8-02-01').primaryEndpoints.blob",
-    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
-    //    null,
-    //    "storageUri: newVariable.primaryEndpoints.blob"
-    //    )]
-    ////   ... '2018-02-01'
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, |'2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = '2018-02-01'",
-    //    null,
-    //    "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, '2018-02-01|').primaryEndpoints.blob",
-    //    "var newVariable = '2018-02-01'",
-    //    null,
-    //    "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
-    //    )]
-    ////   ... storageAccount.id
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.|id, '2018-02-01').primaryEndpoints.blob",
-    //    "var storageAccountId = storageAccount.id",
-    //    null,
-    //    "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.i|d, '2018-02-01').primaryEndpoints.blob",
-    //    "var storageAccountId = storageAccount.id",
-    //    null,
-    //    "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
-    //    )]
-    //// ... storageAccount
-    //[DataRow(
-    //    "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = storageAccount",
-    //    null,
-    //    "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = storageAccount",
-    //    null,
-    //    "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = storageAccount",
-    //    null,
-    //    "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
-    //    )]
-    //// ... inside reference(x, y) but not inside x or y -> closest enclosing expression is the reference()
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id,| '2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
-    //    null,
-    //    "storageUri: newVariable.primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference(storageAccount.id, '2018-02-01' |).primaryEndpoints.blob",
-    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
-    //    null,
-    //    "storageUri: newVariable.primaryEndpoints.blob"
-    //    )]
-    //[DataRow(
-    //    "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
-    //    "var newVariable = reference(storageAccount.id, '2018-02-01')",
-    //    null,
-    //    "storageUri: newVariable.primaryEndpoints.blob"
-    //    )]
-    //public async Task ShouldExpandSelectedExpressionsInALogicalWay(string lineWithSelection, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration, string expectedModifiedLine)
-    //{
-    //    await RunExtractToVarAndOrParamOnSingleLineTest(
-    //        inputTemplateWithSelection: """
-    //        resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+    [DataTestMethod]
+    //
+    // Closest ancestor expression is the top-level expression itself -> offer to update full expression
+    //
+    [DataRow(
+        "storageUri:| reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "storageUri: storageUri"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.|blob",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "storageUri: storageUri"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.<<blo>>b",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "storageUri: storageUri"
+        )]
+    //
+    // Cursor is inside the property name -> offer full expression
+    //
+    [DataRow(
+        "storageUri|: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "storageUri: storageUri"
+        )]
+    [DataRow(
+        "<<storageUri: re>>ference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "storageUri: storageUri"
+        )]
+    [DataRow(
+        "<<storageUri: reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob>>",
+        "var storageUri = reference(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "storageUri: storageUri"
+        )]
+    //
+    // Cursor is inside a subexpression -> only offer to extract that specific subexpression
+    //
+    // ... reference() call
+    [DataRow(
+        "storageUri: reference(storageAccount.id, '2018-02-01').|primaryEndpoints.blob",
+        "var referencePrimaryEndpoints = reference(storageAccount.id, '2018-02-01').primaryEndpoints",
+        "storageUri: referencePrimaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "var newVariable = reference(storageAccount.id, '2018-02-01')",
+        "storageUri: newVariable.primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: refere<<nce(storageAccount.id, '201>>8-02-01').primaryEndpoints.blob",
+        "var newVariable = reference(storageAccount.id, '2018-02-01')",
+        "storageUri: newVariable.primaryEndpoints.blob"
+        )]
+    //   ... '2018-02-01'
+    [DataRow(
+        "storageUri: reference(storageAccount.id, |'2018-02-01').primaryEndpoints.blob",
+        "var newVariable = '2018-02-01'",
+        "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAccount.id, '2018-02-01|').primaryEndpoints.blob",
+        "var newVariable = '2018-02-01'",
+        "storageUri: reference(storageAccount.id, newVariable).primaryEndpoints.blob"
+        )]
+    //   ... storageAccount.id
+    [DataRow(
+        "storageUri: reference(storageAccount.|id, '2018-02-01').primaryEndpoints.blob",
+        "var storageAccountId = storageAccount.id",
+        "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAccount.i|d, '2018-02-01').primaryEndpoints.blob",
+        "var storageAccountId = storageAccount.id",
+        "storageUri: reference(storageAccountId, '2018-02-01').primaryEndpoints.blob"
+        )]
+    // ... storageAccount
+    [DataRow(
+        "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+        "var newVariable = storageAccount",
+        "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+        "var newVariable = storageAccount",
+        "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAc|count.id, '2018-02-01').primaryEndpoints.blob",
+        "var newVariable = storageAccount",
+        "storageUri: reference(newVariable.id, '2018-02-01').primaryEndpoints.blob"
+        )]
+    // ... inside reference(x, y) but not inside x or y -> closest enclosing expression is the reference()
+    [DataRow(
+        "storageUri: reference(storageAccount.id,| '2018-02-01').primaryEndpoints.blob",
+        "var newVariable = reference(storageAccount.id, '2018-02-01')",
+        "storageUri: newVariable.primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference(storageAccount.id, '2018-02-01' |).primaryEndpoints.blob",
+        "var newVariable = reference(storageAccount.id, '2018-02-01')",
+        "storageUri: newVariable.primaryEndpoints.blob"
+        )]
+    [DataRow(
+        "storageUri: reference|(storageAccount.id, '2018-02-01').primaryEndpoints.blob",
+        "var newVariable = reference(storageAccount.id, '2018-02-01')",
+        "storageUri: newVariable.primaryEndpoints.blob"
+        )]
+    public async Task ShouldExpandSelectedExpressionsInALogicalWay(string lineWithSelection, string expectedNewVarDeclaration, string expectedModifiedLine)
+    {
+        await RunExtractToVarSingleLineTest(
+            inputTemplateWithSelection: """
+            resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-    //        resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-    //          properties: {
-    //            diagnosticsProfile: {
-    //              bootDiagnostics: {
-    //                LINEWITHSELECTION
-    //              }
-    //            }
-    //          }
-    //        }
-    //        """,
-    //        expectedOutputTemplate: """
-    //        resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
+            resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+              properties: {
+                diagnosticsProfile: {
+                  bootDiagnostics: {
+                    LINEWITHSELECTION
+                  }
+                }
+              }
+            }
+            """,
+            expectedOutputTemplate: """
+            resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: 'storageaccountname' }
 
-    //        EXPECTEDNEWDECLARATION
-    //        resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
-    //          properties: {
-    //            diagnosticsProfile: {
-    //              bootDiagnostics: {
-    //                EXPECTEDMODIFIEDLINE
-    //              }
-    //            }
-    //          }
-    //        }
-    //        """,
-    //        lineWithSelection,
-    //        expectedNewVarDeclaration,
-    //        expectedNewParamDeclaration,
-    //        expectedModifiedLine);
-    //}
+            EXPECTEDNEWDECLARATION
+            resource vm 'Microsoft.Compute/virtualMachines@2019-12-01' = { name: 'vm', location: 'eastus'
+              properties: {
+                diagnosticsProfile: {
+                  bootDiagnostics: {
+                    EXPECTEDMODIFIEDLINE
+                  }
+                }
+              }
+            }
+            """,
+            lineWithSelection,
+            expectedNewVarDeclaration,
+            expectedModifiedLine);
+    }
 
     ////////////////////////////////////////////////////////////////////
 
@@ -2108,17 +1881,17 @@ public class ExtractVarAndParamTests : CodeActionTestBase
     //        param resourceGroup string
     //        var simpleCalculation = 1 + 1
     //        var complexCalculation = simpleCalculation * 2
-            
+
     //        metadata line = 'line'
-            
+
     //        param location2 string
     //        param resourceGroup2 string
     //        var simpleCalculation2 = 1 + 1
     //        var complexCalculation2 = simpleCalculation * 2
     //        var newVariable = 1
-            
+
     //        metadata line2 = 'line2'
-            
+
     //        var v = newVariable
 
     //        param location3 string
@@ -2131,17 +1904,17 @@ public class ExtractVarAndParamTests : CodeActionTestBase
     //        param resourceGroup string
     //        var simpleCalculation = 1 + 1
     //        var complexCalculation = simpleCalculation * 2
-            
+
     //        metadata line = 'line'
-            
+
     //        param location2 string
     //        param resourceGroup2 string
     //        param newParameter int = 1
     //        var simpleCalculation2 = 1 + 1
     //        var complexCalculation2 = simpleCalculation * 2
-            
+
     //        metadata line2 = 'line2'
-            
+
     //        var v = newParameter
 
     //        param location3 string
@@ -2218,6 +1991,19 @@ public class ExtractVarAndParamTests : CodeActionTestBase
     }
 
     #region Support
+
+    private async Task RunExtractToVarSingleLineTest(
+        string inputTemplateWithSelection,
+        string expectedOutputTemplate,
+        string lineWithSelection,
+        string? expectedNewVarDeclaration,
+        string expectedModifiedLine)
+    {
+        await RunExtractToVariableTest(
+            inputTemplateWithSelection.Replace("LINEWITHSELECTION", lineWithSelection),
+            expectedOutputTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration)
+                .Replace("EXPECTEDMODIFIEDLINE", expectedModifiedLine));
+    }
 
     //asdfg
     //private async Task RunExtractToVarAndOrParamOnSingleLineTest(
