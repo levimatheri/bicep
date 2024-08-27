@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
+using Bicep.Core.Parsing;
 using Bicep.Core.Text;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -145,6 +146,30 @@ namespace Bicep.Core.UnitTests.Text
             yield return new object[] { new[] { 0, 12, 45 }, 44, (1, 32) };
             yield return new object[] { new[] { 0, 12, 45 }, 45, (2, 0) };
             yield return new object[] { new[] { 0, 12, 45 }, 99, (2, 54) };
+        }
+
+        [DataTestMethod]
+        [DataRow("\n", new[] { 0, 10, 10, 25, 35, 1, 36, 25 })]
+        [DataRow("\r\n", new[] { 0, 11, 11, 26, 37, 2, 39, 25 })]
+        public void GetLineSpan(string newLine, int[] expectedLineSpanStartLengthPairs)
+        {
+            var pairsCount = expectedLineSpanStartLengthPairs.Length;
+            (pairsCount % 2).Should().Be(0, $"{nameof(pairsCount)} should be even");
+            var expectedLineSpans = Enumerable.Range(0, pairsCount / 2)
+                .Select(i => new TextSpan((int)expectedLineSpanStartLengthPairs[i*2], (int)expectedLineSpanStartLengthPairs[i*2+1]))
+                .ToArray();
+
+            var program =
+                "// line 1" + newLine
+                + "metadata line2 = 'line2'" + newLine
+                + newLine
+                + "// previous line is empty";
+            var lineStarts = TextCoordinateConverter.GetLineStarts(program);
+            var lineSpans = Enumerable.Range(0, lineStarts.Length)
+                .Select(line => TextCoordinateConverter.GetLineSpan(lineStarts, program.Length, line))
+                .ToArray();
+
+            lineSpans.Should().BeEquivalentTo(expectedLineSpans);
         }
     }
 }

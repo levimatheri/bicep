@@ -2265,7 +2265,7 @@ INVALID FILE
     {
         var typesBicep = """
             @export()
-            type t = {
+            type testType = {
               p: {
                 a: [
                   {

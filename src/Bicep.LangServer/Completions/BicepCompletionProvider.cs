@@ -172,7 +172,7 @@ namespace Bicep.LanguageServer.Completions
                         {
                             string prefix = resourceSnippet.Prefix;
                             BicepTelemetryEvent telemetryEvent = BicepTelemetryEvent.CreateTopLevelDeclarationSnippetInsertion(prefix);
-                            var command = TelemetryHelper.CreateCommand
+                            var command = TelemetryHelper.CreateCommand //asdfgasdfg
                             (
                                 title: "top level snippet completion",
                                 name: TelemetryConstants.CommandName,
@@ -1597,20 +1597,7 @@ namespace Bicep.LanguageServer.Completions
             var nextLine = line + 1;
             if (lineStarts.Length > nextLine)
             {
-                var nextLineStart = lineStarts[nextLine];
-
-                int nextLineEnd;
-
-                if (lineStarts.Length > nextLine + 1)
-                {
-                    nextLineEnd = lineStarts[nextLine + 1] - 1;
-                }
-                else
-                {
-                    nextLineEnd = programSyntax.GetEndPosition();
-                }
-
-                return new TextSpan(nextLineStart, nextLineEnd - nextLineStart);
+                return TextCoordinateConverter.GetLineSpan(lineStarts, programSyntax.GetEndPosition(), nextLine);
             }
 
             return TextSpan.Nil;
@@ -1665,7 +1652,7 @@ namespace Bicep.LanguageServer.Completions
         {
             var required = TypeHelper.IsRequired(property);
 
-            var escapedPropertyName = IsPropertyNameEscapingRequired(property) ? StringUtils.EscapeBicepString(property.Name) : property.Name;
+            var escapedPropertyName = StringUtils.EscapeBicepPropertyName(property.Name);
             var suffix = includeColon ? ":" : string.Empty;
             return CompletionItemBuilder.Create(CompletionItemKind.Property, property.Name)
                 // property names that match Bicep keywords or contain non-identifier chars need to be escaped
@@ -2135,10 +2122,10 @@ namespace Bicep.LanguageServer.Completions
             };
 
         private static bool IsPropertyNameEscapingRequired(TypeProperty property) =>
-            !Lexer.IsValidIdentifier(property.Name) || LanguageConstants.NonContextualKeywords.ContainsKey(property.Name);
+            StringUtils.IsPropertyNameEscapingRequired(property.Name);
 
         private static string FormatPropertyDetail(TypeProperty property) =>
-            TypeHelper.IsRequired(property)
+            TypeHelper.IsRequired(property) //asdfg
                 ? $"{property.Name} (Required)"
                 : property.Name;
 

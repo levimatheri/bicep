@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
+using System.Reflection.Metadata;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Extensions;
 using Bicep.Core.Parsing;
@@ -50,7 +51,7 @@ namespace Bicep.Core.TypeSystem
         {
             var flags = TypePropertyFlags.None;
             var types = new List<TypeSymbol>();
-            
+
             foreach (var objectType in objectTypes)
             {
                 if (objectType.Properties.TryGetValue(propertyName) is {} namedProperty)
@@ -83,7 +84,7 @@ namespace Bicep.Core.TypeSystem
 
             var flags = TypePropertyFlags.None;
             var types = new List<TypeSymbol>();
-            
+
             foreach (var objectType in objectTypes)
             {
                 if (objectType.AdditionalPropertiesType is {} additionalPropertyType)
@@ -100,6 +101,11 @@ namespace Bicep.Core.TypeSystem
 
             return (CreateTypeUnion(types), flags);
         }
+
+        /// <summary>
+        /// Tries to make a type nullable by unioning it with null
+        /// </summary>
+        public static TypeSymbol MakeNullable(ITypeReference typeReference) => CreateTypeUnion(typeReference, LanguageConstants.Null); //asdfg test
 
         /// <summary>
         /// Converts a set of object types into a single object type with unioned properties
@@ -150,7 +156,7 @@ namespace Bicep.Core.TypeSystem
         public static TypeSymbol CreateTypeUnion(params ITypeReference[] members)
             => CreateTypeUnion((IEnumerable<ITypeReference>)members);
 
-        public static bool IsLiteralType(TypeSymbol type) => type switch
+        public static bool IsLiteralType(TypeSymbol type) => type switch //asdfgasdfg
         {
             StringLiteralType or
             IntegerLiteralType or
@@ -246,7 +252,7 @@ namespace Bicep.Core.TypeSystem
         }
 
         /// <summary>
-        /// Gets the type of the property whose name we can obtain at compile-time.
+        /// Gets the type of the property whose name we can obtain at compile-time. asdfg??
         /// </summary>
         /// <param name="baseType">The base object type</param>
         /// <param name="propertyExpressionPositionable">The position of the property name expression</param>
