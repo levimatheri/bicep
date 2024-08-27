@@ -174,6 +174,13 @@ public class TypeStringifierTests
         "type loose = object",
         "type medium = { a: string?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }",
         "type strict = { a: 'a'?, b: ('a'|'b')?, c: ('a'|'b'|'c')? }")]
+    //[DataRow(
+    //    // Mixed-type union (only allowed as non-type-level items like in an array)
+    //    "type testType = ('fizz' | 42 | {an: 'object'} | null)[]",
+    //    "type loose = array",
+    //    "type medium = ('fizz' | 42 | {an: 'object'} | null)[]",
+    //    // bug: we get this, which won't parse: (('fizz' | 42 | { an: 'object' })?)[]
+    //    "type testType = ('fizz' | 42 | {an: 'object'} | null)[]")]
     public void UnionTypes(string typeDeclaration, string expectedLooseSyntax, string expectedMediumStrictSyntax, string expectedStrictSyntax)
     {
         RunTestFromTypeDeclaration(typeDeclaration, expectedLooseSyntax, expectedMediumStrictSyntax, expectedStrictSyntax);

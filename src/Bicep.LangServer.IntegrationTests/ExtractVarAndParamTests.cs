@@ -2054,19 +2054,6 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             expectedModifiedLine);
     }
 
-//asdfg
-//private async Task RunExtractToVariableAndOrParameterTest(string fileWithSelection, string expectedTextTemplate, string? expectedNewVarDeclaration, string? expectedNewParamDeclaration)
-//{
-//    await RunExtractToVariableTestIf(
-//        expectedNewVarDeclaration is { },
-//        fileWithSelection,
-//        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewVarDeclaration));
-//    await RunExtractToParameterTestIf(
-//        expectedNewParamDeclaration is { },
-//        fileWithSelection,
-//        expectedTextTemplate.Replace("EXPECTEDNEWDECLARATION", expectedNewParamDeclaration));
-//}
-
 private async Task RunExtractToVariableAndParameterTest(string fileWithSelection, string? expectedVariableText, string? expectedLooseParamText, string? expectedMediumParamText)
 {
     await RunExtractToVariableTest(
@@ -2077,28 +2064,6 @@ private async Task RunExtractToVariableAndParameterTest(string fileWithSelection
         expectedLooseParamText,
         expectedMediumParamText);
 }
-
-//private async Task RunExtractToVariableTestIf(bool condition, string fileWithSelection, string? expectedText) //asdfg remove
-//{
-//    if (condition)
-//    {
-//        using (new AssertionScope("extract to var test"))
-//        {
-//            await RunExtractToVariableTest(fileWithSelection, expectedText);
-//        }
-//    }
-//}
-
-//private async Task RunExtractToParameterTestIf(bool condition, string fileWithSelection, string? expectedText)//asdfg remove
-//{
-//    if (condition)
-//    {
-//        using (new AssertionScope("extract to param test"))
-//        {
-//            await RunExtractToParameterTest(fileWithSelection, expectedText);
-//        }
-//    }
-//}
 
 private async Task RunExtractToVariableTest(string fileWithSelection, string? expectedText)
 {
