@@ -177,15 +177,18 @@ public static class ExtractVarAndParam
 
         //asdfg create CreateExtractParameterCodeFix for var?
         var newVarDeclarationSyntax = SyntaxFactory.CreateVariableDeclaration(newVarName, expressionSyntax);
+        var newVarDeclarationText = PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
+        var identifierOffsetAsdfg = newVarDeclarationText.IndexOf("var " + newVarName);
+        Debug.Assert(identifierOffsetAsdfg >= 0);
+        identifierOffsetAsdfg += "var ".Length;
 
         var newVarDeclaration = new DeclarationASdfg(
-            PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel),
-            asdfg this is wrong newVarInsertionOffset + "var ".Length);
+            newVarDeclarationText,
+           identifierOffsetAsdfg);
         if (insertBlankLineBeforeNewVar)
         {
             newVarDeclaration.Prepend(newLine);
         }
-
 
         //asdfg combine with params
         var definitionInsertionPositionAsdfg = TextCoordinateConverter.GetPosition(compilationContext.LineStarts, newVarInsertionOffset);
@@ -203,12 +206,12 @@ public static class ExtractVarAndParam
             CodeFixKind.RefactorExtract,
             new CodeReplacement(new TextSpan(newVarInsertionOffset, 0), newVarDeclaration.Text),
             new CodeReplacement(expressionSyntax.Span, newVarName));
-        Debug.Assert(varFix.Replacements.First().Text.Substring(newVarDeclaration.RenameOffset - newVarInsertionOffset - "var ".Length, "var ".Length) == "var ", "Rename is set at the wrong position"); //asdfg remove these
+        Debug.Assert(varFix.Replacements.First().Text.Substring(newVarDeclaration.RenameOffset - "var ".Length, "var ".Length) == "var ", "Rename is set at the wrong position"); //asdfg remove these
         yield return (varFix, renamePositionAsdfg);
 
         // For the new param's type, try to use the declared type if there is one (i.e. the type of
         //   what we're assigning to), otherwise use the actual calculated type of the expression
-            var inferredType = semanticModel.GetTypeInfo(expressionSyntax);
+        var inferredType = semanticModel.GetTypeInfo(expressionSyntax);
         var declaredType = semanticModel.GetDeclaredType(expressionSyntax);
         var newParamType = NullIfErrorOrAny(declaredType) ?? NullIfErrorOrAny(inferredType);
 
@@ -324,10 +327,10 @@ public static class ExtractVarAndParam
             new TypeVariableAccessSyntax(newParamTypeIdentifier),
             defaultValueSyntax,
             leadingNodes);
-        var paramDeclaration = PrettyPrinterV2.PrintValid(paramDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
+        var paramDeclarationText = PrettyPrinterV2.PrintValid(paramDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
         //asdfg better way to do this?  what if param name contains weird characters, requires '@'?
-        var identifierOffset = paramDeclaration.IndexOf("param " + newParamName) + "param ".Length; // asdfg what if -1?
-        return new DeclarationASdfg(paramDeclaration, identifierOffset);
+        var identifierOffset = paramDeclarationText.IndexOf("param " + newParamName) + "param ".Length; // asdfg what if -1?
+        return new DeclarationASdfg(paramDeclarationText, identifierOffset);
     }
 
     private static TypeSymbol? NullIfErrorOrAny(TypeSymbol? type) => type is ErrorType || type is AnyType ? null : type;
