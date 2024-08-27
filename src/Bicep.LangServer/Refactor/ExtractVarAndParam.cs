@@ -247,7 +247,7 @@ public static class ExtractVarAndParam
     private class DeclarationASdfg //asdfg can I do this by creating a syntax tree instead?
     {
         public string Text { get; private set; }
-        public int RenameOffset { get; private set; } //asdfg private?
+        public int RenameOffset { get; private set; }
         //asdfg public (int line, int character) RenamePosition => TextCoordinateConverter.GetPosition(_lineStarts, RenameOffset);
 
         public DeclarationASdfg(string declarationText, int renameOffset)

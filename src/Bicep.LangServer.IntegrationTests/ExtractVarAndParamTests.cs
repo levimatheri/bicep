@@ -30,7 +30,28 @@ using static Google.Protobuf.Reflection.SourceCodeInfo.Types;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 
-//asdfg test rename position
+/*asdfg
+
+
+
+@description('Properties to create and update Azure Cosmos DB database accounts.')
+param properties object? /* DatabaseAccountCreateUpdatePropertiesOrDatabaseAccountGetProperties * / = {}
+resource nestedDiscriminatorMissingKey 'Microsoft.DocumentDB/databaseAccounts@2020-06-01-preview' = {
+  name: 'test'
+  location: 'l'
+  properties: properties
+}
+
+var nestedDiscriminatorMissingKeyCompletions = nestedDiscriminatorMissingKey.properties.cr
+var nestedDiscriminatorMissingKeyCompletions2 = nestedDiscriminatorMissingKey['properties'].
+
+var nestedDiscriminatorMissingKeyIndexCompletions = nestedDiscriminatorMissingKey.properties['']
+/@[004:049) [no-unused-vars (Warning)] Variable "nestedDiscriminatorMissingKeyIndexCompletions" is declared but never used. (bicep core linter https://aka.ms/bicep/linter/no-unused-vars) |nestedDiscriminatorMissingKeyIndexCompletions|
+/@[092:096) [prefer-unquoted-property-names (Warning)] Property names that are valid identifiers should be declared without quotation marks and accessed using dot notation. (bicep core linter https://aka.ms/bicep/linter/prefer-unquoted-property-names) |['']|
+
+
+
+*/
 
 
 /* asdfg
@@ -188,9 +209,6 @@ public class ExtractVarAndParamTests : CodeActionTestBase
 {
     private const string ExtractToVariableTitle = "Extract variable";
     private const string ExtractToParameterTitle = "Extract parameter";
-
-    //asdfg param p2 'foo' | 'bar' | string = 'bar'
-    // asdfg nullable
 
 
     ////////////////////////////////////////////////////////////////////
@@ -926,219 +944,260 @@ var v1 = newParameter
     ////////////////////////////////////////////////////////////////////
 
     [DataTestMethod]
-    ////asdfg
-    //[DataRow("""
-    //            var i = <<1>>
-    //            """,
-    //    """
-    //            param newParameter int = 1
-    //            var i = newParameter
-    //            """,
-    //    DisplayName = "Literal integer")]
-    //[DataRow("""
-    //            param i int = 1
-    //            var j = <<i>> + 1
-    //            """,
-    //    """
-    //            param i int = 1
-    //            param newParameter int = i
-    //            var j = newParameter + 1
-    //            """,
-    //    DisplayName = "int parameter reference")]
-    //[DataRow("""
-    //            param i int = 1
-    //            var j = <<i + 1>>
-    //            """,
-    //    """
-    //            param i int = 1
-    //            param newParameter int = i + 1
-    //            var j = newParameter
-    //            """,
-    //    DisplayName = "int expression with param")]
-    //[DataRow("""
-    //            param i string
-    //            var j = <<concat(i, i)>>
-    //            """,
-    //    """
-    //            param i string
-    //            param newParameter string = concat(i, i)
-    //            var j = newParameter
-    //            """,
-    //    DisplayName = "strings concatenated")]
-    //[DataRow("""
-    //            param i string = 'i'
-    //            var i2 = 'i2'
-    //            var j = <<'{i}{i2}'>>
-    //            """,
-    //    """
-    //            param i string = 'i'
-    //            var i2 = 'i2'
-    //            param newParameter string = '{i}{i2}'
-    //            var j = newParameter
-    //            """,
-    //    DisplayName = "strings concatenated")]
-    //[DataRow("""
-    //            var p = <<[ 1, 2, 3 ]>>
-    //            """,
-    //    """
-    //            param newParameter array = [1, 2, 3]
-    //            var p = newParameter
-    //            """,
-    //    DisplayName = "array literal")]
-    //[DataRow("""
-    //            var p = <<{ a: 1, b: 'b' }>>
-    //            """,
-    //    """
-    //            param newParameter { a: int, b: string } = { a: 1, b: 'b' }
-    //            var p = newParameter
-    //            """,
-    //    DisplayName = "object literal with literal types")]
-    //[DataRow("""
-    //            var p = { a: <<1>>, b: 'b' }
-    //            """,
-    //    """
-    //            param a int = 1
-    //            var p = { a: a, b: 'b' }
-    //            """,
-    //    DisplayName = "property value from object literal")]
-    //[DataRow("""
-    //            var o1 = { a: 1, b: 'b' }
-    //            var a = <<o1.a>>
-    //            """,
-    //    """
-    //            var o1 = { a: 1, b: 'b' }
-    //            param o1A int = o1.a
-    //            var a = o1A
-    //            """,
-    //    DisplayName = "referenced property value from object literal")]
-    //[DataRow("""
-    //            param p 'a'||'b' = 'a'
-    //            var v = <<p>>
-    //            """,
-    //    """
-    //            param p 'a'|'b' = 'a'
-    //            param newParameter 'a' | 'b' = p
-    //            var v = newParameter
-    //            """,
-    //    DisplayName = "string literal type")] //asdfg correct behavior?
-    //[DataRow("""
-    //            var a = {
-    //                int: 1
-    //            }
-    //            var b = a.|int
-    //            """,
-    //    """
-    //            var a = {
-    //                int: 1
-    //            }
-    //            param aInt int = a.int
-    //            var b = aInt
-    //            """,
-    //    DisplayName = "object properties 1")]
-    //[DataRow("""
-    //            var a = {
-    //                int: 1
-    //            }
-    //            var b = |a.int
-    //            """,
-    //    """
-    //            var a = {
-    //                int: 1
-    //            }
-    //            param newParameter object = a
-    //            var b = newParameter.int
-    //            """,
-    //DisplayName = "object properties 2")]
-    //[DataRow("""
-    //            var a = {
-    //                sku: {
-    //                    name: 'Standard_LRS'
-    //                }
-    //            }
-    //            var b = a.|sku
-    //            """,
-    //    """
-    //            var a = {
-    //                sku: {
-    //                    name: 'Standard_LRS'
-    //                }
-    //            }
-    //            param aSku object = a.sku
-    //            var b = aSku
-    //            """,
-    //    DisplayName = "object properties 3")]
-    //[DataRow("""
-    //            param p {
-    //              i: int
-    //              o: {
-    //                i2: int
-    //              }
-    //            } = { i:1, o: { i2: 2} }
-    //            var v = <<p>>.o.i2
-    //            """,
-    //    """
-    //            param p {
-    //              i: int
-    //              o: {
-    //                i2: int
-    //              }
-    //            } = { i:1, o: { i2: 2} }
-    //            param newParameter { i: int, o: { i2: int } } = p
-    //            var v = newParameter.o.i2
-    //            """,
-    //    DisplayName = "custom object type, whole object")]
-    //[DataRow("""
-    //            param p {
-    //              i: int
-    //              o: {
-    //                i2: int
-    //              }
-    //            } = { i:1, o: { i2: 2} }
-    //            var v = p.|o.i2
-    //            """,
-    //    """
-    //            param p {
-    //              i: int
-    //              o: {
-    //                i2: int
-    //              }
-    //            } = { i:1, o: { i2: 2} }
-    //            param pO { i2: int } = p.o
-    //            var v = pO.i2
-    //            """,
-    //    DisplayName = "custom object type, partial")]
-    //[DataRow("""
-    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-    //              unknownProperty: |123
-    //            }
-    //            """,
-    //    """
-    //            param unknownProperty int = 123
-    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-    //              unknownProperty: unknownProperty
-    //            }
-    //            """,
-    //    DisplayName = "resource types undefined 1")]
-    //[DataRow("""
-    //            param p1 'abc'||'def'
-    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-    //              unknownProperty: |p1
-    //            }
-    //            """,
-    //    """
-    //            param p1 'abc'|'def'
-    //            param unknownProperty 'abc' | 'def' = p1
-    //            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
-    //              unknownProperty: unknownProperty
-    //            }
-    //            """,
-    //    DisplayName = "resource properties unknown property, follows expression's inferred type")]
-    //[DataRow("""
-    //            var foo = <<{ intVal: 2 }>>
-    //            """,
-    //    """
-    //            param { intVal: int } = { intVal: 2 }
-    //            """)]
+    [DataRow(
+        """
+            var i = <<1>>
+            """,
+        """
+            param newParameter int = 1
+            var i = newParameter
+            """,
+        null,
+        DisplayName = "Literal integer")]
+    [DataRow(
+        """
+            param i int = 1
+            var j = <<i>> + 1
+            """,
+        """
+            param i int = 1
+            param newParameter int = i
+            var j = newParameter + 1
+            """,
+        null,
+        DisplayName = "int parameter reference")]
+    [DataRow(
+        """
+            param i int = 1
+            var j = <<i + 1>>
+            """,
+        """
+            param i int = 1
+            param newParameter int = i + 1
+            var j = newParameter
+            """,
+        null,
+        DisplayName = "int expression with param")]
+    [DataRow(
+        """
+            param i string
+            var j = <<concat(i, i)>>
+            """,
+        """
+            param i string
+            param newParameter string = concat(i, i)
+            var j = newParameter
+            """,
+        null,
+        DisplayName = "strings concatenated")]
+    [DataRow(
+        """
+            param i string = 'i'
+            var i2 = 'i2'
+            var j = <<'{i}{i2}'>>
+            """,
+        """
+            param i string = 'i'
+            var i2 = 'i2'
+            param newParameter string = '{i}{i2}'
+            var j = newParameter
+            """,
+        null,
+        DisplayName = "strings concatenated")]
+    [DataRow(
+        """
+            var p = <<[ 1, 2, 3 ]>>
+            """,
+        """
+            param newParameter array = [1, 2, 3]
+            var p = newParameter
+            """,
+        """
+            param newParameter int[] = [1, 2, 3]
+            var p = newParameter
+            """,
+        DisplayName = "array literal")]
+    [DataRow(
+        """
+            var p = <<{ a: 1, b: 'b' }>>
+            """,
+        """
+            param newParameter object = { a: 1, b: 'b' }
+            var p = newParameter
+            """,
+        """
+            param newParameter { a: int, b: string } = { a: 1, b: 'b' }
+            var p = newParameter
+            """,
+        DisplayName = "object literal with literal types")]
+    [DataRow(
+        """
+            var p = { a: <<1>>, b: 'b' }
+            """,
+        """
+            param a int = 1
+            var p = { a: a, b: 'b' }
+            """,
+        null,
+        DisplayName = "property value from object literal")]
+    [DataRow(
+        """
+            var o1 = { a: 1, b: 'b' }
+            var a = <<o1.a>>
+            """,
+        """
+            var o1 = { a: 1, b: 'b' }
+            param o1A int = o1.a
+            var a = o1A
+            """,
+        null,
+        DisplayName = "referenced property value from object literal")]
+    [DataRow(
+        """
+            param p 'a'||'b' = 'a'
+            var v = <<p>>
+            """,
+        """
+            param p 'a'|'b' = 'a'
+            param newParameter string = p
+            var v = newParameter
+            """,
+        """
+            param p 'a'|'b' = 'a'
+            param newParameter 'a' | 'b' = p
+            var v = newParameter
+            """,
+        DisplayName = "string literal union")]
+    [DataRow(
+        """
+            var a = {
+                int: 1
+            }
+            var b = |a.int
+            """,
+        """
+            var a = {
+                int: 1
+            }
+            param newParameter object = a
+            var b = newParameter.int
+            """,
+        """
+            var a = {
+                int: 1
+            }
+            param newParameter { int: int } = a
+            var b = newParameter.int
+            """,
+    DisplayName = "object properties")]
+    [DataRow(
+        """
+            param p {
+                i: int
+                o: {
+                i2: int
+                }
+            } = { i:1, o: { i2: 2} }
+            var v = <<p>>.o.i2
+            """,
+        """
+            param p {
+                i: int
+                o: {
+                i2: int
+                }
+            } = { i:1, o: { i2: 2} }
+            param newParameter object = p
+            var v = newParameter.o.i2
+            """,
+        """
+            param p {
+                i: int
+                o: {
+                i2: int
+                }
+            } = { i:1, o: { i2: 2} }
+            param newParameter { i: int, o: { i2: int } } = p
+            var v = newParameter.o.i2
+            """,
+        DisplayName = "custom object type, whole object")]
+    [DataRow(
+        """
+            param p {
+                i: int
+                o: {
+                i2: int
+                }
+            } = { i:1, o: { i2: 2} }
+            var v = p.|o.i2
+            """,
+        """
+            param p {
+                i: int
+                o: {
+                i2: int
+                }
+            } = { i:1, o: { i2: 2} }
+            param pO object = p.o
+            var v = pO.i2
+            """,
+        """
+            param p {
+                i: int
+                o: {
+                i2: int
+                }
+            } = { i:1, o: { i2: 2} }
+            param pO { i2: int } = p.o
+            var v = pO.i2
+            """,
+        DisplayName = "custom object type, partial")]
+    [DataRow("""
+            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+                unknownProperty: |123
+            }
+            """,
+        """
+            param unknownProperty int = 123
+            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+                unknownProperty: unknownProperty
+            }
+            """,
+        null,
+        DisplayName = "resource types undefined 1")]
+    [DataRow(
+        """
+            param p1 'abc'||'def'
+            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+                unknownProperty: |p1
+            }
+            """,
+        """
+            param p1 'abc'|'def'
+            param unknownProperty string = p1
+            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+                unknownProperty: unknownProperty
+            }
+            """,
+        """
+            param p1 'abc'|'def'
+            param unknownProperty 'abc' | 'def' = p1
+            resource aksCluster 'Microsoft.ContainerService/managedClusters@2021-03-01' = {
+                unknownProperty: unknownProperty
+            }
+            """,
+        DisplayName = "resource properties unknown property, follows expression's inferred type")]
+    [DataRow("""
+            var foo = <<{ intVal: 2 }>>
+            """,
+        """
+            param newParameter object = { intVal: 2 }
+            var foo = newParameter
+            """,
+        """
+            param newParameter { intVal: int } = { intVal: 2 }
+            var foo = newParameter
+            """)]
 
     ////asdf TODO(??)
     ////[DataRow("""
@@ -1153,164 +1212,108 @@ var v1 = newParameter
     ////    DisplayName = "resource type")]
 
 
-    //[DataRow(
-    //    """
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: 'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: true
-    //                    remoteVirtualNetwork: {
-    //                        id: |'virtualNetworksId'
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    """
-    //            param id string = 'virtualNetworksId'
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: 'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: true
-    //                    remoteVirtualNetwork: {
-    //                        id: id
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    DisplayName = "resource types 3 asdfg")]
-    //[DataRow(
-    //    """
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: 'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: true
-    //                    remoteVirtualNetwork: |{
-    //                        id: virtualNetworksId
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    """
-    //            param remoteVirtualNetwork object = {
-    //              id: virtualNetworksId
-    //            }
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: 'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: true
-    //                    remoteVirtualNetwork: remoteVirtualNetwork
-    //                }
-    //            }
-    //            """,
-    //    DisplayName = "resource types - SubResource")]
-    //[DataRow(
-    //    """
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: 'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: |true
-    //                    remoteVirtualNetwork: {
-    //                        id: virtualNetworksId'
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    """
-    //            param allowVirtualNetworkAccess bool = true
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: 'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: allowVirtualNetworkAccess
-    //                    remoteVirtualNetwork: {
-    //                        id: virtualNetworksId'
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    DisplayName = "resource types 5 asdfg")]
-    ////asdfg param ought to be named peeringName instead of name
-    //[DataRow(
-    //    """
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: |'virtualNetwork/name'
-    //                properties: {
-    //                    allowVirtualNetworkAccess: true
-    //                    remoteVirtualNetwork: {
-    //                        id: virtualNetworksId
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    """
-    //            param name string = 'virtualNetwork/name'
-    //            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
-    //                name: name
-    //                properties: {
-    //                    allowVirtualNetworkAccess: true
-    //                    remoteVirtualNetwork: {
-    //                        id: virtualNetworksId
-    //                    }
-    //                }
-    //            }
-    //            """,
-    //    DisplayName = "resource types - string property")]
-    //[DataRow(
-    //    """
-    //            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-    //                name: 'name'
-    //                location: 'location'
-    //                kind: 'StorageV2'
-    //                sku: {
-    //                    name: |'Premium_LRS'
-    //                }
-    //            }
-    //            """,
-    //    """
-    //            param name 'Premium_LRS' | 'Premium_ZRS' | 'Standard_GRS' | 'Standard_GZRS' | 'Standard_LRS' | 'Standard_RAGRS' | 'Standard_RAGZRS' | 'Standard_ZRS' | string = 'Premium_LRS'
-    //            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
-    //                name: 'name'
-    //                location: 'location'
-    //                kind: 'StorageV2'
-    //                sku: {
-    //                    name: name
-    //                }
-    //            }
-    //            """,
-    //    DisplayName = "resource properties - string union")]
-    //[DataRow(
-    //    """
-    //            param p int?
-    //            var v = |p
-    //            """,
-    //    """
-    //            param p int?
-    //            param newParameter int? = p
-    //            var v = newParameter
-    //            """,
-    //    DisplayName = "nullable types")]
-    //[DataRow(
-    //    """
-    //            param whoops int = 'not an int'
-    //            var v = <<p + 1>>
-    //            """,
-    //    """
-    //            param whoops int = 'not an int'
-    //            param newParameter unknown = p + 1
-    //            var v = newParameter
-    //            """,
-    //    DisplayName = "error types")]
-    //[DataRow(
-    //    """
-    //            param p1 { a: { b: string } }
-    //            var v = p1
-    //            """,
-    //    """
-    //            param p1 { a: { b: string } }
-    //            param newParameter { a: { b: string } } = p1
-    //            var v = newParameter
-    //            """
-    //    )]
-
+    [DataRow(
+        """
+            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+                name: |'virtualNetwork/name'
+                properties: {
+                    allowVirtualNetworkAccess: true
+                    remoteVirtualNetwork: {
+                        id: virtualNetworksId
+                    }
+                }
+            }
+            """,
+        """
+            @description('The resource name')
+            param name string = 'virtualNetwork/name'
+            resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2020-07-01' = {
+                name: name
+                properties: {
+                    allowVirtualNetworkAccess: true
+                    remoteVirtualNetwork: {
+                        id: virtualNetworksId
+                    }
+                }
+            }
+            """,
+        null,
+        DisplayName = "resource types - string property")]
+    [DataRow(
+        """
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+                name: 'name'
+                location: 'location'
+                kind: 'StorageV2'
+                sku: {
+                    name: |'Premium_LRS'
+                }
+            }
+            """,
+        """
+            @description('The SKU name. Required for account creation; optional for update. Note that in older versions, SKU name was called accountType.')
+            param name string = 'Premium_LRS'
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+                name: 'name'
+                location: 'location'
+                kind: 'StorageV2'
+                sku: {
+                    name: name
+                }
+            }
+            """,
+        """
+            @description('The SKU name. Required for account creation; optional for update. Note that in older versions, SKU name was called accountType.')
+            param name 'Premium_LRS' | 'Premium_ZRS' | 'Standard_GRS' | 'Standard_GZRS' | 'Standard_LRS' | 'Standard_RAGRS' | 'Standard_RAGZRS' | 'Standard_ZRS' | string = 'Premium_LRS'
+            resource storageaccount 'Microsoft.Storage/storageAccounts@2021-02-01' = {
+                name: 'name'
+                location: 'location'
+                kind: 'StorageV2'
+                sku: {
+                    name: name
+                }
+            }
+            """,
+        DisplayName = "resource properties - string union")]
+    [DataRow(
+        """
+            param p int?
+            var v = |p
+            """,
+        """
+            param p int?
+            param newParameter int = p
+            var v = newParameter
+            """,
+        null,
+        DisplayName = "nullable types")]
+    [DataRow(
+        """
+            param whoops int = 'not an int'
+            var v = <<p + 1>>
+            """,
+        """
+            param whoops int = 'not an int'
+            param newParameter object? /* unknown */ = p + 1
+            var v = newParameter
+            """,
+        null,
+        DisplayName = "error types")]
+    [DataRow(
+        """
+            param p1 { a: { b: string } }
+            var v = |p1
+            """,
+        """
+            param p1 { a: { b: string } }
+            param newParameter object = p1
+            var v = newParameter
+            """,
+        """
+            param p1 { a: { b: string } }
+            param newParameter { a: { b: string } } = p1
+            var v = newParameter
+            """)]
     //asdfg TODO: secure types
     //[DataRow(""" TODO: asdfg
     //    @secure()
@@ -1337,10 +1340,10 @@ var v1 = newParameter
     //    var j = newParameter
     //    """,
     //    DisplayName = "expression with secure string param reference")]
-    //public async Task Params_InferType(string fileWithSelection, string expectedText)
-    //{
-    //    //asdfg await RunExtractToParameterTest(fileWithSelection, expectedText);
-    //}
+    public async Task Params_InferType(string fileWithSelection, string expectedMediumParameterText, string expectedStrictParameterText)
+    {
+        await RunExtractToParameterTest(fileWithSelection, expectedMediumParameterText, expectedStrictParameterText);
+    }
 
     ////////////////////////////////////////////////////////////////////
 
@@ -1912,6 +1915,13 @@ var v1 = newParameter
 
     ////////////////////////////////////////////////////////////////////
 
+    public async Task asdfg(string fileWithSelection, string expectedLooseParamText, string? expectedMediumParamText)
+    {
+        await RunExtractToParameterTest(fileWithSelection, expectedLooseParamText, expectedMediumParamText);
+    }
+
+    ////////////////////////////////////////////////////////////////////
+
     [DataTestMethod]
     //asdfg
     //[DataRow(
@@ -2320,7 +2330,7 @@ var v1 = newParameter
 
         (var codeActions, var bicepFile) = await GetCodeActionsForSyntaxTest(fileWithSelection);
         var extractedParamFixes = codeActions.Where(x => x.Title.StartsWith(ExtractToParameterTitle)).ToArray();
-        extractedParamFixes.Should().HaveCountLessThanOrEqualTo(2);
+        extractedParamFixes.Length.Should().BeLessThanOrEqualTo(2);
 
         if (expectedLooseParameterText == null)
         {
@@ -2347,7 +2357,7 @@ var v1 = newParameter
             {
                 if (expectedMediumParameterText != "IGNORE")
                 {
-                    extractedParamFixes.Should().HaveCountGreaterThanOrEqualTo(2, "expected a second option to extract to parameter");
+                    extractedParamFixes.Length.Should().Be(2, "expected a second option to extract to parameter");
 
                     var mediumFix = extractedParamFixes[1];
                     mediumFix.Kind.Should().Be(CodeActionKind.RefactorExtract);
