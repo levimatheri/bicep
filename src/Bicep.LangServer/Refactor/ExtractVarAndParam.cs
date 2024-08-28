@@ -97,18 +97,17 @@ public static class ExtractVarAndParam
 
     static string NewLine(SemanticModel semanticModel) => semanticModel.Configuration.Formatting.Data.NewlineKind.ToEscapeSequence();
 
-    public static IEnumerable<(CodeFix fix, (int line, int character) renamePosition)> GetRefactoringFixes(
+    public static IEnumerable<(CodeFix fix, Position renamePosition)> GetRefactoringFixes(
         CompilationContext compilationContext,
-        Compilation compilation,
         SemanticModel semanticModel,
         List<SyntaxBase> nodesInRange)
     {
         if (SyntaxMatcher.FindLastNodeOfType<ExpressionSyntax, ExpressionSyntax>(nodesInRange) is not (ExpressionSyntax expressionSyntax, _))
         {
-            yield break;
+            return [];
         }
 
-        TypeProperty? typeProperty = null; // asdfg better name
+        TypeProperty? parentTypeProperty = null; // The property inside a parent object whose value is being extracted, if any
         string? defaultNewName = null;
         string newLine = NewLine(semanticModel); //asdfg still useful?
 
@@ -121,7 +120,7 @@ public static class ExtractVarAndParam
             // `{ objectPropertyName: <<expression>> }` // entire property value expression selected
             //   -> default to the name "objectPropertyName"
             defaultNewName = propertyName;
-            typeProperty = propertySyntax.TryGetTypeProperty(semanticModel); //asdfg testpoint
+            parentTypeProperty = propertySyntax.TryGetTypeProperty(semanticModel); //asdfg testpoint
         }
         else if (expressionSyntax is ObjectPropertySyntax propertySyntax2 //asdfg rename
             && propertySyntax2.TryGetKeyText() is string propertyName2)
@@ -135,11 +134,11 @@ public static class ExtractVarAndParam
             if (propertyValueSyntax != null)
             {
                 expressionSyntax = propertyValueSyntax;
-                typeProperty = propertySyntax2.TryGetTypeProperty(semanticModel); //asdfg testpoint
+                parentTypeProperty = propertySyntax2.TryGetTypeProperty(semanticModel); //asdfg testpoint
             }
             else
             {
-                yield break;
+                return [];
             }
         }
         else if (expressionSyntax is PropertyAccessSyntax propertyAccessSyntax)
@@ -165,18 +164,37 @@ public static class ExtractVarAndParam
             defaultNewName = firstPartName is { } ? firstPartName + lastPartName.UppercaseFirstLetter() : lastPartName;
         }
 
-        if (semanticModel.Binder.GetNearestAncestor<StatementSyntax>(expressionSyntax) is not StatementSyntax statementWithExtraction)
+        if (semanticModel.Binder.GetNearestAncestor<StatementSyntax>(expressionSyntax) is not StatementSyntax parentStatement)
         {
-            yield break;
+            return [];
         }
 
-        var newVarName = FindUnusedName(compilation, expressionSyntax.Span.Position, defaultNewName ?? "newVariable");
-        var newParamName = FindUnusedName(compilation, expressionSyntax.Span.Position, defaultNewName ?? "newParameter");
+        return CreateExtractions(
+            compilationContext,
+            semanticModel,
+            parentStatement,
+            expressionSyntax,
+            parentTypeProperty,
+            defaultNewName);
+    }
 
-        var (newVarInsertionOffset, insertBlankLineBeforeNewVar) = FindOffsetToInsertNewDeclarationOfType<VariableDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
+    private static IEnumerable<(CodeFix fix, Position renamePosition)> CreateExtractions(
+        CompilationContext compilationContext,
+        SemanticModel semanticModel, //asdfg can get from context?
+        StatementSyntax parentStatement,
+        ExpressionSyntax expressionToExtract,
+        TypeProperty? parentTypeProperty,
+        string? defaultNewName
+    ) {
+        var newVarName = FindUnusedName(compilationContext.Compilation, expressionToExtract.Span.Position, defaultNewName ?? "newVariable");
+        var newParamName = FindUnusedName(compilationContext.Compilation, expressionToExtract.Span.Position, defaultNewName ?? "newParameter");
+
+        var (newVarInsertionOffset, insertBlankLineBeforeNewVar) = FindOffsetToInsertNewDeclarationOfType<VariableDeclarationSyntax>(
+            compilationContext,
+            parentStatement.Span.Position);
 
         //asdfg create CreateExtractParameterCodeFix for var?
-        var newVarDeclarationSyntax = SyntaxFactory.CreateVariableDeclaration(newVarName, expressionSyntax);
+        var newVarDeclarationSyntax = SyntaxFactory.CreateVariableDeclaration(newVarName, expressionToExtract);
         var newVarDeclarationText = PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
         var identifierOffsetAsdfg = newVarDeclarationText.IndexOf("var " + newVarName);
         Debug.Assert(identifierOffsetAsdfg >= 0);
@@ -187,7 +205,7 @@ public static class ExtractVarAndParam
            identifierOffsetAsdfg);
         if (insertBlankLineBeforeNewVar)
         {
-            newVarDeclaration.Prepend(newLine);
+            newVarDeclaration.Prepend(NewLine(semanticModel));
         }
 
         //asdfg combine with params
@@ -205,32 +223,32 @@ public static class ExtractVarAndParam
             isPreferred: false,
             CodeFixKind.RefactorExtract,
             new CodeReplacement(new TextSpan(newVarInsertionOffset, 0), newVarDeclaration.Text),
-            new CodeReplacement(expressionSyntax.Span, newVarName));
+            new CodeReplacement(expressionToExtract.Span, newVarName));
         Debug.Assert(varFix.Replacements.First().Text.Substring(newVarDeclaration.RenameOffset - "var ".Length, "var ".Length) == "var ", "Rename is set at the wrong position"); //asdfg remove these
         yield return (varFix, renamePositionAsdfg);
 
         // For the new param's type, try to use the declared type if there is one (i.e. the type of
         //   what we're assigning to), otherwise use the actual calculated type of the expression
-        var inferredType = semanticModel.GetTypeInfo(expressionSyntax);
-        var declaredType = semanticModel.GetDeclaredType(expressionSyntax);
+        var inferredType = semanticModel.GetTypeInfo(expressionToExtract);
+        var declaredType = semanticModel.GetDeclaredType(expressionToExtract);
         var newParamType = NullIfErrorOrAny(declaredType) ?? NullIfErrorOrAny(inferredType);
 
         // Don't create nullable params - they're not allowed to have default values
         var ignoreTopLevelNullability = true;
 
         // Strict typing for the param doesn't appear useful, providing only loose and medium at the moment
-        var stringifiedNewParamTypeLoose = Stringify(newParamType, typeProperty, Strictness.Loose, ignoreTopLevelNullability);
-        var stringifiedNewParamTypeMedium = Stringify(newParamType, typeProperty, Strictness.Medium, ignoreTopLevelNullability);
+        var stringifiedNewParamTypeLoose = Stringify(newParamType, parentTypeProperty, Strictness.Loose, ignoreTopLevelNullability);
+        var stringifiedNewParamTypeMedium = Stringify(newParamType, parentTypeProperty, Strictness.Medium, ignoreTopLevelNullability);
 
         var multipleParameterTypesAvailable = !string.Equals(stringifiedNewParamTypeLoose, stringifiedNewParamTypeMedium, StringComparison.Ordinal);
 
-        var (newParamInsertionOffset, insertBlankLineBeforeNewParam) = FindOffsetToInsertNewDeclarationOfType<ParameterDeclarationSyntax>(compilationContext, statementWithExtraction.Span.Position);
+        var (newParamInsertionOffset, insertBlankLineBeforeNewParam) = FindOffsetToInsertNewDeclarationOfType<ParameterDeclarationSyntax>(compilationContext, parentStatement.Span.Position);
 
         var (looseFix, looseRenamePosition) = CreateExtractParameterCodeFix(
                 multipleParameterTypesAvailable
                     ? $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeLoose)}"
                     : "Extract parameter",
-                semanticModel, compilationContext.LineStarts, typeProperty, stringifiedNewParamTypeLoose, newParamName, newParamInsertionOffset, expressionSyntax, Strictness.Loose, insertBlankLineBeforeNewParam);
+                semanticModel, compilationContext.LineStarts, parentTypeProperty, stringifiedNewParamTypeLoose, newParamName, newParamInsertionOffset, expressionToExtract, Strictness.Loose, insertBlankLineBeforeNewParam);
         //Debug.Assert(looseFix.Replacements.First().Text.Substring(looseRenameOffset - newParamInsertionOffset - "param ".Length, "param ".Length) == "param ", "Rename is set at the wrong position"); //asdfg remove these
         yield return (looseFix, looseRenamePosition);
 
@@ -238,7 +256,7 @@ public static class ExtractVarAndParam
         {
             var (mediumFix, mediumRenamePosition) = CreateExtractParameterCodeFix(
                 $"Extract parameter of type {GetQuotedText(stringifiedNewParamTypeMedium)}",
-                semanticModel, compilationContext.LineStarts, typeProperty, stringifiedNewParamTypeMedium, newParamName, newParamInsertionOffset, expressionSyntax, Strictness.Medium, insertBlankLineBeforeNewParam);
+                semanticModel, compilationContext.LineStarts, parentTypeProperty, stringifiedNewParamTypeMedium, newParamName, newParamInsertionOffset, expressionToExtract, Strictness.Medium, insertBlankLineBeforeNewParam);
             //Debug.Assert(mediumFix.Replacements.First().Text.Substring(mediumRenameOffset - newParamInsertionOffset - "param ".Length, "param ".Length) == "param ", "Rename is set at the wrong position"); //asdfg remove these
             yield return (mediumFix, mediumRenamePosition);
         }
@@ -263,7 +281,7 @@ public static class ExtractVarAndParam
         }
     }
 
-    private static (CodeFix, (int line, int character) renamePosition)/*asdfg type?*/ CreateExtractParameterCodeFix(
+    private static (CodeFix fix, Position renamePosition)/*asdfg type?*/ CreateExtractParameterCodeFix(
         string title,
         SemanticModel semanticModel,
         ImmutableArray<int> lineStarts,

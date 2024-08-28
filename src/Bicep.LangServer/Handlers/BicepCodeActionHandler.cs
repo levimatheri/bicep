@@ -130,7 +130,7 @@ namespace Bicep.LanguageServer.Handlers
                 .Select(fix => CreateCodeAction(request.TextDocument.Uri, compilationContext, fix));
             commandOrCodeActions.AddRange(codeFixes);
 
-            var refactoringFixes = ExtractVarAndParam.GetRefactoringFixes(compilationContext, compilation, semanticModel, nodesInRange)
+            var refactoringFixes = ExtractVarAndParam.GetRefactoringFixes(compilationContext, semanticModel, nodesInRange)
                 .Select(fix => CreateCodeAction(documentUri, compilationContext, fix.fix, fix.renamePosition));
             commandOrCodeActions.AddRange(refactoringFixes);
 
@@ -225,7 +225,7 @@ namespace Bicep.LanguageServer.Handlers
             return Task.FromResult(request);
         }
 
-        private static CommandOrCodeAction CreateCodeAction(DocumentUri uri, CompilationContext context, CodeFix fix, (int line, int character)? renamePosition = null)
+        private static CommandOrCodeAction CreateCodeAction(DocumentUri uri, CompilationContext context, CodeFix fix, Position? renamePosition = null)
         {
             var codeActionKind = fix.Kind switch
             {
@@ -251,7 +251,7 @@ namespace Bicep.LanguageServer.Handlers
                         })
                     }
                 },
-                Command = !renamePosition.HasValue ? null :
+                Command = renamePosition == null ? null :
                     new Command()
                     {
                         Name = "bicep.internal.startRename",
@@ -261,8 +261,8 @@ namespace Bicep.LanguageServer.Handlers
                         uri.ToString(), //asdfg with spaces?
                         new
                         {
-                            line = renamePosition.Value.line,
-                            character = renamePosition.Value.character,
+                            line = renamePosition.Line,
+                            character = renamePosition.Character,
                         }
                     )
             };
