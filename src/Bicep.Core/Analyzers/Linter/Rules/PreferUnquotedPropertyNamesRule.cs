@@ -70,15 +70,17 @@ namespace Bicep.Core.Analyzers.Linter.Rules
 
             private static bool TryGetValidIdentifierToken(SyntaxBase syntax, [NotNullWhen(true)] out string? validToken)
             {
-                validToken = null;
-
-                if (syntax is StringSyntax stringSyntax &&
-                    stringSyntax.TryGetLiteralValue() is { } literalValue)
+                if (syntax is StringSyntax stringSyntax && stringSyntax.TryGetLiteralValue() is { } literalValue)
                 {
-                    validToken = StringUtils.EscapeBicepPropertyName(literalValue);
+                    if (!StringUtils.IsPropertyNameEscapingRequired(literalValue))
+                    {
+                        validToken = literalValue;
+                        return true;
+                    }
                 }
 
-                return validToken != null;
+                validToken = null;
+                return false;
             }
         }
     }

@@ -1431,7 +1431,7 @@ namespace Bicep.Core.Parsing
 
         protected SyntaxBase TypeExpression()
         {
-            // Parse optional leading '|' for union types. asdfg?
+            // Parse optional leading '|' for union types.
             List<SyntaxBase>? unionTypeNodes = HasUnionMemberSeparator()
                 ? new(NewLines()) { reader.Read() }
                 : null;
