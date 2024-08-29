@@ -38,17 +38,33 @@ namespace Bicep.LanguageServer.Refactor;
 	command?: Command;
 
 
+asdfg
+var should get name "stgName" but is just "name"
+
+resource stg 'Microsoft.Storage/storageAccounts@2019-04-01' = {
+  name: '${storagePrefix}${uniqueString(resourceGroup().id)}'
+  location: location
+  sku: {
+    name: storageSKU
+  }
+  kind: 'StorageV2'
+  properties: {
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+
 asdfg DecoratorCodeFixProvider
 */
 
 // asdfg Convert var to param
 
 /*asdfg
- 
+
  * type myMixedTypeArrayType = ('fizz' | 42 | {an: 'object'} | null)[]
- * 
- * 
- 
+ *
+ *
+
 Nullable-typed parameters may not be assigned default values. They have an implicit default of 'null' that cannot be overridden.bicep(BCP326):
 
     var commandToExecute = 'powershell -ExecutionPolicy Unrestricted -File writeblob.ps1'
@@ -195,7 +211,7 @@ public static class ExtractVarAndParam
 
         //asdfg create CreateExtractParameterCodeFix for var?
         var newVarDeclarationSyntax = SyntaxFactory.CreateVariableDeclaration(newVarName, expressionToExtract);
-        var newVarDeclarationText = PrettyPrinterV2.PrintValid(newVarDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
+        var newVarDeclarationText = PrettyPrintDeclaration(newVarDeclarationSyntax, semanticModel);
         var identifierOffsetAsdfg = newVarDeclarationText.IndexOf("var " + newVarName);
         Debug.Assert(identifierOffsetAsdfg >= 0);
         identifierOffsetAsdfg += "var ".Length;
@@ -345,10 +361,19 @@ public static class ExtractVarAndParam
             new TypeVariableAccessSyntax(newParamTypeIdentifier),
             defaultValueSyntax,
             leadingNodes);
-        var paramDeclarationText = PrettyPrinterV2.PrintValid(paramDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
+        var paramDeclarationText = PrettyPrintDeclaration(paramDeclarationSyntax, semanticModel);
         //asdfg better way to do this?  what if param name contains weird characters, requires '@'?
         var identifierOffset = paramDeclarationText.IndexOf("param " + newParamName) + "param ".Length; // asdfg what if -1?
         return new DeclarationASdfg(paramDeclarationText, identifierOffset);
+    }
+
+    //asdfg TODO: better would be to create an actual syntax tree, but it would need to be modified to handle special case
+    private static string PrettyPrintDeclaration(StatementSyntax paramDeclarationSyntax, SemanticModel semanticModel) //asdfg
+    {
+        var declarationText = PrettyPrinterV2.PrintValid(paramDeclarationSyntax, PrettyPrinterV2Options.Default) + NewLine(semanticModel);
+        var p = new Parser(declarationText);
+        var prettyDeclarationText = PrettyPrinterV2.PrintValid(p.Program(), PrettyPrinterV2Options.Default);
+        return prettyDeclarationText;
     }
 
     private static TypeSymbol? NullIfErrorOrAny(TypeSymbol? type) => type is ErrorType || type is AnyType ? null : type;

@@ -743,7 +743,34 @@ public class ExtractVarAndParamTests : CodeActionTestBase
             param _artifactsLocation string
             param  _artifactsLocationSasToken string
             @description('Describes the properties of a Virtual Machine Extension.')
-            param properties { autoUpgradeMinorVersion: bool?, forceUpdateTag: string?, instanceView: { name: string?, statuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, substatuses: { code: string?, displayStatus: string?, level: ('Error' | 'Info' | 'Warning')?, message: string?, time: string? }[]?, type: string?, typeHandlerVersion: string? }?, protectedSettings: object? /* any */, publisher: string?, settings: object? /* any */, type: string?, typeHandlerVersion: string? } = {
+            param properties {
+              autoUpgradeMinorVersion: bool?
+              forceUpdateTag: string?
+              instanceView: {
+                name: string?
+                statuses: {
+                  code: string?
+                  displayStatus: string?
+                  level: ('Error' | 'Info' | 'Warning')?
+                  message: string?
+                  time: string?
+                }[]?
+                substatuses: {
+                  code: string?
+                  displayStatus: string?
+                  level: ('Error' | 'Info' | 'Warning')?
+                  message: string?
+                  time: string?
+                }[]?
+                type: string?
+                typeHandlerVersion: string?
+              }?
+              protectedSettings: object? /* any */
+              publisher: string?
+              settings: object? /* any */
+              type: string?
+              typeHandlerVersion: string?
+            } = {
               // Entire properties object selected
               publisher: 'Microsoft.Compute'
               type: 'CustomScriptExtension'
