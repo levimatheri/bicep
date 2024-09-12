@@ -500,11 +500,11 @@
       },
       "Microsoft.VisualStudio.ImageCatalog": {
         "type": "Transitive",
-        "resolved": "17.10.40170",
-        "contentHash": "HT0BSiAJN1ERf6vg7uCv6UYEt2xx9QNqaXyhq7c5jAixf36Rtv+QfaIvfhJFUbBh1LWjYtdLNs8SasbGa6lMMg==",
+        "resolved": "17.10.39563",
+        "contentHash": "6DNJet5Yjt68zPeamT04NIHXicK3HjCsO3R6c25lYcsNtIxW3QAQtELsVE4Msknup1ASJP7SVsGoxUZES145iA==",
         "dependencies": {
-          "Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime": "17.10.40152",
-          "Microsoft.VisualStudio.Interop": "17.10.40170"
+          "Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime": "17.10.39546",
+          "Microsoft.VisualStudio.Interop": "17.10.39563"
         }
       },
       "Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime": {
