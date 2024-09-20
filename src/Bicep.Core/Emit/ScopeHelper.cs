@@ -584,6 +584,36 @@ namespace Bicep.Core.Emit
             return scopeInfo.ToImmutableDictionary();
         }
 
+        public static ScopeData? GetDeploymentScopeInfo(SemanticModel semanticModel, IDiagnosticWriter diagnosticWriter)
+        {
+            void LogInvalidScopeDiagnostic(IPositionable positionable, ResourceScope suppliedScope, ResourceScope supportedScopes)
+                => diagnosticWriter.Write(positionable, x => x.UnsupportedModuleScope(suppliedScope, supportedScopes));
+
+            var scopeInfo = new Dictionary<DeploySymbol, ScopeData>();
+            if (semanticModel.Root.DeployDeclaration is { } deploySymbol)
+            {
+                if (deploySymbol.TryGetDeployType() is { } deployType)
+                {
+                    var scopeValue = deploySymbol.TryGetBodyPropertyValue(LanguageConstants.ResourceScopePropertyName);
+                    var scopeData = ScopeHelper.ValidateScope(semanticModel, LogInvalidScopeDiagnostic, deployType.ValidParentScopes, deploySymbol.DeclaringDeploySyntax.Body, scopeValue);
+
+                    if (scopeData is null)
+                    {
+                        scopeData = new(semanticModel.TargetScope);
+                    }
+
+                    ValidateNestedTemplateScopeRestrictions(
+                        semanticModel,
+                        scopeData,
+                        buildDiagnostic => diagnosticWriter.Write(scopeValue ?? deploySymbol.DeclaringDeploySyntax.Body, buildDiagnostic));
+
+                    return scopeData;
+                }
+            }
+            
+            return null;
+        }
+
         public static void ValidateDeploymentScopeForDeployFile(SemanticModel semanticModel, IDiagnosticWriter diagnosticWriter)
         {
             if (semanticModel.Root.DeployDeclaration is not { } deploySymbol ||

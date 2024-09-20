@@ -1,8 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 using System.Collections.Immutable;
+using Azure.ResourceManager.Resources.Models;
 using Bicep.Core.Diagnostics;
+using Bicep.Core.Models;
 using Bicep.Core.Semantics;
+using Bicep.Core.Syntax;
 using Bicep.Core.Workspaces;
 using Newtonsoft.Json;
 
@@ -21,11 +24,18 @@ public record TemplateResult(
     string? Template,
     string? SourceMap);
 
+public record DeploymentResult(
+    bool Success,
+    ImmutableDictionary<BicepSourceFile, ImmutableArray<IDiagnostic>> Diagnostics,
+    ArmDeploymentDefinition? Definition);
+
 public interface ICompilationEmitter
 {
     TemplateResult Template();
 
     ParametersResult Parameters();
+
+    DeploymentResult Deployment();
 }
 
 public class CompilationEmitter : ICompilationEmitter
@@ -35,6 +45,47 @@ public class CompilationEmitter : ICompilationEmitter
     public CompilationEmitter(Compilation compilation)
     {
         this.compilation = compilation;
+    }
+
+    public DeploymentResult Deployment()
+    {
+        var model = compilation.GetEntrypointSemanticModel();
+        if (model.SourceFileKind != BicepSourceFileKind.DeployFile)
+        {
+            throw new InvalidOperationException($"Entry-point {model.Root.FileUri} is not a deployment file");
+        }
+
+        if (model.Root.DeployDeclaration is null)
+        {
+            throw new InvalidOperationException($"Entry-point {model.Root.FileUri} does not contain a deployment declaration");
+        }
+
+        var deployDeclaration = model.Root.DeployDeclaration;
+        if (!deployDeclaration.TryGetReferencingSemanticModel().IsSuccess(out var bicepModel) && bicepModel is not SemanticModel)
+        {
+            throw new InvalidOperationException($"Failed to find linked bicep file for deployment file {model.Root.FileUri}");
+        }
+
+        var diagnostics = compilation.GetAllDiagnosticsByBicepFile();
+        var scope = model.EmitLimitationInfo.DeploymentScopeData;
+        var managementGroup = (scope?.ManagementGroupNameProperty as StringSyntax)?.TryGetLiteralValue() ?? null;
+        var subscriptionId = (scope?.SubscriptionIdProperty as StringSyntax)?.TryGetLiteralValue() ?? null;
+        var resourceGroup = (scope?.ResourceGroupProperty as StringSyntax)?.TryGetLiteralValue() ?? null;
+        return new DeploymentResult(
+            true,
+            diagnostics,
+            new ArmDeploymentDefinition(
+                managementGroup,
+                subscriptionId,
+                resourceGroup,
+                deployDeclaration.Name,
+                new ArmDeploymentProperties(ArmDeploymentMode.Incremental) {
+                    Template = BinaryData.FromString(Template((bicepModel as SemanticModel)!)?.Template ?? throw new InvalidOperationException("Failed to generate template")),
+                    Parameters = BinaryData.FromString("{}"),
+                }
+            )
+        );
+
     }
 
     public ParametersResult Parameters()

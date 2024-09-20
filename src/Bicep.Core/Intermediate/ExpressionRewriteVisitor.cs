@@ -399,6 +399,16 @@ public abstract class ExpressionRewriteVisitor : IExpressionVisitor
         return hasChanges ? expression with { Body = body, Parameters = parameters, DependsOn = dependsOn, Description = description } : expression;
     }
 
+    void IExpressionVisitor.VisitDeclaredDeployExpression(DeclaredDeployExpression expression) => ReplaceCurrent(expression, ReplaceDeclaredDeployExpression);
+    public virtual Expression ReplaceDeclaredDeployExpression(DeclaredDeployExpression expression)
+    {
+        var hasChanges =
+            TryRewrite(expression.Body, out var body) |
+            TryRewrite(expression.Parameters, out var parameters);
+
+        return hasChanges ? expression with { Body = body, Parameters = parameters } : expression;
+    }
+
     void IExpressionVisitor.VisitResourceDependencyExpression(ResourceDependencyExpression expression) => ReplaceCurrent(expression, ReplaceResourceDependencyExpression);
     public virtual Expression ReplaceResourceDependencyExpression(ResourceDependencyExpression expression)
     {

@@ -512,10 +512,22 @@ namespace Bicep.Core.Emit
             return ConvertExpression(nameValueSyntax);
         }
 
+        private LanguageExpression GetDeployNameExpression(DeploySymbol deploySymbol)
+        {
+            SyntaxBase nameValueSyntax = GetDeployNameSyntax(deploySymbol);
+            return ConvertExpression(nameValueSyntax);
+        }
+
         public static SyntaxBase GetModuleNameSyntax(ModuleSymbol moduleSymbol)
         {
             // this condition should have already been validated by the type checker
             return moduleSymbol.TryGetBodyPropertyValue(LanguageConstants.ModuleNamePropertyName) ?? throw new ArgumentException($"Expected module syntax body to contain property 'name'");
+        }
+
+        public static SyntaxBase GetDeployNameSyntax(DeploySymbol deploySymbol)
+        {
+            // this condition should have already been validated by the type checker
+            return deploySymbol.TryGetBodyPropertyValue(LanguageConstants.ModuleNamePropertyName) ?? throw new ArgumentException($"Expected module syntax body to contain property 'name'");
         }
 
         public LanguageExpression GetUnqualifiedResourceId(DeclaredResourceMetadata resource)

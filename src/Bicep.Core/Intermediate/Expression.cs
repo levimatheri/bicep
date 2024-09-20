@@ -513,6 +513,20 @@ public record DeclaredModuleExpression(
         => visitor.VisitDeclaredModuleExpression(this);
 }
 
+public record DeclaredDeployExpression(
+    SyntaxBase? SourceSyntax,
+    DeploySymbol Symbol,
+    ScopeHelper.ScopeData? ScopeData,
+    SyntaxBase BodySyntax,
+    Expression Body,
+    Expression? Parameters,
+    Expression? Description = null
+) : Expression(SourceSyntax)
+{
+    public override void Accept(IExpressionVisitor visitor)
+        => visitor.VisitDeclaredDeployExpression(this);
+}
+
 public record ResourceDependencyExpression(
     SyntaxBase? SourceSyntax,
     Expression Reference

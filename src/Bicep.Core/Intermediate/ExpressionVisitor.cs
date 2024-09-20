@@ -217,6 +217,12 @@ public abstract class ExpressionVisitor : IExpressionVisitor
         Visit(expression.DependsOn);
     }
 
+    public virtual void VisitDeclaredDeployExpression(DeclaredDeployExpression expression)
+    {
+        Visit(expression.Body);
+        Visit(expression.Parameters);
+    }
+
     public virtual void VisitResourceDependencyExpression(ResourceDependencyExpression expression)
     {
         Visit(expression.Reference);

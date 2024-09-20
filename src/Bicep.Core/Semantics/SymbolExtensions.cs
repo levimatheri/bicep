@@ -28,6 +28,12 @@ namespace Bicep.Core.Semantics
         public static SyntaxBase? TryGetBodyPropertyValue(this ModuleSymbol moduleSymbol, string propertyName)
             => TryGetBodyProperty(moduleSymbol, propertyName)?.Value;
 
+        public static ObjectPropertySyntax? TryGetBodyProperty(this DeploySymbol deploySymbol, string propertyName)
+            => deploySymbol.DeclaringDeploySyntax.TryGetBody()?.TryGetPropertyByName(propertyName);
+            
+        public static SyntaxBase? TryGetBodyPropertyValue(this DeploySymbol deploySymbol, string propertyName)
+            => TryGetBodyProperty(deploySymbol, propertyName)?.Value;
+
         public static bool IsSecure(this ParameterSymbol parameterSymbol)
         {
             return HasDecorator(parameterSymbol, "secure");

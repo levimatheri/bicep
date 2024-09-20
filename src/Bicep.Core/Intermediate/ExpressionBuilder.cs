@@ -216,6 +216,9 @@ public class ExpressionBuilder
             case ModuleDeclarationSyntax module:
                 return EvaluateDecorators(module, ConvertModule(module));
 
+            case DeployDeclarationSyntax deployment:
+                return ConvertDeployment(deployment);
+
             case TypeDeclarationSyntax typeDeclaration:
                 return EvaluateDecorators(typeDeclaration, new DeclaredTypeExpression(typeDeclaration,
                     typeDeclaration.Name.IdentifierName,
@@ -631,6 +634,35 @@ public class ExpressionBuilder
             bodyExpression,
             parameters is not null ? ConvertWithoutLowering(parameters.Value) : null,
             dependencies);
+    }
+
+    private DeclaredDeployExpression ConvertDeployment(DeployDeclarationSyntax syntax)
+    {
+        var symbol = GetDeclaredSymbol<DeploySymbol>(syntax);
+
+        var body = syntax.Body;
+        
+        var objectBody = (ObjectSyntax)body;
+
+        var properties = objectBody.Properties
+            .Select(ConvertObjectProperty);
+
+        Expression bodyExpression = new ObjectExpression(body, properties.ToImmutableArray());
+        var parameters = objectBody.TryGetPropertyByName(LanguageConstants.DeployParamsPropertyName);
+
+        var dependencies = Context.ResourceDependencies[symbol]
+            .Where(ShouldGenerateDependsOn)
+            .OrderBy(x => x.Resource.Name) // order to generate a deterministic template
+            .Select(x => ToDependencyExpression(x, body))
+            .ToImmutableArray();
+
+        return new DeclaredDeployExpression(
+            syntax,
+            symbol,
+            Context.DeploymentScopeData,
+            body,
+            bodyExpression,
+            parameters is not null ? ConvertWithoutLowering(parameters.Value) : null);
     }
 
     private DeclaredResourceExpression ConvertResource(ResourceDeclarationSyntax syntax)

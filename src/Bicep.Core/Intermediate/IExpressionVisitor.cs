@@ -75,6 +75,8 @@ public interface IExpressionVisitor
 
     void VisitDeclaredModuleExpression(DeclaredModuleExpression expression);
 
+    void VisitDeclaredDeployExpression(DeclaredDeployExpression expression);
+
     void VisitResourceDependencyExpression(ResourceDependencyExpression expression);
 
     void VisitProgramExpression(ProgramExpression expression);

@@ -43,5 +43,17 @@ namespace Bicep.Core.Syntax
         public override void Accept(ISyntaxVisitor visitor) => visitor.VisitDeployDeclarationSyntax(this);
 
         public ArtifactType GetArtifactType() => ArtifactType.Module;
+
+        public ObjectSyntax? TryGetBody() =>
+            this.Body switch
+            {
+                ObjectSyntax @object => @object,
+                // blocked by assert in the constructor
+                _ => throw new NotImplementedException($"Unexpected type of deploy value '{this.Body.GetType().Name}'.")
+            };
+
+        public ObjectSyntax GetBody() =>
+            this.TryGetBody() ?? throw new InvalidOperationException($"A valid deploy body is not available on this deploy due to errors. Use {nameof(TryGetBody)}() instead.");
+
     }
 }

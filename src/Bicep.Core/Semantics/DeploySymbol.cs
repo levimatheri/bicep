@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Syntax;
+using Bicep.Core.TypeSystem.Types;
 
 namespace Bicep.Core.Semantics
 {
@@ -31,5 +32,7 @@ namespace Bicep.Core.Semantics
                 yield return this.Type;
             }
         }
+
+        public DeployType? TryGetDeployType() => DeployType.TryUnwrap(this.Type);
     }
 }

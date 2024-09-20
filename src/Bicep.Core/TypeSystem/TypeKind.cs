@@ -65,6 +65,11 @@ namespace Bicep.Core.TypeSystem
         Module,
 
         /// <summary>
+        /// Deploy type
+        /// </summary>
+        Deploy,
+
+        /// <summary>
         /// Test type
         /// </summary>
         Test,

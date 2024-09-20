@@ -175,6 +175,10 @@ namespace Bicep.Core
         public const string ModuleOutputsPropertyName = "outputs";
         public const string ModuleNamePropertyName = "name";
 
+        // bicep deploy properties
+        public const string DeployScopePropertyName = "scope";
+        public const string DeployParamsPropertyName = "params";
+
         // test properties
         public const string TestParamsPropertyName = "params";
 

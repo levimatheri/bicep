@@ -259,6 +259,12 @@ namespace Bicep.Core.TypeSystem
 
                         return new ModuleType(targetModuleType.Name, targetModuleType.ValidParentScopes, narrowedBody);
                     }
+                case DeployType targetDeployType:
+                    {
+                        var narrowedBody = NarrowType(config, expression, targetDeployType.Body.Type);
+
+                        return new DeployType(targetDeployType.Name, targetDeployType.ValidParentScopes, narrowedBody);
+                    }
                 case TestType targetTestType:
                     {
                         var narrowedBody = NarrowType(config, expression, targetTestType.Body.Type);

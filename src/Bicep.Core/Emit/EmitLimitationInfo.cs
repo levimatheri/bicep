@@ -14,5 +14,6 @@ public record ParameterAssignmentValue(JToken? Value, ParameterKeyVaultReference
 public record EmitLimitationInfo(
     IReadOnlyList<IDiagnostic> Diagnostics,
     ImmutableDictionary<ModuleSymbol, ScopeHelper.ScopeData> ModuleScopeData,
+    ScopeHelper.ScopeData? DeploymentScopeData,
     ImmutableDictionary<DeclaredResourceMetadata, ScopeHelper.ScopeData> ResourceScopeData,
     ImmutableDictionary<ParameterAssignmentSymbol, ParameterAssignmentValue> ParameterAssignments);

@@ -39,6 +39,8 @@ namespace Bicep.Core.Emit
 
         public ImmutableDictionary<ModuleSymbol, ScopeHelper.ScopeData> ModuleScopeData => SemanticModel.EmitLimitationInfo.ModuleScopeData;
 
+        public ScopeHelper.ScopeData? DeploymentScopeData => SemanticModel.EmitLimitationInfo.DeploymentScopeData;
+
         public ImmutableDictionary<DeclaredResourceMetadata, ScopeHelper.ScopeData> ResourceScopeData => SemanticModel.EmitLimitationInfo.ResourceScopeData;
 
         public ImportClosureInfo ImportClosureInfo => importClosureInfoLazy.Value;

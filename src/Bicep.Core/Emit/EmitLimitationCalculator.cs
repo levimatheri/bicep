@@ -31,6 +31,7 @@ namespace Bicep.Core.Emit
             ScopeHelper.ValidateDeploymentScopeForDeployFile(model, diagnostics);
 
             var moduleScopeData = ScopeHelper.GetModuleScopeInfo(model, diagnostics);
+            var deploymentScopeData = ScopeHelper.GetDeploymentScopeInfo(model, diagnostics);
             var resourceScopeData = ScopeHelper.GetResourceScopeInfo(model, diagnostics);
             var resourceTypeResolver = ResourceTypeResolver.Create(model);
 
@@ -60,7 +61,7 @@ namespace Bicep.Core.Emit
 
             var paramAssignments = CalculateParameterAssignments(model, diagnostics);
 
-            return new(diagnostics.GetDiagnostics(), moduleScopeData, resourceScopeData, paramAssignments);
+            return new(diagnostics.GetDiagnostics(), moduleScopeData, deploymentScopeData, resourceScopeData, paramAssignments);
         }
 
         private static void DetectDuplicateNames(SemanticModel semanticModel, IDiagnosticWriter diagnosticWriter, ImmutableDictionary<DeclaredResourceMetadata, ScopeHelper.ScopeData> resourceScopeData, ImmutableDictionary<ModuleSymbol, ScopeHelper.ScopeData> moduleScopeData)
