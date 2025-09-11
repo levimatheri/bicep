@@ -126,9 +126,14 @@ namespace Bicep.Cli.Services
             }
         }
 
-        private void WriteToStdout(string contents)
+        public void WriteToStdout(string contents)
         {
             io.Output.Write(contents);
+        }
+
+        public void WriteLineToStdout(string contents)
+        {
+            io.Output.WriteLine(contents);
         }
 
         public void WriteToFile(Uri fileUri, string contents)
