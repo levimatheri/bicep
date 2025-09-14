@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Azure.Deployments.Core.ErrorResponses;
 using Azure.Deployments.Expression.Expressions;
@@ -13,6 +15,7 @@ using Bicep.Core;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Emit;
 using Bicep.Core.Extensions;
+using Bicep.Core.Parsing;
 using Bicep.Core.Semantics;
 using Bicep.Core.SourceGraph;
 using Bicep.Core.Syntax;
@@ -29,7 +32,7 @@ public class ReplEnvironment
     private readonly InMemoryFileExplorer fileExplorer;
     private readonly IOUri replFileUri;
     private readonly StringBuilder replContent;
-    // private Compilation currentCompilation;
+    private readonly Dictionary<string, string> variableDeclarations = new(LanguageConstants.IdentifierComparer);
 
     public ReplEnvironment(BicepCompiler compiler)
     {
@@ -39,73 +42,134 @@ public class ReplEnvironment
         this.replFileUri = IOUri.FromFilePath("/repl.bicepparam");
         this.replContent = new StringBuilder("using none\n");
     }
-
-    public ReplEvalResult EvaluateExpression(SyntaxBase expression)
+    
+    public ReplEvalResult EvaluateInput(string input)
     {
-        var tempVarName = $"__temp_eval_{Guid.NewGuid():N}";
-        var tempContent = new StringBuilder(replContent.ToString());
-
-        // Handle variable declarations vs expressions differently
-        string targetVarName;
-        if (expression is VariableDeclarationSyntax varDecl)
+        if (string.IsNullOrWhiteSpace(input))
         {
-            // Add variable declaration directly
-            tempContent.AppendLine(expression.ToString());
-            targetVarName = varDecl.Name.IdentifierName;
-        }
-        else
-        {
-            // Wrap expression in temporary variable
-            tempContent.AppendLine($"var {tempVarName} = {expression}");
-            targetVarName = tempVarName;
+            return ReplEvalResult.Empty;
         }
 
-        // Temporarily update the file content for evaluation
-        var fileHandle = this.fileExplorer.GetFile(replFileUri);
-        fileHandle.Write(tempContent.ToString());
+        var syntax = new ReplParser(input).Parse();
+        if (syntax is VariableDeclarationSyntax varDecl)
+        {
+            return EvaluateVariableDeclaration(varDecl, input);
+        }
+
+        return EvaluateExpression(syntax, input);
+    }
+    
+    private ReplEvalResult EvaluateVariableDeclaration(VariableDeclarationSyntax varDecl, string input)
+    {
+        var variableName = varDecl.Name.IdentifierName;
+
+        // Store or update the variable declaration
+        variableDeclarations[variableName] = input.Trim();
 
         try
         {
-            // Update workspace and create new compilation
-            var sourceFile = compiler.SourceFileFactory.CreateBicepParamFile(replFileUri, tempContent.ToString());
+            // Build the complete content with all current variables
+            var completeContent = BuildCompleteContent();
+            var fullContent = "using none\n" + (string.IsNullOrEmpty(completeContent) ? "" : completeContent);
+
+            var compilationResult = CompileContent(fullContent);
+            if (compilationResult.HasErrors)
+            {
+                // If there's an error, revert the variable change
+                variableDeclarations.Remove(variableName);
+                return ReplEvalResult.For(compilationResult.Diagnostics);
+            }
+
+            // Successfully added/updated variable - sync replContent
+            this.replContent.Clear();
+            this.replContent.Append(fullContent);
+
+            return ReplEvalResult.Empty;
+        }
+        catch (Exception ex)
+        {
+            // If there's an error, revert the variable change
+            variableDeclarations.Remove(variableName);
+            var diagnostic = DiagnosticBuilder.ForPosition(varDecl)
+                .FailedToEvaluateSubject("variable", variableName, ex.Message);
+            return ReplEvalResult.For(diagnostic);
+        }
+    }
+
+    private ReplEvalResult EvaluateExpression(SyntaxBase syntax, string input)
+    {
+        var tempVarName = $"__temp_eval_{Guid.NewGuid():N}";
+        var tempContent = new StringBuilder();
+        
+        // Add existing variables
+        var completeContent = BuildCompleteContent();
+        if (!string.IsNullOrEmpty(completeContent))
+        {
+            tempContent.AppendLine(completeContent);
+        }
+        
+        // Add the expression as a temporary variable
+        tempContent.AppendLine($"var {tempVarName} = {input}");
+        var fullTempContent = "using none\n" + tempContent.ToString();
+
+        var compilationResult = CompileContent(fullTempContent);
+        if (compilationResult.HasErrors)
+        {
+            return ReplEvalResult.For(compilationResult.Diagnostics.Where(d => d.Level == DiagnosticLevel.Error));
+        }
+
+        // Find and evaluate the temporary variable
+        if (compilationResult.Model == null)
+        {
+            return ReplEvalResult.For(DiagnosticBuilder.ForPosition(syntax)
+                .FailedToEvaluateSubject("expression", input, "Compilation failed"));
+        }
+
+        var variable = compilationResult.Model.Root.VariableDeclarations.FirstOrDefault(v => v.Name == tempVarName);
+        if (variable?.DeclaringVariable.Value is not SyntaxBase valueExpression)
+        {
+            return ReplEvalResult.For(DiagnosticBuilder.ForPosition(syntax)
+                .FailedToEvaluateSubject("expression", input, "Unable to find temporary variable"));
+        }
+
+        var evaluator = new ReplEvaluator(compilationResult.Model);
+        var result = evaluator.EvaluateExpression(valueExpression);
+        return result;
+    }
+    private string BuildCompleteContent()
+    {
+        if (variableDeclarations.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(Environment.NewLine, variableDeclarations.Values);
+    }
+
+    private CompilationResult CompileContent(string content)
+    {
+        var fileHandle = this.fileExplorer.GetFile(replFileUri);
+        try
+        {
+            fileHandle.Write(content);
+            var sourceFile = compiler.SourceFileFactory.CreateBicepParamFile(replFileUri, content);
             workspace.UpsertSourceFile(sourceFile);
             var compilation = compiler.CreateCompilationWithoutRestore(replFileUri, workspace);
             var model = compilation.GetEntrypointSemanticModel();
-
-            if (model
-                .GetAllDiagnostics()
-                .Any(d => d.Source != DiagnosticSource.CoreLinter && d.Level == DiagnosticLevel.Error))
-            {
-                // Return the first diagnostic encountered
-                return ReplEvalResult.For(model.GetAllDiagnostics());
-            }
-
-            if (expression is VariableDeclarationSyntax)
-            {
-                this.replContent.AppendLine(expression.ToString());
-                // Don't restore original content - we want to keep the new variable
-                return ReplEvalResult.Empty;
-            }
-
-            // Find and evaluate the target variable
-            var variable = model.Root.VariableDeclarations.FirstOrDefault(v => v.Name == targetVarName);
-            if (variable?.DeclaringVariable.Value is not SyntaxBase valueExpression)
-            {
-                return ReplEvalResult.For(DiagnosticBuilder.ForPosition(expression)
-                    .FailedToEvaluateSubject("expression", expression.ToString(), "Unable to find variable"));
-            }
-
-            var evaluator = new ReplEvaluator(model);
-            var result = evaluator.EvaluateExpression(valueExpression);
-
-            return result;
+            var diagnostics = model.GetAllDiagnostics();
+            
+            var hasErrors = diagnostics.Any(d => d.Level == DiagnosticLevel.Error && d.Source != DiagnosticSource.CoreLinter);
+            
+            return new CompilationResult(model, diagnostics, hasErrors);
         }
-        finally
+        catch (Exception)
         {
-            // Always sync file with current replContent state
-            fileHandle.Write(replContent.ToString());
+            // If compilation fails, treat it as having errors
+            return new CompilationResult(null, [], true);
         }
     }
+
+    private record CompilationResult(SemanticModel? Model, ImmutableArray<IDiagnostic> Diagnostics, bool HasErrors);
 
     private class ReplEvaluator
     {
@@ -121,6 +185,16 @@ public class ReplEnvironment
             this.variablesByName = semanticModel.Root.VariableDeclarations
                 .GroupBy(x => x.Name, LanguageConstants.IdentifierComparer)
                 .ToImmutableDictionary(x => x.Key, x => x.First(), LanguageConstants.IdentifierComparer);
+        }
+
+        public ReplEvalResult EvaluateVariable(string variableName)
+        {
+            if (!this.variablesByName.TryGetValue(variableName, out var variable))
+            {
+                throw new InvalidOperationException($"Variable '{variableName}' not found");
+            }
+
+            return EvaluateVariable(variable);
         }
 
         public ReplEvalResult EvaluateExpression(SyntaxBase expression)

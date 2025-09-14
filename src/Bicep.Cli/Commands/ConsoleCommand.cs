@@ -57,11 +57,7 @@ public class ConsoleCommand(
 
                 Trace.WriteLine($"You entered: {input}");
 
-                var parser = new ReplParser(input);
-
-                var syntax = parser.Parse();
-
-                var result = replEnvironment.EvaluateExpression(syntax);
+                var result = replEnvironment.EvaluateInput(input);
 
                 if (result.HasValue)
                 {
@@ -71,7 +67,7 @@ public class ConsoleCommand(
                 {
                     foreach (var diagnostic in result.Diagnostics)
                     {
-                        writer.WriteLineToStdout($"{diagnostic}");
+                        writer.WriteLineToStdout($"{diagnostic.Message}");
                     }
                 }
                 else
