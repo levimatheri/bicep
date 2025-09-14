@@ -1,11 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+using System.Diagnostics;
 using Bicep.Cli.Arguments;
 using Bicep.Cli.Helpers;
 using Bicep.Cli.Logging;
 using Bicep.Cli.Services;
 using Bicep.Core;
+using Bicep.Core.Parsing;
+using Bicep.Core.Syntax;
+using Bicep.Core.Utils;
 using Bicep.IO.Abstraction;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
@@ -14,14 +18,15 @@ namespace Bicep.Cli.Commands;
 
 public class ConsoleCommand(
     ILogger logger,
-    OutputWriter writer) : ICommand
+    OutputWriter writer,
+    ReplEnvironment replEnvironment) : ICommand
 {
     public async Task<int> RunAsync(ConsoleArguments args, CancellationToken cancellationToken)
     {
         await Task.CompletedTask;
 
         PrintIntro();
-
+        
         while (!cancellationToken.IsCancellationRequested)
         {
             writer.WriteToStdout("> ");
@@ -30,26 +35,50 @@ public class ConsoleCommand(
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var input = Console.ReadLine()?.Trim()?.ToLowerInvariant();
+                var input = Console.ReadLine()?.Trim();
+                var inputLower = input?.ToLowerInvariant();
 
-                if (input is null || input == "exit")
+                if (input is null || inputLower is null || inputLower == "exit")
                 {
                     break;
                 }
 
-                if (input == "clear")
+                if (inputLower == "clear")
                 {
                     Console.Clear();
                     continue;
                 }
 
-                if (input == "help")
+                if (inputLower == "help")
                 {
                     writer.WriteLineToStdout("TBD.");
                     continue;
                 }
 
-                writer.WriteLineToStdout($"You entered: {input}");
+                Trace.WriteLine($"You entered: {input}");
+
+                var parser = new ReplParser(input);
+
+                var syntax = parser.Parse();
+
+                var result = replEnvironment.EvaluateExpression(syntax);
+
+                if (result.HasValue)
+                {
+                    writer.WriteLineToStdout($"{result.Value}");
+                }
+                else if (result.Diagnostics.Any())
+                {
+                    foreach (var diagnostic in result.Diagnostics)
+                    {
+                        writer.WriteLineToStdout($"{diagnostic}");
+                    }
+                }
+                else
+                {
+                    // Nothing to show (e.g., successful variable declaration)
+                    continue;
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
