@@ -60,7 +60,7 @@ public class ReplParser : BaseParser
             if (next.Type == TokenType.NewLine)
             {
                 // skip blank lines between entries
-                reader.Read();
+                nodes.Add(reader.Read());
                 continue;
             }
 
