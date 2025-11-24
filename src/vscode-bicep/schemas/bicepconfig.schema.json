@@ -173,13 +173,13 @@
     "externalInputResolverEntry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["target", "parameters"],
+      "required": [ "target", "settings" ],
       "properties": {
         "target": {
           "type": "string",
           "description": "Path to the resolver plugin executable or script."
         },
-        "parameters": {
+        "settings": {
           "type": "object",
           "description": "Resolver-specific parameter bag passed through to the resolver tooling. Properties are specific to the external input kind.",
           "additionalProperties": true

@@ -1,0 +1,21 @@
+{
+  "externalInputResolverConfig": {
+    "ev2.*": {
+      "target": "D:\\CodingProjects\\playground\\c#\\TestConsole\\Ev2Rpc\\bin\\Debug\\net10.0\\Ev2Rpc.exe",
+      "parameters": {
+        "ServiceGroupRoot": "example-service-group-root",
+        "RolloutSpecs": ["rollout-spec-1", "rollout-spec-2"],
+        "ServicePresence": [
+          {
+            "RolloutInfra": "rollout-infra-1",
+            "Regions": ["region-1", "region-2"]
+          },
+          {
+            "RolloutInfra": "rollout-infra-2",
+            "Regions": ["region-3"]
+          }
+        ]
+      }
+    }
+  }
+}
