@@ -264,6 +264,36 @@ param foo = externalInput('my.param.provider')
     }
 
     [TestMethod]
+    public void Just_testing_sometin()
+    {
+        var services = new ServiceBuilder().WithFeatureOverrides(new(TestContext, DeployCommandsEnabled: true));
+        var result = CompilationHelper.CompileParams(services,
+("main.bicep", @"
+"),
+("parameters.bicepparam", """
+var subscriptionId = readCliArg('subscription-id')
+var resourceGroup = readCliArg('resource-group')
+
+using 'main.bicep' with {
+  name: 'asdf9uasd9'
+  mode: 'deployment'
+  scope: '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}'
+}            
+"""));
+
+        result.Should().NotHaveAnyDiagnostics();
+        var parameters = TemplateHelper.ConvertAndAssertParameters(result.Parameters);
+        parameters["foo"].Value.Should().BeNull();
+        parameters["foo"].Expression.Should().DeepEqual("""[externalInputs('my_param_provider_0')]""");
+
+        var externalInputs = TemplateHelper.ConvertAndAssertExternalInputs(result.Parameters);
+        externalInputs["my_param_provider_0"].Should().DeepEqual(new JObject
+        {
+            ["kind"] = "my.param.provider",
+        });
+    }
+
+    [TestMethod]
     public void ExternalInput_assigned_to_parameter_with_config()
     {
         var result = CompilationHelper.CompileParams(

@@ -1101,8 +1101,7 @@ public class ExpressionBuilder
                 return new ParametersAssignmentReferenceExpression(variableAccessSyntax, parameterSymbol);
 
             case VariableSymbol variableSymbol:
-                if (Context.SemanticModel.SymbolsToInline.VariablesToInline.Contains(variableSymbol) ||
-                    Context.ExternalInputReferences.VariablesReferences.Contains(variableSymbol))
+                if (Context.SemanticModel.SymbolsToInline.VariablesToInline.Contains(variableSymbol))
                 {
                     // we've got a runtime dependency, or we're evaluating a variable that has an external input function reference,
                     // so we have to inline the variable usage

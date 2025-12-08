@@ -1283,6 +1283,7 @@ namespace Bicep.Core.Semantics.Namespaces
                         .WithRequiredParameter("variableName", LanguageConstants.String, "The name of the environment variable.")
                         .WithEvaluator(exp => new FunctionCallExpression(exp.SourceSyntax, LanguageConstants.ExternalInputsArmFunctionName, [new StringLiteralExpression(null, "sys.envVar"), .. exp.Parameters]))
                         .WithReturnType(LanguageConstants.String)
+                        .WithFlags(FunctionFlags.ExternalInput)
                         .Build();
 
                     yield return new FunctionOverloadBuilder(LanguageConstants.ReadCliArgBicepFunctionName)
@@ -1290,6 +1291,7 @@ namespace Bicep.Core.Semantics.Namespaces
                         .WithRequiredParameter("argumentName", LanguageConstants.String, "The name of the CLI argument.")
                         .WithEvaluator(exp => new FunctionCallExpression(exp.SourceSyntax, LanguageConstants.ExternalInputsArmFunctionName, [new StringLiteralExpression(null, "sys.cliArg"), .. exp.Parameters]))
                         .WithReturnType(LanguageConstants.String)
+                        .WithFlags(FunctionFlags.ExternalInput)
                         .Build();
                 }
 
@@ -1308,6 +1310,7 @@ namespace Bicep.Core.Semantics.Namespaces
 
                         return new(LanguageConstants.Any);
                     }, LanguageConstants.Any)
+                    .WithFlags(FunctionFlags.ExternalInput)
                     .Build();
             }
 

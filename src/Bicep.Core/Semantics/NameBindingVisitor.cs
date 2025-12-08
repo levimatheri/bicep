@@ -200,6 +200,25 @@ namespace Bicep.Core.Semantics
             allowedFlags = FunctionFlags.Default;
         }
 
+        public override void VisitParameterAssignmentSyntax(ParameterAssignmentSyntax syntax)
+        {
+            this.VisitNodes(syntax.LeadingNodes);
+            this.Visit(syntax.Name);
+            this.Visit(syntax.Assignment);
+            allowedFlags = FunctionFlags.ExternalInput;
+            this.Visit(syntax.Value);
+            allowedFlags = FunctionFlags.Default;
+        }
+
+        public override void VisitUsingDeclarationSyntax(UsingDeclarationSyntax syntax)
+        {
+            this.VisitNodes(syntax.LeadingNodes);
+            this.Visit(syntax.Path);
+            allowedFlags = FunctionFlags.ExternalInput;
+            this.Visit(syntax.WithClause);
+            allowedFlags = FunctionFlags.Default;
+        }
+
         public override void VisitFunctionDeclarationSyntax(FunctionDeclarationSyntax syntax)
         {
             allowedFlags = FunctionFlags.FunctionDecorator;

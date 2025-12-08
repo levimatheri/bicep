@@ -569,6 +569,13 @@ public record ProgramExpression(
         => visitor.VisitProgramExpression(this);
 }
 
+public record ParameterAssignmentExpression(
+    SyntaxBase? SourceSyntax,
+    ) : Expression(SourceSyntax)
+{
+    public override void Accept(IExpressionVisitor visitor)
+        => visitor.VisitParameterAssignmentExpression(this);
+}
 public record AccessChainExpression(
     SyntaxBase? SourceSyntax,
     AccessExpression FirstLink,

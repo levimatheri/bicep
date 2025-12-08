@@ -386,7 +386,9 @@ namespace Bicep.Core.Emit
 
             if (functionSymbol is { })
             {
-                var shouldInline = functionSymbol.FunctionFlags.HasFlag(FunctionFlags.RequiresInlining);
+                var shouldInline =
+                    functionSymbol.FunctionFlags.HasFlag(FunctionFlags.RequiresInlining)
+                    || functionSymbol.FunctionFlags.HasFlag(FunctionFlags.ExternalInput);
                 SetInlineCache(shouldInline);
             }
         }

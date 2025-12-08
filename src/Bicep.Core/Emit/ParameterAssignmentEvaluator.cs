@@ -279,12 +279,17 @@ public class ParameterAssignmentEvaluator
                 var parameterConverter = GetConverterForParameter(parameter);
                 var intermediate = parameterConverter.ConvertToIntermediateExpression(declaringParam.Value);
 
-                if (this.externalInputReferences.ParametersReferences.Contains(parameter))
-                {
-                    var rewrittenExpression = ExternalInputExpressionRewriter
-                        .Rewrite(intermediate, this.externalInputReferences);
+                // if (this.externalInputReferences.ParametersReferences.Contains(parameter))
+                // {
+                //     var rewrittenExpression = ExternalInputExpressionRewriter
+                //         .Rewrite(intermediate, this.externalInputReferences);
 
-                    return Result.For(rewrittenExpression);
+                //     return Result.For(rewrittenExpression);
+                // }
+
+                if (ExternalInputDetectionVisitor.ContainsExternalInput(intermediate))
+                {
+                    return Result.For(intermediate);
                 }
 
                 if (intermediate is ParameterKeyVaultReferenceExpression keyVaultReferenceExpression)
@@ -312,10 +317,10 @@ public class ParameterAssignmentEvaluator
 
         var intermediate = converter.ConvertToIntermediateExpression(config);
 
-        var rewrittenExpression = ExternalInputExpressionRewriter
-            .Rewrite(intermediate, this.externalInputReferences);
+        // var rewrittenExpression = ExternalInputExpressionRewriter
+        //     .Rewrite(intermediate, this.externalInputReferences);
 
-        return Result.For(rewrittenExpression);
+        return Result.For(intermediate);
     }
 
     public ImmutableDictionary<string, Result> EvaluateExtensionConfigAssignment(ExtensionConfigAssignmentSymbol inputExtConfigAssignment)
@@ -379,6 +384,11 @@ public class ParameterAssignmentEvaluator
                 {
                     var context = GetExpressionEvaluationContext();
                     var intermediate = converter.ConvertToIntermediateExpression(variable.DeclaringVariable.Value);
+
+                    if (intermediate is FunctionCallExpression { Name: LanguageConstants.ExternalInputsArmFunctionName })
+                    {
+                        return Result.For(intermediate);
+                    }
 
                     return Result.For(converter.ConvertExpression(intermediate).EvaluateExpression(context));
                 }
@@ -598,6 +608,29 @@ public class ParameterAssignmentEvaluator
         {
             return ExpressionEvaluationResult.For([DiagnosticBuilder.ForPosition(expressionSyntax)
                 .FailedToEvaluateSubject("expression", expressionSyntax.ToString(), ex.Message)]);
+        }
+    }
+
+    private class ExternalInputDetectionVisitor : ExpressionVisitor
+    {
+        private static bool containsExternalInput;
+
+        public static bool ContainsExternalInput(Expression expression)
+        {
+            var visitor = new ExternalInputDetectionVisitor();
+            visitor.Visit(expression);
+            return containsExternalInput;
+        }
+
+        public override void VisitFunctionCallExpression(FunctionCallExpression expression)
+        {
+            if (expression is { Name: LanguageConstants.ExternalInputsArmFunctionName })
+            {
+                containsExternalInput = true;
+                return; // Early exit once we find an externalInput call
+            }
+
+            base.VisitFunctionCallExpression(expression);
         }
     }
 
