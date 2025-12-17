@@ -2022,6 +2022,10 @@ namespace Bicep.Core.Diagnostics
                     "BCP444",
                     $"This expression is being used as a default value for an extension configuration property, which requires a value that can be calculated at the start of the deployment.{variableDependencyChainClause}{accessiblePropertiesClause}");
             }
+
+            public Diagnostic ExportDecoratorInvalidImportableFileType(string fileKind, IEnumerable<string> importableFileKinds) => CoreError(
+                "BCP445",
+                $@"""{fileKind}"" is not a valid value for 'importableFileKinds' parameter. Valid values are: {ToQuotedString(importableFileKinds)}.");
         }
 
         public static DiagnosticBuilderInternal ForPosition(TextSpan span)

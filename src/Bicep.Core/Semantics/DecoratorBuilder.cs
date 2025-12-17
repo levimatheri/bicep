@@ -45,6 +45,9 @@ public class DecoratorBuilder
         return this;
     }
 
+    public DecoratorBuilder WithOptionalParameter(string name, TypeSymbol type, string description, FunctionArgumentTypeCalculator? calculator = null, FunctionParameterFlags flags = FunctionParameterFlags.None)
+        => WithParameter(name, type, description, flags & ~FunctionParameterFlags.Required, calculator);
+
     public DecoratorBuilder WithFlags(FunctionFlags flags)
     {
         if (!Enum.IsDefined(typeof(FunctionFlags), flags))

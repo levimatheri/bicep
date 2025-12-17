@@ -2101,6 +2101,16 @@ namespace Bicep.Core.Semantics.Namespaces
 
                 yield return new DecoratorBuilder(LanguageConstants.ExportPropertyName)
                     .WithDescription("Allows a type, variable, or function to be imported into other Bicep files.")
+                    .WithOptionalParameter(
+                        "importableFileTypes", 
+                        TypeFactory.CreateArrayType(
+                            TypeHelper.CreateTypeUnion(
+                                TypeFactory.CreateStringLiteralType("bicep"), 
+                                TypeFactory.CreateStringLiteralType("bicepparam")
+                            )
+                        ), 
+                        "List of Bicep file types that can import this symbol.", 
+                        flags: FunctionParameterFlags.Constant)
                     .WithFlags(FunctionFlags.TypeVariableOrFunctionDecorator)
                     .WithEvaluator(static (functionCall, decorated) => decorated switch
                     {
@@ -2136,6 +2146,19 @@ namespace Bicep.Core.Semantics.Namespaces
                                 diagnosticWriter.Write(DiagnosticBuilder.ForPosition(decoratorSyntax).ClosureContainsNonExportableSymbols(nonExportableSymbolsInClosure));
                             }
                         }
+
+                        // if (decoratorSyntax.Arguments.FirstOrDefault() is { } importableFileTypesArgument &&
+                        //     importableFileTypesArgument.Expression is ArraySyntax importableFileTypesArray)
+                        // {
+                        //     var allowedFileKinds = new HashSet<string>(["bicep", "bicepparam"]);
+                        //     foreach (var item in importableFileTypesArray.Items)
+                        //     {
+                        //         if (item.Value is StringSyntax fileKind && fileKind.TryGetLiteralValue() is { } value && !allowedFileKinds.Contains(value))
+                        //         {
+                        //             diagnosticWriter.Write(DiagnosticBuilder.ForPosition(item.Value).ExportDecoratorInvalidImportableFileType(value, allowedFileKinds));
+                        //         }
+                        //     }
+                        // }
                     })
                     .Build();
 

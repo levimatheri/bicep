@@ -1231,6 +1231,21 @@ public class CompileTimeImportTests
     }
 
     [TestMethod]
+    public void Exporting_with_invalid_importable_file_types_should_raise_diagnostic()
+    {
+        var result = CompilationHelper.Compile(
+            ("main.bicep", """
+                @export(['.invalid'])
+                var foo = 'test'
+            """));
+
+        result.ExcludingLinterDiagnostics().Should().HaveDiagnostics(new[]
+        {
+            ("BCP033", DiagnosticLevel.Error, """Expected a value of type "'bicep' | 'bicepparam'" but the provided value is of type "'.invalid'"."""),
+        });
+    }
+
+    [TestMethod]
     public void Exporting_a_variable_that_references_a_resource_should_raise_diagnostic()
     {
         var result = CompilationHelper.Compile("""
