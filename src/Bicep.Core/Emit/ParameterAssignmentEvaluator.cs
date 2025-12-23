@@ -638,5 +638,25 @@ public class ParameterAssignmentEvaluator
 
             return base.ReplaceFunctionCallExpression(expression);
         }
+
+        public override Expression ReplaceImportedUserDefinedFunctionCallExpression(ImportedUserDefinedFunctionCallExpression expression)
+        {
+            var importedSymbol = expression.Symbol;
+            var originalModel = importedSymbol.SourceModel;
+            if (originalModel is SemanticModel bicepSourceModel)
+            {
+                var converter = new ExpressionConverter(new EmitterContext(bicepSourceModel));
+                var functionDeclaration = bicepSourceModel.Root.FunctionDeclarations
+                    .FirstOrDefault(f => LanguageConstants.IdentifierComparer.Equals(f.Name, importedSymbol.OriginalSymbolName));
+                
+                if (functionDeclaration != null)
+                {
+                    var converted = converter.ConvertToIntermediateExpression(functionDeclaration.DeclaringFunction.Lambda);
+                    return Replace(converted);
+                }
+            }
+            
+            return base.ReplaceImportedUserDefinedFunctionCallExpression(expression);
+        }
     }
 }

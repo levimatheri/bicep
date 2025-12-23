@@ -5,7 +5,9 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Bicep.Core.Semantics;
+using Bicep.Core.Semantics.Metadata;
 using Bicep.Core.Semantics.Namespaces;
+using Bicep.Core.SourceGraph;
 using Bicep.Core.Syntax;
 using Bicep.Core.Syntax.Visitors;
 using Bicep.Core.TypeSystem;
@@ -39,32 +41,6 @@ public sealed partial class ExternalInputFunctionReferenceVisitor : AstVisitor
     {
         VisitFunctionCallSyntaxInternal(syntax);
         base.VisitInstanceFunctionCallSyntax(syntax);
-    }
-
-    public static bool FunctionContainsExternalInputReference(SemanticModel model, DeclaredFunctionSymbol targetSymbol)
-    {
-        var closure = model.Binder.GetReferencedSymbolClosureFor(targetSymbol).Add(targetSymbol);
-        var visited = new HashSet<SyntaxBase>();
-        foreach (var symbol in closure)
-        {
-            if (symbol is DeclaredFunctionSymbol declaredFunctionSymbol)
-            {
-                var functionCalls = SyntaxAggregator.AggregateByType<FunctionCallSyntaxBase>(declaredFunctionSymbol.DeclaringFunction.Lambda);
-                foreach (var functionCall in functionCalls)
-                {
-                    if (!visited.Contains(functionCall) &&
-                        model.GetSymbolInfo(functionCall) is FunctionSymbol functionSymbol &&
-                        functionSymbol.FunctionFlags.HasFlag(FunctionFlags.ParamFileImportableOnly))
-                    {
-                        return true;
-                    }
-
-                    visited.Add(functionCall);
-                }
-            }
-        }
-
-        return false;
     }
 
     public static ExternalInputReferences CollectExternalInputReferences(SemanticModel model)
@@ -143,41 +119,95 @@ public sealed partial class ExternalInputFunctionReferenceVisitor : AstVisitor
 
     private void VisitFunctionCallSyntaxInternal(FunctionCallSyntaxBase functionCallSyntax)
     {
-        if (SemanticModelHelper.TryGetFunctionInNamespace(semanticModel, SystemNamespaceType.BuiltInName, functionCallSyntax) is not { } functionCall)
+        // Check for direct sys namespace external input functions
+        if (SemanticModelHelper.TryGetFunctionInNamespace(semanticModel, SystemNamespaceType.BuiltInName, functionCallSyntax) is { } functionCall)
+        {
+            string? definitionKey = null;
+            var index = this.externalInputReferences.Count;
+
+            if (functionCall.Name.NameEquals(LanguageConstants.ExternalInputBicepFunctionName) &&
+                functionCallSyntax.Arguments.Length >= 1 &&
+                semanticModel.GetTypeInfo(functionCallSyntax.Arguments[0]) is StringLiteralType stringLiteral)
+            {
+                definitionKey = GetExternalInputDefinitionName(stringLiteral.RawStringValue, index);
+            }
+            else if (functionCall.Name.NameEquals(LanguageConstants.ReadCliArgBicepFunctionName))
+            {
+                definitionKey = GetExternalInputDefinitionName($"sys.cliArg", index);
+            }
+            else if (functionCall.Name.NameEquals(LanguageConstants.ReadEnvVarBicepFunctionName))
+            {
+                definitionKey = GetExternalInputDefinitionName($"sys.envVar", index);
+            }
+
+            if (definitionKey is not null)
+            {
+                this.externalInputReferences.TryAdd(functionCall, definitionKey);
+
+                if (this.targetParameterAssignment is not null)
+                {
+                    this.parametersContainingExternalInput.Add(this.targetParameterAssignment);
+                }
+
+                if (this.targetVariableDeclaration is not null)
+                {
+                    this.variablesContainingExternalInput.Add(this.targetVariableDeclaration);
+                }
+            }
+        }
+
+        // Check for imported function symbols that may contain external input references
+        var symbol = semanticModel.GetSymbolInfo(functionCallSyntax);
+
+        // Handle imported function symbols
+        if (symbol is ImportedFunctionSymbol importedFunction)
+        {
+            // Recursively process the imported function's body to find external input references
+            ProcessImportedFunction(importedFunction.SourceModel, importedFunction.ExportMetadata.Name);
+        }
+        // Handle wildcard import instance function calls
+        else if (symbol is WildcardImportInstanceFunctionSymbol wildcardFunction)
+        {
+            // Get the base wildcard import symbol and process the function from the source model
+            ProcessImportedFunction(wildcardFunction.BaseSymbol.SourceModel, wildcardFunction.Name);
+        }
+    }
+
+    private void ProcessImportedFunction(ISemanticModel sourceModel, string functionName)
+    {
+        // Only process Bicep semantic models (not ARM templates or other sources)
+        if (sourceModel is not SemanticModel bicepSourceModel)
         {
             return;
         }
 
-        var index = this.externalInputReferences.Count;
-        string definitionKey;
+        // Find the function declaration in the source model
+        var functionDeclaration = bicepSourceModel.Root.FunctionDeclarations.FirstOrDefault(f => LanguageConstants.IdentifierComparer.Equals(f.Name, functionName));
 
-        if (functionCall.Name.NameEquals(LanguageConstants.ExternalInputBicepFunctionName) &&
-            functionCallSyntax.Arguments.Length >= 1 &&
-            semanticModel.GetTypeInfo(functionCallSyntax.Arguments[0]) is StringLiteralType stringLiteral)
-        {
-            definitionKey = GetExternalInputDefinitionName(stringLiteral.RawStringValue, index);
-        }
-        else if (functionCall.Name.NameEquals(LanguageConstants.ReadCliArgBicepFunctionName))
-        {
-            definitionKey = GetExternalInputDefinitionName($"sys.cliArg", index);
-        }
-        else if (functionCall.Name.NameEquals(LanguageConstants.ReadEnvVarBicepFunctionName))
-        {
-            definitionKey = GetExternalInputDefinitionName($"sys.envVar", index);
-        }
-        else
+        if (functionDeclaration is null)
         {
             return;
         }
 
-        this.externalInputReferences.TryAdd(functionCall, definitionKey);
+        // Create a visitor for the imported function's source model
+        var importedVisitor = new ExternalInputFunctionReferenceVisitor(bicepSourceModel);
+        
+        // Visit the function declaration to find external input references
+        functionDeclaration.DeclaringFunction.Accept(importedVisitor);
 
-        if (this.targetParameterAssignment is not null)
+        // Merge the results from the imported function into this visitor's results
+        foreach (var externalInputRef in importedVisitor.externalInputReferences)
+        {
+            this.externalInputReferences.TryAdd(externalInputRef.Key, externalInputRef.Value);
+        }
+
+        // If we're currently tracking a parameter or variable, mark it as containing external input
+        if (this.targetParameterAssignment is not null && importedVisitor.externalInputReferences.Count > 0)
         {
             this.parametersContainingExternalInput.Add(this.targetParameterAssignment);
         }
 
-        if (this.targetVariableDeclaration is not null)
+        if (this.targetVariableDeclaration is not null && importedVisitor.externalInputReferences.Count > 0)
         {
             this.variablesContainingExternalInput.Add(this.targetVariableDeclaration);
         }
