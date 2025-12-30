@@ -59,17 +59,38 @@ public class ConsoleCommand(
 
         if (Console.IsInputRedirected)
         {
-            // Read all input from stdin if piped in
+            // Read all input from stdin if redirected (via pipe or file redirection)
             var input = await io.Input.ReadToEndAsync();
-            
+
             if (string.IsNullOrWhiteSpace(input))
             {
                 return 0;
             }
 
-            var output = replEnvironment.EvaluateAndGetOutput(input);
-            await io.Output.WriteAsync(output);
-            
+            // Handle input line by line (to support multi-line strings)
+            var outputBuilder = new StringBuilder();
+            var inputBuffer = new StringBuilder();
+
+            using var reader = new StringReader(input);
+            while (await reader.ReadLineAsync() is { } line)
+            {
+                inputBuffer.Append(line);
+                inputBuffer.Append('\n');
+
+                var current = inputBuffer.ToString();
+                if (ReplEnvironment.ShouldSubmitBuffer(current, line))
+                {
+                    inputBuffer.Clear();
+                    outputBuilder.Append(replEnvironment.EvaluateAndGetOutput(current));
+                }
+            }
+
+            if (inputBuffer.Length > 0)
+            {
+                outputBuilder.Append(replEnvironment.EvaluateAndGetOutput(inputBuffer.ToString()));
+            }
+
+            await io.Output.WriteAsync(outputBuilder.ToString());
             return 0;
         }
 
