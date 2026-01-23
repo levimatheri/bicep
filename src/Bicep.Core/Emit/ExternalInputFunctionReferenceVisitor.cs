@@ -88,7 +88,6 @@ public sealed partial class ExternalInputFunctionReferenceVisitor : AstVisitor
             return;
         }
 
-        // External input functions should lower to the same IR, i.e. externalInput('<kind>', <config>)
         try
         {
             var intermediate = expressionConverter.ConvertExpression(functionCallSyntax);

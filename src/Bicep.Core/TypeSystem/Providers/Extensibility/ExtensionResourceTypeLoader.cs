@@ -9,6 +9,7 @@ using Bicep.Core.Resources;
 using Bicep.Core.Semantics;
 using Bicep.Core.SourceGraph;
 using Bicep.Core.TypeSystem.Types;
+using BicepSourceFileKind = Bicep.Core.SourceGraph.BicepSourceFileKind;
 
 namespace Bicep.Core.TypeSystem.Providers.Extensibility
 {

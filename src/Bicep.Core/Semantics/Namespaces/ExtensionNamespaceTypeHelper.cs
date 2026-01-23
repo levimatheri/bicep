@@ -34,16 +34,6 @@ namespace Bicep.Core.Semantics.Namespaces
             ];
         }
 
-        public static bool RequiresExternalInputs(NamespaceFunctionType namespaceFunction)
-        {
-            if (namespaceFunction.EvaluatesTo is not { } evaluatesTo)
-            {
-                return false;
-            }
-
-            return ExpressionsEngine.ExpressionHasFunction(evaluatesTo, LanguageConstants.ExternalInputBicepFunctionName);
-        }
-
         public static FunctionOverload.LanguageExpressionEvaluatorDelegate GetLanguageExpressionTransformer(NamespaceFunctionType functionDefinition)
         {
             return expression =>
@@ -53,7 +43,7 @@ namespace Bicep.Core.Semantics.Namespaces
                     new NamespaceFunctionEvaluationScope(functionDefinition, expression),
                     Azure.Deployments.Expression.Expressions.ExpressionBuiltInFunctions.Functions, // to handle use of e.g. 'concat' function
                 ]);
-                var parsed = ExpressionParser.ParseLanguageExpression(functionDefinition.EvaluatesTo);
+                var parsed = ExpressionParser.ParseLanguageExpression(functionDefinition.EvaluatedLanguageExpression);
                 var evaluated = evaluationContext.EvaluateExpression(parsed);
                 return evaluated.ToLanguageExpression();
             };
@@ -67,26 +57,36 @@ namespace Bicep.Core.Semantics.Namespaces
             {
                 this.functionTable = new(StringComparer.OrdinalIgnoreCase)
                 {
-                    [LanguageConstants.ExternalInputBicepFunctionName] = new ExternalInputFunction().Evaluate,
+                    [LanguageConstants.ExternalInputBicepFunctionName] = EvaluateToIrreducible,
                     [ExpressionConstants.ParametersFunction] = new ParametersFunction(functionDefinition, expression).Evaluate
                 };
             }
 
             public FunctionEvaluator? TryGetFunctionEvaluator(string functionName)
                 => this.functionTable.GetValueOrDefault(functionName);
+
+             private static IntermediateFunctionExpression EvaluateToIrreducible(
+                ExpressionEvaluationContext context,
+                string functionName,
+                ImmutableArray<ITemplateLanguageExpression> arguments,
+                IPositionalMetadataHolder positionalMetadata) => new(
+                    functionName,
+                    [.. arguments.Select(context.EvaluateExpression)],
+                    positionalMetadata,
+                    irreducible: true);
         }
 
-        private class ExternalInputFunction : BinaryExpressionFunction<StringExpression, IValueExpression>
-        {
-            public override string Name => LanguageConstants.ExternalInputBicepFunctionName;
-            protected override ITemplateLanguageExpression? Evaluate(string functionName, StringExpression kind, IValueExpression config, IPositionalMetadataHolder positionalMetadata)
-            {
-                return new IntermediateFunctionExpression(
-                    LanguageConstants.ExternalInputBicepFunctionName,
-                    [kind, config],
-                    positionalMetadata);
-            }
-        }
+        //private class ExternalInputFunction : BinaryExpressionFunction<StringExpression, IValueExpression>
+        //{
+        //    public override string Name => LanguageConstants.ExternalInputBicepFunctionName;
+        //    protected override ITemplateLanguageExpression? Evaluate(string functionName, StringExpression kind, IValueExpression config, IPositionalMetadataHolder positionalMetadata)
+        //    {
+        //        return new IntermediateFunctionExpression(
+        //            LanguageConstants.ExternalInputBicepFunctionName,
+        //            [kind, config],
+        //            positionalMetadata);
+        //    }
+        //}
 
         private class ParametersFunction : UnaryExpressionFunction<StringExpression>
         {

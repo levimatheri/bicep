@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 using System.Collections.Concurrent;
 using Azure.Bicep.Types.Index;
+using Azure.Deployments.Expression.Engines;
 using Bicep.Core.Resources;
 using Bicep.Core.Semantics;
 using Bicep.Core.Semantics.Namespaces;
@@ -67,7 +68,7 @@ namespace Bicep.Core.TypeSystem.Providers.Extensibility
                 builder = builder.WithDescription(description);
             }
 
-            var returnType = GetTypeSymbol(namespaceFunctionType.Output.Type, false);
+            var returnType = GetTypeSymbol(namespaceFunctionType.OutputType.Type, false);
             builder = builder.WithReturnType(returnType);
 
             foreach (var parameter in namespaceFunctionType.Parameters)
@@ -77,10 +78,12 @@ namespace Bicep.Core.TypeSystem.Providers.Extensibility
                 builder = builder.WithParameter(parameter.Name, paramType, parameter.Description ?? "", paramFlags);
             }
 
-            if (!string.IsNullOrWhiteSpace(namespaceFunctionType.EvaluatesTo))
+            if (!string.IsNullOrWhiteSpace(namespaceFunctionType.EvaluatedLanguageExpression))
             {
                 builder = builder.WithExpressionConverter(ExtensionNamespaceTypeHelper.GetLanguageExpressionTransformer(namespaceFunctionType));
-                if (ExtensionNamespaceTypeHelper.RequiresExternalInputs(namespaceFunctionType))
+
+                // if EvalutedLanguageExpression contains externalInput() calls, mark the function as requiring external input
+                if (ExpressionsEngine.ExpressionHasFunction(namespaceFunctionType.EvaluatedLanguageExpression, LanguageConstants.ExternalInputBicepFunctionName))
                 {
                     builder = builder.WithFlags(FunctionFlags.RequiresExternalInput);
                 }
@@ -179,9 +182,13 @@ namespace Bicep.Core.TypeSystem.Providers.Extensibility
             {
                 flags |= FunctionParameterFlags.Required;
             }
-            if (input.Flags.HasFlag(Azure.Bicep.Types.Concrete.NamespaceFunctionParameterFlags.Constant))
+            if (input.Flags.HasFlag(Azure.Bicep.Types.Concrete.NamespaceFunctionParameterFlags.CompileTimeConstant))
             {
                 flags |= FunctionParameterFlags.Constant;
+            }
+            if (input.Flags.HasFlag(Azure.Bicep.Types.Concrete.NamespaceFunctionParameterFlags.DeployTimeConstant))
+            {
+                flags |= FunctionParameterFlags.DeployTimeConstant;
             }
 
             return flags;
@@ -189,10 +196,10 @@ namespace Bicep.Core.TypeSystem.Providers.Extensibility
 
         private static BicepSourceFileKind? GetFunctionVisibilityRestriction(Azure.Bicep.Types.Concrete.NamespaceFunctionType input)
         {
-            return input.FileVisibilityRestriction switch
+            return input.VisibleInFileKind switch
             {
-                Azure.Bicep.Types.Concrete.NamespaceFunctionFileVisibilityRestriction.Bicepparam => BicepSourceFileKind.ParamsFile,
-                Azure.Bicep.Types.Concrete.NamespaceFunctionFileVisibilityRestriction.Bicep => BicepSourceFileKind.BicepFile,
+                Azure.Bicep.Types.Concrete.BicepSourceFileKind.ParamsFile => BicepSourceFileKind.ParamsFile,
+                Azure.Bicep.Types.Concrete.BicepSourceFileKind.BicepFile => BicepSourceFileKind.BicepFile,
                 _ => null, // default, visible in all file kinds
             };
         }

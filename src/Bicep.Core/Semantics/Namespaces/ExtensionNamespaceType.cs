@@ -11,6 +11,7 @@ using Bicep.Core.TypeSystem.Providers;
 using Bicep.Core.TypeSystem.Providers.Extensibility;
 using Bicep.Core.TypeSystem.Types;
 using static Bicep.Core.TypeSystem.Providers.Extensibility.ExtensionResourceTypeLoader;
+using BicepSourceFileKind = Bicep.Core.SourceGraph.BicepSourceFileKind;
 
 namespace Bicep.Core.Semantics.Namespaces
 {

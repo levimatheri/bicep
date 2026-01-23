@@ -42,37 +42,34 @@ public class ExternalInputNamespaceTypeTests
             "scopeBinding",
             "Reads scope binding from external tooling",
             "[externalInput('ev2.scopeBinding', parameters('bindingKey'))]",
-            [new NamespaceFunctionParameter("bindingKey", factory.GetReference(stringType), "The binding key parameter", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.Constant)],
+            [new NamespaceFunctionParameter("bindingKey", factory.GetReference(stringType), "The binding key parameter", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.CompileTimeConstant)],
             factory.GetReference(anyType),
-            NamespaceFunctionFlags.ExternalInput,
-            NamespaceFunctionFileVisibilityRestriction.Bicepparam));
+            BicepSourceFileKind.ParamsFile));
 
         var configFunctionType = factory.Create(() => new NamespaceFunctionType(
             "config",
             "Reads configuration from external tooling",
             "[externalInput('ev2.expression', concat('$config(', parameters('configKey'), ')'))]",
-            [new NamespaceFunctionParameter("configKey", factory.GetReference(stringType), "The configuration key parameter", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.Constant)],
+            [new NamespaceFunctionParameter("configKey", factory.GetReference(stringType), "The configuration key parameter", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.CompileTimeConstant)],
             factory.GetReference(anyType),
-            NamespaceFunctionFlags.ExternalInput,
-            NamespaceFunctionFileVisibilityRestriction.Bicepparam));
+            BicepSourceFileKind.ParamsFile));
 
         var sysVariableFunctionType = factory.Create(() => new NamespaceFunctionType(
             "sysVar",
             "Reads configuration from external tooling",
             "[externalInput('ev2.expression', parameters('varExpr'))]",
-            [new NamespaceFunctionParameter("varExpr", factory.GetReference(stringType), "The system variable expression", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.Constant)],
+            [new NamespaceFunctionParameter("varExpr", factory.GetReference(stringType), "The system variable expression", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.CompileTimeConstant)],
             factory.GetReference(anyType),
-            NamespaceFunctionFlags.ExternalInput,
-            NamespaceFunctionFileVisibilityRestriction.Bicepparam));
+            BicepSourceFileKind.ParamsFile));
 
         var sasUriFunctionType = factory.Create(() => new NamespaceFunctionType(
             "sasUri",
             "Reads SAS URI from external tooling",
-            "[externalInput('ev2.sasUriForPath', parameters('sasUriConfig'))]",
-            [new NamespaceFunctionParameter("sasUriConfig", factory.GetReference(sasUriConfig), "The SAS URI configuration properties", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.Constant)],
+            "[concat(externalInput('ev2.sasUriForPath', parameters('sasUriConfig')), 'test', externalInput('ev2.sasUriForPath', parameters('sasUriConfig')))]",
+            //"[externalInput('ev2.sasUriForPath', parameters('sasUriConfig'))]",
+            [new NamespaceFunctionParameter("sasUriConfig", factory.GetReference(sasUriConfig), "The SAS URI configuration properties", NamespaceFunctionParameterFlags.Required | NamespaceFunctionParameterFlags.CompileTimeConstant)],
             factory.GetReference(anyType),
-            NamespaceFunctionFlags.ExternalInput,
-            NamespaceFunctionFileVisibilityRestriction.Bicepparam));
+            BicepSourceFileKind.ParamsFile));
 
         var settings = new TypeSettings(name: "ThirdPartyExtension", version: "1.0.0", isSingleton: false, configurationType: null!);
 
@@ -105,12 +102,12 @@ public class ExternalInputNamespaceTypeTests
 using none
 
 extension '../extension.tgz' as ext
-param foo = ext.scopeBinding('BINDING')
+//param foo = ext.scopeBinding('BINDING')
 //param bar = ext.config('redis')
 //param buildVer = ext.sysVar('$buildVersion()')
-//param servicePackageLink = ext.sasUri({
-//    path: 'bin/service.sfpkg'
-//})
+param servicePackageLink = ext.sasUri({
+    path: 'bin/service.sfpkg'
+})
 """)),
             ("../extension.tgz", extensionTgz));
 
