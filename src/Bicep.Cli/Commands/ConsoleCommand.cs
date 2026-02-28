@@ -207,11 +207,25 @@ public class ConsoleCommand(
             }
             if (keyInfo.Key == ConsoleKey.LeftArrow)
             {
-                cursorOffset = Math.Max(cursorOffset - 1, 0);
+                if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
+                {
+                    cursorOffset = GetWordBoundaryNearOffset(lineBuffer, cursorOffset, -1);
+                }
+                else
+                {
+                    cursorOffset = Math.Max(cursorOffset - 1, 0);
+                }
             }
             if (keyInfo.Key == ConsoleKey.RightArrow)
             {
-                cursorOffset = Math.Min(cursorOffset + 1, lineBuffer.Count);
+                if (keyInfo.Modifiers.HasFlag(ConsoleModifiers.Control))
+                {
+                    cursorOffset = GetWordBoundaryNearOffset(lineBuffer, cursorOffset, 1);
+                }
+                else
+                {
+                    cursorOffset = Math.Min(cursorOffset + 1, lineBuffer.Count);
+                }
             }
             if (keyInfo.Key == ConsoleKey.Enter)
             {
@@ -250,5 +264,52 @@ public class ConsoleCommand(
         await io.Output.Writer.WriteAsync("\n");
 
         return string.Concat(lineBuffer);
+    }
+
+    private static int GetWordBoundaryNearOffset(List<Rune> lineBuffer, int cursorOffset, int direction)
+    {
+        ArgumentOutOfRangeException.ThrowIfEqual(direction, 0, "Direction cannot be zero");
+        if (direction < 0)
+        {
+            for (var i = cursorOffset - 1; i > 0; i--)
+            {
+                if (IsWordBoundary(i - 1, i))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+        else
+        {
+            for (var i = cursorOffset; i < lineBuffer.Count - 1; i++)
+            {
+                if (IsWordBoundary(i, i + 1))
+                {
+                    return i + 1;
+                }
+            }
+
+            return lineBuffer.Count;
+        }
+
+        bool IsWordBoundary(int index1, int index2)
+        {
+            var c1 = lineBuffer[index1];
+            var c2 = lineBuffer[index2];
+
+            var isWhitespace1 = Rune.IsWhiteSpace(c1);
+            var isWhitespace2 = Rune.IsWhiteSpace(c2);
+            if (isWhitespace1 && !isWhitespace2)
+            {
+                return true;
+            }
+            // if (isWhitespace1 || isWhitespace2)
+            // {
+            //     return false;
+            // }
+            return Rune.IsLetterOrDigit(c1) != Rune.IsLetterOrDigit(c2);
+        }
     }
 }
