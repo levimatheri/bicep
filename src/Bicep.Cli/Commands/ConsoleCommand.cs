@@ -227,6 +227,14 @@ public class ConsoleCommand(
                     cursorOffset = Math.Min(cursorOffset + 1, lineBuffer.Count);
                 }
             }
+            if (keyInfo.Key == ConsoleKey.Home)
+            {
+                cursorOffset = 0;
+            }
+            if (keyInfo.Key == ConsoleKey.End)
+            {
+                cursorOffset = lineBuffer.Count;
+            }
             if (keyInfo.Key == ConsoleKey.Enter)
             {
                 await io.Output.Writer.FlushAsync();
