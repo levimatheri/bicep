@@ -406,14 +406,16 @@ public class ParameterAssignmentEvaluator
                 var parameterConverter = GetConverterForParameter(parameter);
                 var intermediate = parameterConverter.ConvertToIntermediateExpression(declaringParam.Value);
 
-                if (semanticModel.SymbolsToInline.ParameterAssignmentsToInline.Contains(parameter))
-                {
-                    return Result.For(intermediate);
-                }
-
+                // handle KV references (getSecret function call) before the inlinable check. This is because getSecret can contain
+                // externalInput references, and we don't want to inline the getSecret function calls
                 if (intermediate is ParameterKeyVaultReferenceExpression keyVaultReferenceExpression)
                 {
                     return Result.For(keyVaultReferenceExpression);
+                }
+
+                if (semanticModel.SymbolsToInline.ParameterAssignmentsToInline.Contains(parameter))
+                {
+                    return Result.For(intermediate);
                 }
 
                 try
