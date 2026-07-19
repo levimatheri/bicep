@@ -3,6 +3,8 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using Azure.Core;
@@ -45,9 +47,16 @@ public record StacksConfig(
 public record DeployCommandsConfig(
     string Template,
     string Parameters,
-    UsingConfig UsingConfig);
+    UsingConfig UsingConfig)
+{
+    /// <summary>
+    /// When set, the template is chunked and uploaded to this deployment artifacts server
+    /// instead of being submitted directly to Azure.
+    /// </summary>
+    public string? ArtifactsEndpoint { get; init; }
+}
 
-public class DeploymentProcessor(IArmClientProvider armClientProvider) : IDeploymentProcessor
+public class DeploymentProcessor(IArmClientProvider armClientProvider, IHttpClientFactory httpClientFactory) : IDeploymentProcessor
 {
     public static async Task<DeployCommandsConfig> GetDeployCommandsConfig(IEnvironment environment, IReadOnlyDictionary<string, string> additionalArgs, ParametersResult result, ResourceScope scopeType)
     {
@@ -179,6 +188,12 @@ public class DeploymentProcessor(IArmClientProvider armClientProvider) : IDeploy
     {
         try
         {
+            if (config.ArtifactsEndpoint is { } artifactsEndpoint)
+            {
+                await DeployViaArtifacts(artifactsEndpoint, config, onRefresh, cancellationToken);
+                return;
+            }
+
             var armClient = armClientProvider.CreateArmClient(bicepConfig, null);
 
             var (template, parameters, usingConfig) = config;
@@ -270,6 +285,99 @@ public class DeploymentProcessor(IArmClientProvider armClientProvider) : IDeploy
         {
             // ensure we report the error
             onRefresh(new(null, exception.Message));
+        }
+    }
+
+    // Raw chunk size. Base64 inflates by ~33%, so 1 MiB stays well under the 2 MB
+    // limit imposed by the artifacts server (and Cosmos documents).
+    private const int ArtifactChunkSize = 1024 * 1024;
+
+    private async Task DeployViaArtifacts(string endpoint, DeployCommandsConfig config, Action<DeploymentWrapperView> onRefresh, CancellationToken cancellationToken)
+    {
+        var (template, _, usingConfig) = config;
+        var deploymentName = usingConfig.Name ?? "main";
+        var artifactName = $"{deploymentName}-artifact";
+
+        var templateBytes = Encoding.UTF8.GetBytes(template);
+        var sha256 = Convert.ToHexString(SHA256.HashData(templateBytes)).ToLowerInvariant();
+        var chunkCount = Math.Max(1, (int)Math.Ceiling((double)templateBytes.Length / ArtifactChunkSize));
+
+        var startTime = DateTime.UtcNow;
+        var operations = new List<DeploymentOperationView>();
+
+        var baseUri = endpoint.EndsWith('/') ? new Uri(endpoint) : new Uri(endpoint + "/");
+        using var client = httpClientFactory.CreateClient();
+        client.BaseAddress = baseUri;
+
+        void Report(string state) => onRefresh(new(
+            new DeploymentView(
+                Id: $"{usingConfig.Scope}/providers/Microsoft.Resources/deploymentArtifacts/{artifactName}",
+                Name: deploymentName,
+                State: state,
+                StartTime: startTime,
+                EndTime: IsTerminal(state) ? DateTime.UtcNow : null,
+                Operations: [.. operations],
+                Error: null,
+                Outputs: []),
+            null));
+
+        void AddOperation(string name, string id, string type) => operations.Add(new(
+            Id: id,
+            Name: name,
+            SymbolicName: null,
+            Type: type,
+            State: "Succeeded",
+            StartTime: DateTime.UtcNow,
+            EndTime: DateTime.UtcNow,
+            Error: null));
+
+        // 1. Register the artifact manifest.
+        await PutJsonAsync(client, $"artifacts/{artifactName}", new JsonObject
+        {
+            ["properties"] = new JsonObject
+            {
+                ["expectedChunkCount"] = chunkCount,
+                ["contentType"] = "application/json",
+                ["totalSize"] = templateBytes.Length,
+                ["sha256"] = sha256,
+            },
+        }, cancellationToken);
+        AddOperation("artifact", artifactName, "Microsoft.Resources/deploymentArtifacts");
+        Report("Running");
+
+        // 2. Upload each chunk as a child item.
+        for (var i = 0; i < chunkCount; i++)
+        {
+            var offset = i * ArtifactChunkSize;
+            var length = Math.Min(ArtifactChunkSize, templateBytes.Length - offset);
+            var data = length > 0 ? Convert.ToBase64String(templateBytes, offset, length) : string.Empty;
+
+            await PutJsonAsync(client, $"artifacts/{artifactName}/items/{i}", new JsonObject
+            {
+                ["properties"] = new JsonObject { ["data"] = data },
+            }, cancellationToken);
+            AddOperation($"item {i}", $"{artifactName}/{i}", "Microsoft.Resources/deploymentArtifacts/items");
+            Report("Running");
+        }
+
+        // 3. Trigger the deploy operation referencing the artifact.
+        await PutJsonAsync(client, $"deployments/{deploymentName}", new JsonObject
+        {
+            ["properties"] = new JsonObject { ["artifactId"] = artifactName },
+        }, cancellationToken);
+        AddOperation("deploy", deploymentName, "Microsoft.Resources/deployments");
+        Report("Succeeded");
+    }
+
+    private static async Task PutJsonAsync(HttpClient client, string relativeUri, JsonNode body, CancellationToken cancellationToken)
+    {
+        using var content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
+        using var response = await client.PutAsync(relativeUri, content, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Request to '{relativeUri}' failed with status {(int)response.StatusCode}: {responseBody}");
         }
     }
 

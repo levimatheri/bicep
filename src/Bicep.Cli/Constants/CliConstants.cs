@@ -50,6 +50,9 @@ namespace Bicep.Cli.Constants
         public const string Force = "--force";
         public const string DiagnosticsFormat = "--diagnostics-format";
 
+        // Deploy
+        public const string ArtifactsEndpoint = "--artifacts-endpoint";
+
         // Build / BuildParams
         public const string BicepFile = "--bicep-file";
 

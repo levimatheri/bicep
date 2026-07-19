@@ -216,7 +216,8 @@ namespace Bicep.Cli
                     Out = new AnsiConsoleOutput(io.Output.Writer),
                 }))
                 .AddSingleton<IDeploymentProcessor, DeploymentProcessor>()
-                .AddSingleton<DeploymentRenderer>();
+                .AddSingleton<DeploymentRenderer>()
+                .AddHttpClient();
 
         private static void StartProfile()
         {

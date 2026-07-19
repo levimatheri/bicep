@@ -29,12 +29,16 @@ public class DeployCommand(
     {
         var config = await DeploymentProcessor.GetDeployCommandsConfig(environment, args.AdditionalArguments, result, model.TargetScope);
 
+        if (args.ArtifactsEndpoint is { } artifactsEndpoint)
+        {
+            config = config with { ArtifactsEndpoint = artifactsEndpoint };
+        }
+
         var success = await deploymentRenderer.RenderDeployment(
             DeploymentRenderer.RefreshInterval,
             (onUpdate) => deploymentProcessor.Deploy(model.Configuration, config, onUpdate, cancellationToken),
             args.OutputFormat ?? DeploymentOutputFormat.Default,
             cancellationToken);
-
         return success ? 0 : 1;
     }
 
@@ -57,10 +61,15 @@ public class DeployCommand(
         {
             Description = "Output format for deployment results (Default, Json).",
         };
+        var artifactsEndpointOption = new System.CommandLine.Option<string?>(Option.ArtifactsEndpoint)
+        {
+            Description = "[Experimental] Base URL of a deployment artifacts server. When set, the template is chunked and uploaded instead of being submitted to Azure.",
+        };
 
         command.Add(inputFileArgument);
         command.Add(noRestoreOption);
         command.Add(formatOption);
+        command.Add(artifactsEndpointOption);
         command.Validators.Add((System.CommandLine.Parsing.CommandResult result) => CommandLineBuilderContext.ValidateRequiredPositionalArgument(result, inputFileArgument));
 
         command.SetAction((result, ct) => context.RunCommandAsync(async () =>
@@ -70,7 +79,8 @@ public class DeployCommand(
                 result.GetRequiredValue(inputFileArgument),
                 result.GetValue(noRestoreOption),
                 additionalArguments,
-                result.GetValue(formatOption));
+                result.GetValue(formatOption),
+                result.GetValue(artifactsEndpointOption));
 
             return await context.GetCommand<DeployCommand>().RunAsync(args, ct);
         }));
