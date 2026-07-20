@@ -83,6 +83,7 @@ namespace Bicep.Cli.Constants
 
         // Deploy / local-deploy / what-if / teardown
         public const string Format = "--format";
+        public const string Server = "--server";
 
         // Snapshot
         public const string Mode = "--mode";

@@ -19,6 +19,7 @@ namespace Bicep.Cli.Commands;
 public class DeployCommand(
     DeploymentRenderer deploymentRenderer,
     IDeploymentProcessor deploymentProcessor,
+    AcrUploadDeployClient acrUploadClient,
     ILogger logger,
     IEnvironment environment,
     DiagnosticLogger diagnosticLogger,
@@ -29,6 +30,11 @@ public class DeployCommand(
     {
         var config = await DeploymentProcessor.GetDeployCommandsConfig(environment, args.AdditionalArguments, result, model.TargetScope);
 
+        if (!string.IsNullOrWhiteSpace(args.Server))
+        {
+            return await DeployViaAcrUploadAsync(args.Server, config, cancellationToken);
+        }
+
         var success = await deploymentRenderer.RenderDeployment(
             DeploymentRenderer.RefreshInterval,
             (onUpdate) => deploymentProcessor.Deploy(model.Configuration, config, onUpdate, cancellationToken),
@@ -36,6 +42,41 @@ public class DeployCommand(
             cancellationToken);
 
         return success ? 0 : 1;
+    }
+
+    private async Task<int> DeployViaAcrUploadAsync(string server, DeployCommandsConfig config, CancellationToken cancellationToken)
+    {
+        if (!Uri.TryCreate(server.EndsWith('/') ? server : server + "/", UriKind.Absolute, out var serverUri))
+        {
+            throw new CommandLineException($"Invalid --server value '{server}'. Expected an absolute URL.");
+        }
+
+        var deploymentName = config.UsingConfig.Name ?? "main";
+        var repository = SanitizeRepository(deploymentName);
+        var tag = $"v{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+        try
+        {
+            var result = await acrUploadClient.DeployAsync(
+                serverUri,
+                repository,
+                tag,
+                BinaryData.FromString(config.Template),
+                deploymentName,
+                cancellationToken);
+
+            return result.Status == "Succeeded" ? 0 : 1;
+        }
+        catch (HttpRequestException exception)
+        {
+            throw new CommandLineException($"Could not reach the AcrUpload server at '{serverUri}'. Ensure the server is running and the --server URL (including port) is correct. {exception.Message}");
+        }
+    }
+
+    private static string SanitizeRepository(string name)
+    {
+        var sanitized = new string([.. name.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' or '.' ? c : '-')]);
+        return sanitized.Trim('-', '.', '_') is { Length: > 0 } trimmed ? trimmed : "main";
     }
 
     internal static System.CommandLine.Command CreateCommand(CommandLineBuilderContext context)
@@ -57,10 +98,15 @@ public class DeployCommand(
         {
             Description = "Output format for deployment results (Default, Json).",
         };
+        var serverOption = new System.CommandLine.Option<string?>(Option.Server)
+        {
+            Description = "[Experimental] Deploy via an AcrUpload server at the given URL: pushes the compiled template to ACR and calls the server's deploy endpoint instead of deploying directly to Azure.",
+        };
 
         command.Add(inputFileArgument);
         command.Add(noRestoreOption);
         command.Add(formatOption);
+        command.Add(serverOption);
         command.Validators.Add((System.CommandLine.Parsing.CommandResult result) => CommandLineBuilderContext.ValidateRequiredPositionalArgument(result, inputFileArgument));
 
         command.SetAction((result, ct) => context.RunCommandAsync(async () =>
@@ -70,7 +116,8 @@ public class DeployCommand(
                 result.GetRequiredValue(inputFileArgument),
                 result.GetValue(noRestoreOption),
                 additionalArguments,
-                result.GetValue(formatOption));
+                result.GetValue(formatOption),
+                result.GetValue(serverOption));
 
             return await context.GetCommand<DeployCommand>().RunAsync(args, ct);
         }));

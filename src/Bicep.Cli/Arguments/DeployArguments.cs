@@ -10,4 +10,5 @@ public record DeployArguments(
     string InputFile,
     bool NoRestore,
     ImmutableDictionary<string, string> AdditionalArguments,
-    DeploymentOutputFormat? OutputFormat) : DeployArgumentsBase(InputFile, NoRestore, AdditionalArguments);
+    DeploymentOutputFormat? OutputFormat,
+    string? Server = null) : DeployArgumentsBase(InputFile, NoRestore, AdditionalArguments);
