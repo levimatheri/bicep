@@ -33,6 +33,9 @@ public class ConsoleCommand(
 {
     private const string FirstLinePrefix = "> ";
 
+    // Upper bound on how many completion candidates are listed at once, to avoid flooding the console.
+    private const int MaxMenuCandidates = 10;
+
     private Rune ReadRune(char firstChar)
         => ReadRune(firstChar, () => Console.ReadKey(intercept: true).KeyChar);
 
@@ -244,6 +247,96 @@ public class ConsoleCommand(
     private string GetPrefix(StringBuilder buffer)
         => buffer.Length == 0 ? FirstLinePrefix : "";
 
+    /// <summary>
+    /// Applies an identifier completion at the cursor.
+    /// <list type="bullet">
+    /// <item>A single candidate replaces the partial identifier with the full candidate.</item>
+    /// <item>Multiple candidates first fill in their longest common prefix; when nothing more can be
+    /// filled, the candidates are listed below the prompt.</item>
+    /// </list>
+    /// Returns <see langword="true"/> when the console output was re-rendered here (so the caller should
+    /// skip the default redraw), matching the pattern used by history navigation.
+    /// </summary>
+    private async Task<bool> ApplyCompletion(StringBuilder buffer, LineEditor editor)
+    {
+        var currentLineBeforeCursor = string.Concat(editor.Buffer.Take(editor.Cursor));
+        var textBeforeCursor = buffer.ToString() + currentLineBeforeCursor;
+
+        var completions = replEnvironment.GetCompletions(textBeforeCursor);
+        if (completions.Candidates.Count == 0)
+        {
+            return false;
+        }
+
+        if (completions.Candidates.Count == 1)
+        {
+            ReplaceTypedPrefix(editor, completions.Prefix, completions.Candidates[0]);
+            return false;
+        }
+
+        // Multiple candidates: fill in the longest common prefix (which also normalizes casing).
+        var commonPrefix = LongestCommonPrefix(completions.Candidates);
+        ReplaceTypedPrefix(editor, completions.Prefix, commonPrefix);
+
+        // If that added new characters, let the user keep typing (or tab again) before listing options.
+        if (commonPrefix.Length > completions.Prefix.Length)
+        {
+            return false;
+        }
+
+        // Avoid dumping an overwhelming list (e.g. tabbing on an empty line lists every known function).
+        if (completions.Candidates.Count > MaxMenuCandidates)
+        {
+            return false;
+        }
+
+        await RenderCompletionMenu(buffer, editor, completions.Candidates);
+        return true;
+    }
+
+    private static void ReplaceTypedPrefix(LineEditor editor, string typedPrefix, string replacement)
+    {
+        for (var i = 0; i < typedPrefix.Length; i++)
+        {
+            editor.Backspace();
+        }
+
+        editor.InsertText(replacement);
+    }
+
+    private static string LongestCommonPrefix(IReadOnlyList<string> values)
+    {
+        var prefix = values[0];
+        foreach (var value in values.Skip(1))
+        {
+            var max = Math.Min(prefix.Length, value.Length);
+            var length = 0;
+            while (length < max && prefix[length] == value[length])
+            {
+                length++;
+            }
+
+            prefix = prefix[..length];
+            if (prefix.Length == 0)
+            {
+                break;
+            }
+        }
+
+        return prefix;
+    }
+
+    private async Task RenderCompletionMenu(StringBuilder buffer, LineEditor editor, IReadOnlyList<string> candidates)
+    {
+        // List the candidates below the current input line, then reprint the prompt beneath the listing.
+        await io.Output.Writer.WriteAsync("\n");
+        await io.Output.Writer.WriteAsync(string.Join("  ", candidates));
+        await io.Output.Writer.WriteAsync("\n");
+
+        var inputLine = replEnvironment.HighlightInputLine(GetPrefix(buffer), buffer.ToString(), editor.Buffer, editor.Cursor, printPrevLines: false);
+        await io.Output.Writer.WriteAsync(inputLine);
+    }
+
     private async Task<InputLine?> ReadLine(StringBuilder buffer)
     {
         await io.Output.Writer.WriteAsync(GetPrefix(buffer));
@@ -293,6 +386,14 @@ public class ConsoleCommand(
 
                 case (_, End):
                     editor.MoveToEnd();
+                    break;
+
+                case (_, Tab):
+                    if (await ApplyCompletion(buffer, editor))
+                    {
+                        // Completion menu re-rendered the output itself; skip the default redraw.
+                        continue;
+                    }
                     break;
 
                 case (_, Enter):

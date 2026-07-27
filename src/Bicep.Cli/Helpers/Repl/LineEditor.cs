@@ -91,6 +91,15 @@ public sealed class LineEditor
         Cursor++;
     }
 
+    public void InsertText(string text)
+    {
+        foreach (var rune in text.EnumerateRunes())
+        {
+            buffer.Insert(Cursor, rune);
+            Cursor++;
+        }
+    }
+
     public void Backspace()
     {
         if (Cursor > 0 && Cursor <= buffer.Count)

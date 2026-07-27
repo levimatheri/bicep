@@ -10,6 +10,7 @@ using Bicep.Core;
 using Bicep.Core.Diagnostics;
 using Bicep.Core.Emit;
 using Bicep.Core.Extensions;
+using Bicep.Core.Navigation;
 using Bicep.Core.Parsing;
 using Bicep.Core.PrettyPrintV2;
 using Bicep.Core.Semantics;
@@ -17,6 +18,8 @@ using Bicep.Core.SourceGraph;
 using Bicep.Core.Syntax;
 using Bicep.Core.Syntax.Visitors;
 using Bicep.Core.Text;
+using Bicep.Core.TypeSystem;
+using Bicep.Core.TypeSystem.Types;
 using Bicep.IO.Abstraction;
 using Bicep.IO.InMemory;
 using Newtonsoft.Json.Linq;
@@ -202,6 +205,102 @@ public class ReplEnvironment
         return new(ParseJToken(expressionEvalResult.Value), CreateAnnotatedDiagnostics(expressionEvalResult.Diagnostics, userExpression, fullContent.Length));
     }
 
+    /// <summary>
+    /// Returns the set of identifier completion candidates for the cursor positioned at the end of
+    /// <paramref name="textBeforeCursor"/>. The text is treated as the current (possibly multi-line) REPL
+    /// input; any persisted declarations are prepended so in-scope symbols are resolved. Candidates are
+    /// filtered by the partial identifier immediately to the left of the cursor, which is returned as the
+    /// <see cref="ReplCompletionResult.Prefix"/> so callers know how much text to replace.
+    /// </summary>
+    public ReplCompletionResult GetCompletions(string textBeforeCursor)
+    {
+        var declarationsPrefix = new StringBuilder();
+        foreach (var line in declarationLines)
+        {
+            declarationsPrefix.AppendLine(line);
+        }
+
+        var fullContent = declarationsPrefix.Append(textBeforeCursor).ToString();
+        var offset = fullContent.Length;
+
+        var compilation = CompileInternal(fullContent);
+        var model = compilation.GetEntrypointSemanticModel();
+        var program = model.SourceFile.ProgramSyntax;
+
+        var word = GetIdentifierPrefix(fullContent, offset);
+        var wordStart = offset - word.Length;
+
+        var candidates = TryGetMemberCompletions(model, program, wordStart) ?? GetScopeCompletions(model);
+
+        return new ReplCompletionResult(
+            word,
+            [
+                .. candidates
+                    .Where(c => c.StartsWith(word, StringComparison.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(c => c, StringComparer.OrdinalIgnoreCase),
+            ]);
+    }
+
+    private static IReadOnlyList<string>? TryGetMemberCompletions(SemanticModel model, ProgramSyntax program, int wordStart)
+    {
+        // Member access when the character immediately before the partial word is a '.'.
+        var dotOffset = wordStart - 1;
+        if (dotOffset < 0)
+        {
+            return null;
+        }
+
+        if (program.TryFindMostSpecificNodeInclusive(dotOffset, x => x is PropertyAccessSyntax) is not PropertyAccessSyntax propertyAccess)
+        {
+            return null;
+        }
+
+        return GetPropertyNames(model.GetTypeInfo(propertyAccess.BaseExpression));
+    }
+
+    private static IReadOnlyList<string> GetPropertyNames(TypeSymbol type)
+        => type switch
+        {
+            ObjectType obj =>
+            [
+                .. obj.Properties.Keys,
+                .. obj.MethodResolver.GetKnownFunctions().Keys,
+            ],
+            _ => [],
+        };
+
+    private static IReadOnlyList<string> GetScopeCompletions(SemanticModel model)
+    {
+        var root = model.Root;
+
+        return
+        [
+            .. root.VariableDeclarations.Select(x => x.Name),
+            .. root.FunctionDeclarations.Select(x => x.Name),
+            .. root.ParameterDeclarations.Select(x => x.Name),
+            .. root.TypeDeclarations.Select(x => x.Name),
+            .. model.Binder.NamespaceResolver.GetKnownFunctionNames(includeDecorators: false),
+            LanguageConstants.VariableKeyword,
+            LanguageConstants.TypeKeyword,
+            LanguageConstants.FunctionKeyword,
+        ];
+    }
+
+    private static string GetIdentifierPrefix(string text, int offset)
+    {
+        var start = offset;
+        while (start > 0 && IsIdentifierChar(text[start - 1]))
+        {
+            start--;
+        }
+
+        return text[start..offset];
+    }
+
+    private static bool IsIdentifierChar(char c)
+        => char.IsLetterOrDigit(c) || c == '_';
+
     public string? TryGetHistory(bool backwards)
     {
         if (backwards)
@@ -331,3 +430,5 @@ public class ReplEnvironment
 public record AnnotatedReplResult(SyntaxBase? Value, IEnumerable<PrintHelper.AnnotatedDiagnostic> AnnotatedDiagnostics);
 
 public record ReplBufferState(bool ShouldSubmit, bool IsTypeDeclaration);
+
+public record ReplCompletionResult(string Prefix, IReadOnlyList<string> Candidates);

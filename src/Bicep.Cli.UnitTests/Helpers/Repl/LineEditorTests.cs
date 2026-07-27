@@ -38,6 +38,43 @@ public class LineEditorTests
     }
 
     [TestMethod]
+    public void InsertText_inserts_at_the_cursor_and_advances_it()
+    {
+        var editor = CreateEditor("concat");
+        editor.MoveToStart();
+        editor.MoveToWordBoundary(+1);
+
+        editor.InsertText("enate");
+
+        GetText(editor).Should().Be("concatenate");
+        editor.Cursor.Should().Be(11);
+    }
+
+    [TestMethod]
+    public void InsertText_in_the_middle_shifts_trailing_text()
+    {
+        var editor = CreateEditor("ac");
+        editor.MoveToStart();
+        editor.MoveRight();
+
+        editor.InsertText("b");
+
+        GetText(editor).Should().Be("abc");
+        editor.Cursor.Should().Be(2);
+    }
+
+    [TestMethod]
+    public void InsertText_with_empty_string_is_a_noop()
+    {
+        var editor = CreateEditor("hello");
+
+        editor.InsertText("");
+
+        GetText(editor).Should().Be("hello");
+        editor.Cursor.Should().Be(5);
+    }
+
+    [TestMethod]
     public void MoveToStart_and_MoveToEnd_move_the_cursor_to_the_line_boundaries()
     {
         var editor = CreateEditor("hello");

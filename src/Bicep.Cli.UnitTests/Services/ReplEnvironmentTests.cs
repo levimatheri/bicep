@@ -232,6 +232,104 @@ public class ReplEnvironmentTests
                 """));
     }
 
+    [TestMethod]
+    public void GetCompletions_returns_matching_builtin_functions()
+    {
+        var replEnvironment = CreateReplEnvironment();
+
+        var completions = replEnvironment.GetCompletions("con");
+
+        completions.Prefix.Should().Be("con");
+        completions.Candidates.Should().Contain("concat");
+    }
+
+    [TestMethod]
+    public void GetCompletions_returns_language_keywords()
+    {
+        var replEnvironment = CreateReplEnvironment();
+
+        var completions = replEnvironment.GetCompletions("v");
+
+        completions.Candidates.Should().Contain("var");
+    }
+
+    [TestMethod]
+    public void GetCompletions_returns_persisted_variable_declarations()
+    {
+        var replEnvironment = CreateReplEnvironment();
+        replEnvironment.EvaluateInput("var myVariable = 'abc'");
+
+        var completions = replEnvironment.GetCompletions("myVar");
+
+        completions.Candidates.Should().Contain("myVariable");
+    }
+
+    [TestMethod]
+    public void GetCompletions_returns_persisted_function_declarations()
+    {
+        var replEnvironment = CreateReplEnvironment();
+        replEnvironment.EvaluateInput("func myFunc(name string) string => 'Hello ${name}!'");
+
+        var completions = replEnvironment.GetCompletions("myF");
+
+        completions.Candidates.Should().Contain("myFunc");
+    }
+
+    [TestMethod]
+    public void GetCompletions_after_member_access_returns_property_names()
+    {
+        var replEnvironment = CreateReplEnvironment();
+        replEnvironment.EvaluateInput("""
+            var person = {
+              alpha: 1
+              beta: 2
+            }
+            """);
+
+        var completions = replEnvironment.GetCompletions("person.a");
+
+        completions.Prefix.Should().Be("a");
+        completions.Candidates.Should().Contain("alpha");
+        completions.Candidates.Should().NotContain("beta");
+    }
+
+    [TestMethod]
+    public void GetCompletions_after_member_access_with_no_prefix_returns_all_property_names()
+    {
+        var replEnvironment = CreateReplEnvironment();
+        replEnvironment.EvaluateInput("""
+            var person = {
+              alpha: 1
+              beta: 2
+            }
+            """);
+
+        var completions = replEnvironment.GetCompletions("person.");
+
+        completions.Candidates.Should().Contain(["alpha", "beta"]);
+    }
+
+    [TestMethod]
+    public void GetCompletions_with_no_prefix_returns_all_candidates()
+    {
+        var replEnvironment = CreateReplEnvironment();
+
+        var completions = replEnvironment.GetCompletions("");
+
+        completions.Candidates.Should().Contain("concat");
+        completions.Candidates.Should().Contain("var");
+    }
+
+    [TestMethod]
+    public void GetCompletions_with_non_matching_prefix_returns_empty()
+    {
+        var replEnvironment = CreateReplEnvironment();
+
+        var completions = replEnvironment.GetCompletions("zzzNoSuchThing");
+
+        completions.Candidates.Should().BeEmpty();
+    }
+
     private static string GetHighlighted(ReplEnvironment replEnvironment, string input)
     {
         var lines = StringUtils.SplitOnNewLine(input).ToArray();
